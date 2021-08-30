@@ -60,6 +60,7 @@ fn init(mut exports: JsObject) -> napi::Result<()> {
         "parseSyncUndefinedNoSerde",
         parse::parse_sync_undefined_no_serde,
     )?;
+    exports.create_named_method("parseSyncBincode", parse::parse_sync_bincode)?;
     exports.create_named_method("reflect", reflect)?;
 
     Ok(())

@@ -33,6 +33,17 @@ pub fn complete_parse<'a>(env: &Env, program: Program, _c: &Compiler) -> napi::R
     env.create_string_from_std(s)
 }
 
+pub fn complete_parse_undef<'a>(
+    env: &Env,
+    program: Program,
+    _c: &Compiler,
+) -> napi::Result<JsUndefined> {
+    let _s = serde_json::to_string(&program)
+        .context("failed to serialize Program")
+        .convert_err()?;
+    env.get_undefined()
+}
+
 impl Task for ParseTask {
     type Output = Program;
     type JsValue = JsString;
@@ -144,7 +155,7 @@ pub fn parse_sync(cx: CallContext) -> napi::Result<JsString> {
 }
 
 #[js_function(3)]
-pub fn parse_test(cx: CallContext) -> napi::Result<JsString> {
+pub fn parse_sync_undefined(cx: CallContext) -> napi::Result<JsUndefined> {
     let c = get_compiler(&cx);
 
     let src = cx.get::<JsString>(0)?.into_utf8()?.as_str()?.to_owned();
@@ -171,7 +182,38 @@ pub fn parse_test(cx: CallContext) -> napi::Result<JsString> {
     })
     .convert_err()?;
 
-    complete_parse(&cx.env, program, &c)
+    complete_parse_undef(&cx.env, program, &c)
+}
+
+#[js_function(3)]
+pub fn parse_sync_undefined_no_serde(cx: CallContext) -> napi::Result<JsUndefined> {
+    let c = get_compiler(&cx);
+
+    let src = cx.get::<JsString>(0)?.into_utf8()?.as_str()?.to_owned();
+    let options: ParseOptions = cx.get_deserialized(1)?;
+    let filename = cx.get::<Either<JsString, JsUndefined>>(2)?;
+    let filename = if let Either::A(value) = filename {
+        FileName::Real(value.into_utf8()?.as_str()?.to_owned().into())
+    } else {
+        FileName::Anon
+    };
+
+    let _program = try_with_handler(c.cm.clone(), |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                options.comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    cx.env.get_undefined()
 }
 
 #[js_function(2)]

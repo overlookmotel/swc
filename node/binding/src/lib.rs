@@ -53,7 +53,11 @@ fn init(mut exports: JsObject) -> napi::Result<()> {
 
     exports.create_named_method("bundle", bundle::bundle)?;
 
-    exports.create_named_method("parseTest", parse::parse_test)?;
+    exports.create_named_method("parseSyncUndefined", parse::parse_sync_undefined)?;
+    exports.create_named_method(
+        "parseSyncUndefinedNoSerde",
+        parse::parse_sync_undefined_no_serde,
+    )?;
 
     Ok(())
 }

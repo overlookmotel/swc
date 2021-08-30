@@ -3,7 +3,7 @@ use crate::{
     util::{CtxtExt, MapErr},
 };
 use anyhow::Context as _;
-use napi::{CallContext, Either, Env, JsObject, JsString, JsUndefined, Task};
+use napi::{CallContext, Either, Env, JsBuffer, JsObject, JsString, JsUndefined, Task};
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
@@ -11,6 +11,10 @@ use std::{
 use swc::{config::ParseOptions, try_with_handler, Compiler};
 use swc_common::{FileName, SourceFile};
 use swc_ecma_ast::Program;
+
+#[cfg(feature = "serde")]
+extern crate bincode;
+use bincode;
 
 // ----- Parsing -----
 
@@ -214,6 +218,38 @@ pub fn parse_sync_undefined_no_serde(cx: CallContext) -> napi::Result<JsUndefine
     .convert_err()?;
 
     cx.env.get_undefined()
+}
+
+#[js_function(3)]
+pub fn parse_sync_bincode(cx: CallContext) -> napi::Result<JsBuffer> {
+    let c = get_compiler(&cx);
+
+    let src = cx.get::<JsString>(0)?.into_utf8()?.as_str()?.to_owned();
+    let options: ParseOptions = cx.get_deserialized(1)?;
+    let filename = cx.get::<Either<JsString, JsUndefined>>(2)?;
+    let filename = if let Either::A(value) = filename {
+        FileName::Real(value.into_utf8()?.as_str()?.to_owned().into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with_handler(c.cm.clone(), |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                options.comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    let bytes: Vec<u8> = bincode::serialize(&program).unwrap();
+    Ok(cx.env.create_buffer_with_data(bytes)?.into_raw())
 }
 
 #[js_function(2)]

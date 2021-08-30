@@ -6,10 +6,12 @@ extern crate napi_derive;
 extern crate swc_node_base;
 
 use backtrace::Backtrace;
-use napi::{CallContext, Env, JsFunction, JsObject, JsUndefined};
+use napi::{CallContext, Env, JsFunction, JsObject, JsString, JsUndefined};
 use std::{env, panic::set_hook, sync::Arc};
 use swc::{Compiler, TransformOutput};
 use swc_common::{self, sync::Lazy, FilePathMapping, SourceMap};
+
+use serde_reflection::{Tracer, TracerConfig};
 
 mod bundle;
 mod minify;
@@ -58,6 +60,7 @@ fn init(mut exports: JsObject) -> napi::Result<()> {
         "parseSyncUndefinedNoSerde",
         parse::parse_sync_undefined_no_serde,
     )?;
+    exports.create_named_method("reflect", reflect)?;
 
     Ok(())
 }
@@ -83,3 +86,14 @@ pub fn complete_output(env: &Env, output: TransformOutput) -> napi::Result<JsObj
 }
 
 pub type ArcCompiler = Arc<Compiler>;
+
+#[js_function]
+fn reflect(ctx: CallContext) -> napi::Result<JsString> {
+    let mut tracer = Tracer::new(TracerConfig::default());
+    tracer
+        .trace_simple_type::<swc_ecma_ast::RestPat>()
+        .expect("Failed to trace type");
+    let registry = tracer.registry().expect("Failed get registry");
+    let data = serde_json::to_string(&registry).unwrap();
+    ctx.env.create_string_from_std(data)
+}

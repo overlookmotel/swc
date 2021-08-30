@@ -33,3 +33,4 @@ swc_ecma_loader = {path = "../../ecmascript/loader"}
 swc_ecma_parser = {path = "../../ecmascript/parser"}
 swc_node_base = {path = "../base"}
 swc_node_bundler = {path = "../bundler"}
+serde-reflection = "0.3.3"

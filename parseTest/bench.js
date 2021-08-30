@@ -6,10 +6,10 @@ const createJs = require('./createJs.js');
 
 const bindings = loadBinding(pathJoin(__dirname, '..'), 'swc', '@swc/core');
 
-const js = createJs(100000);
+const js = createJs(10_000);
 
 time('to AST', () => parseToAst(js));
-time('to JSON', () => parseToJson(js));
+time('to JSON', () => console.log('JSON size:', parseToJson(js).length));
 time('to undefined', () => parseToUndefined(js));
 time('to undefined (no serde)', () => parseToUndefinedNoSerde(js));
 

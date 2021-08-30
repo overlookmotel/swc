@@ -53,6 +53,8 @@ fn init(mut exports: JsObject) -> napi::Result<()> {
 
     exports.create_named_method("bundle", bundle::bundle)?;
 
+    exports.create_named_method("parseTest", parse::parse_test)?;
+
     Ok(())
 }
 

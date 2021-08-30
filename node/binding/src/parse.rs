@@ -143,6 +143,37 @@ pub fn parse_sync(cx: CallContext) -> napi::Result<JsString> {
     complete_parse(&cx.env, program, &c)
 }
 
+#[js_function(3)]
+pub fn parse_test(cx: CallContext) -> napi::Result<JsString> {
+    let c = get_compiler(&cx);
+
+    let src = cx.get::<JsString>(0)?.into_utf8()?.as_str()?.to_owned();
+    let options: ParseOptions = cx.get_deserialized(1)?;
+    let filename = cx.get::<Either<JsString, JsUndefined>>(2)?;
+    let filename = if let Either::A(value) = filename {
+        FileName::Real(value.into_utf8()?.as_str()?.to_owned().into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with_handler(c.cm.clone(), |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                options.comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    complete_parse(&cx.env, program, &c)
+}
+
 #[js_function(2)]
 pub fn parse_file_sync(cx: CallContext) -> napi::Result<JsString> {
     let c = get_compiler(&cx);

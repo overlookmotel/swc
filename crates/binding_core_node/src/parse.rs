@@ -14,6 +14,8 @@ use swc::{
 };
 use swc_common::{comments::Comments, FileName};
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
+use swc::{config::ParseOptions, Compiler};
+use swc_common::{comments::Comments, plugin::Serialized, FileName};
 
 use crate::{get_compiler, util::try_with};
 
@@ -180,6 +182,51 @@ pub fn parse_sync(src: String, opts: Buffer, filename: Option<String>) -> napi::
     .convert_err()?;
 
     Ok(serde_json::to_string(&program)?)
+}
+
+#[napi]
+pub fn parse_sync_to_buffer(
+    src: String,
+    opts: Buffer,
+    filename: Option<String>,
+) -> napi::Result<Buffer> {
+    crate::util::init_default_trace_subscriber();
+    let c = get_compiler();
+
+    let options: ParseOptions = get_deserialized(&opts)?;
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with(c.cm.clone(), false, |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+
+            let comments = if options.comments {
+                Some(c.comments() as &dyn Comments)
+            } else {
+                None
+            };
+
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    let serialized = Serialized::serialize(&program).convert_err()?;
+    let buf: Vec<u8> = serialized.as_ref().to_vec();
+    let buffer: Buffer = buf.into();
+
+    Ok(buffer)
 }
 
 #[napi]

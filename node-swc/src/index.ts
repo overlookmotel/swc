@@ -63,6 +63,13 @@ export class Compiler {
     return JSON.parse(bindings.parseSync(src, toBuffer(options), filename));
   }
 
+  parseSyncToBuffer(src: string, options?: ParseOptions, filename?: string): Buffer {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncToBuffer(src, toBuffer(options), filename);
+  }
+
   parseFile(
     path: string,
     options: ParseOptions & { isModule: false }
@@ -234,6 +241,10 @@ export function parseSync(
 export function parseSync(src: string, options?: ParseOptions): Module;
 export function parseSync(src: string, options?: ParseOptions): Program {
   return compiler.parseSync(src, options);
+}
+
+export function parseSyncToBuffer(src: string, options?: ParseOptions): Buffer {
+  return compiler.parseSyncToBuffer(src, options);
 }
 
 export function parseFile(

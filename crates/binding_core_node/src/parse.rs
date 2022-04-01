@@ -261,8 +261,7 @@ pub fn parse_sync_to_buffer(
     .convert_err()?;
 
     let serialized = Serialized::serialize(&program).convert_err()?;
-    let buf: Vec<u8> = serialized.as_ref().to_vec();
-    let buffer: Buffer = buf.into();
+    let buffer = Buffer::from(serialized.as_ref().as_slice());
 
     Ok(buffer)
 }
@@ -306,8 +305,7 @@ pub fn parse_sync_to_buffer_no_return(
     .convert_err()?;
 
     let serialized = Serialized::serialize(&program).convert_err()?;
-    let buf: Vec<u8> = serialized.as_ref().to_vec();
-    let _buffer: Buffer = buf.into();
+    let _buffer = Buffer::from(serialized.as_ref().as_slice());
 
     Ok("".to_string())
 }

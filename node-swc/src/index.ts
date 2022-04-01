@@ -63,11 +63,32 @@ export class Compiler {
     return JSON.parse(bindings.parseSync(src, toBuffer(options), filename));
   }
 
+  parseSyncNoReturn(src: string, options?: ParseOptions, filename?: string): String {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncNoReturn(src, toBuffer(options), filename);
+  }
+
   parseSyncToBuffer(src: string, options?: ParseOptions, filename?: string): Buffer {
     options = options || { syntax: "ecmascript" };
     options.syntax = options.syntax || "ecmascript";
 
     return bindings.parseSyncToBuffer(src, toBuffer(options), filename);
+  }
+
+  parseSyncToBufferNoReturn(src: string, options?: ParseOptions, filename?: string): String {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncToBufferNoReturn(src, toBuffer(options), filename);
+  }
+
+  parseSyncNoSerialization(src: string, options?: ParseOptions, filename?: string): String {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncNoSerialization(src, toBuffer(options), filename);
   }
 
   parseFile(
@@ -243,8 +264,20 @@ export function parseSync(src: string, options?: ParseOptions): Program {
   return compiler.parseSync(src, options);
 }
 
+export function parseSyncNoReturn(src: string, options?: ParseOptions): String {
+  return compiler.parseSyncNoReturn(src, options);
+}
+
 export function parseSyncToBuffer(src: string, options?: ParseOptions): Buffer {
   return compiler.parseSyncToBuffer(src, options);
+}
+
+export function parseSyncToBufferNoReturn(src: string, options?: ParseOptions): String {
+  return compiler.parseSyncToBufferNoReturn(src, options);
+}
+
+export function parseSyncNoSerialization(src: string, options?: ParseOptions): String {
+  return compiler.parseSyncNoSerialization(src, options);
 }
 
 export function parseFile(

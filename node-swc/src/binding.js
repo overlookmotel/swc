@@ -236,14 +236,17 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { bundle, minify, minifySync, parse, parseSync, parseSyncToBuffer, parseFileSync, parseFile, print, printSync, transform, transformSync, transformFile, transformFileSync, getTargetTriple, initCustomTraceSubscriber, Compiler } = nativeBinding
+const { bundle, minify, minifySync, parse, parseSync, parseSyncNoReturn, parseSyncToBuffer, parseSyncToBufferNoReturn, parseSyncNoSerialization, parseFileSync, parseFile, print, printSync, transform, transformSync, transformFile, transformFileSync, getTargetTriple, initCustomTraceSubscriber, Compiler } = nativeBinding
 
 module.exports.bundle = bundle
 module.exports.minify = minify
 module.exports.minifySync = minifySync
 module.exports.parse = parse
 module.exports.parseSync = parseSync
+module.exports.parseSyncNoReturn = parseSyncNoReturn
 module.exports.parseSyncToBuffer = parseSyncToBuffer
+module.exports.parseSyncToBufferNoReturn = parseSyncToBufferNoReturn
+module.exports.parseSyncNoSerialization = parseSyncNoSerialization
 module.exports.parseFileSync = parseFileSync
 module.exports.parseFile = parseFile
 module.exports.print = print

@@ -57,3 +57,5 @@ pkg/
 *.mm_profdata
 .tsbuildinfo
 .swc/
+
+!bench.js

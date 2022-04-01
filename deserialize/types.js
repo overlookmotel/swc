@@ -87,22 +87,23 @@ const types = {
 	VariableDeclarationDeclarators: [VEC, 'VariableDeclarator'],
 	VariableDeclarator: [NODE, {
 		id: 'Pattern',
-		init: 'BoxedExpression',
+		init: 'VariableDeclaratorInit',
 		definite: 'VariableDeclaratorDefinite'
 	}],
+	VariableDeclaratorInit: [OPTION, 'BoxedExpression'],
 	VariableDeclaratorDefinite: {
 		deserialize: function deserializeVariableDeclaratorDefinite() { return false; }, // TODO
 		length: 4
 	},
 	BoxedExpression: {
 		deserialize: function deserializeBoxedExpression(buff, pos) {
-			const ptr = getPtr(buff, pos + 4);
+			const ptr = getPtr(buff, pos);
 			const deserialize = enumOptionsExpression[buff.readUInt32LE(ptr)];
 			assert(deserialize);
-			return deserialize(buff, ptr + 8);
+			return deserialize(buff, ptr + 8); // TODO Don't know why +8 instead of +4
 		},
 		dependencies: ['Expression'],
-		length: 8
+		length: 4
 	},
 
 	// Patterns

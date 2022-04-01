@@ -179,9 +179,16 @@ function deserializeVariableDeclarator(buff, pos) {
 		type: 'VariableDeclarator',
 		span: deserializeSpan(buff, pos),
 		id: deserializePattern(buff, pos + 12),
-		init: deserializeBoxedExpression(buff, pos + 64),
+		init: deserializeVariableDeclaratorInit(buff, pos + 64),
 		definite: deserializeVariableDeclaratorDefinite(buff, pos + 72)
 	};
+}
+
+function deserializeVariableDeclaratorInit(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeBoxedExpression(buff, pos + 4);
+	assert(opt === 0);
+	return null;
 }
 
 const enumOptionsExpression = [
@@ -792,10 +799,10 @@ function deserializeNumericLiteral(buff, pos) {
 }
 
 function deserializeBoxedExpression(buff, pos) {
-	const ptr = getPtr(buff, pos + 4);
+	const ptr = getPtr(buff, pos);
 	const deserialize = enumOptionsExpression[buff.readUInt32LE(ptr)];
 	assert(deserialize);
-	return deserialize(buff, ptr + 8);
+	return deserialize(buff, ptr + 8); // TODO Don't know why +8 instead of +4
 }
 
 function deserializeVariableDeclaratorDefinite() { return false; }

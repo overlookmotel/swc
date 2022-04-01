@@ -606,7 +606,7 @@ function deserializeBindingIdentifier(buff, pos) {
 	};
 }
 
-const enumOptionsVariableDeclarationKind = ['var','let','const'];
+const enumOptionsVariableDeclarationKind = ['var', 'let', 'const'];
 
 function deserializeVariableDeclarationKind(buff, pos) {
 	const opt = buff.readUInt32LE(pos);

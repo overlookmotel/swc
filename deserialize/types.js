@@ -237,7 +237,7 @@ const types = {
 				pos = getPtr(buff, pos + 4) - 4;
 			}
 
-			return buff.slice(pos, pos + len).toString(); // TODO What encoding?
+			return buff.toString('utf8', pos, pos + len); // TODO What encoding?
 		},
 		length: 8
 	}

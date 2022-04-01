@@ -91,8 +91,10 @@ function generateEnum(typeName, deserializerName, enumOptions, options = {}) {
 }
 
 function generateEnumValue(typeName, deserializerName, enumOptions) {
+	const enumOptionCodes = enumOptions.map(opt => typeof opt === 'string' ? `'${opt}'` : opt + '');
+
 	outputCode(`
-		const enumOptions${typeName} = ${JSON.stringify(enumOptions).replace(/"/g, "'")};
+		const enumOptions${typeName} = [${enumOptionCodes.join(', ')}];
 
 		function ${deserializerName}(buff, pos) {
 			const opt = buff.readUInt32LE(pos);

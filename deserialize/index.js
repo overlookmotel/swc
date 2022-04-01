@@ -431,6 +431,15 @@ function deserializeStringLiteral(buff, pos) {
 	};
 }
 
+function deserializeIdentifier(buff, pos) {
+	return {
+		type: 'Identifier',
+		span: deserializeSpan(buff, pos),
+		value: deserializeJsWord(buff, pos + 12),
+		optional: deserializeIdentifierOptional(buff, pos + 20)
+	};
+}
+
 function deserializeSequenceExpression(buff, pos) {
 	return {
 		type: 'SequenceExpression',
@@ -587,12 +596,13 @@ function deserializeArrayPattern(buff, pos) {
 	};
 }
 
-function deserializeIdentifier(buff, pos) {
+function deserializeBindingIdentifier(buff, pos) {
 	return {
 		type: 'Identifier',
 		span: deserializeSpan(buff, pos),
 		value: deserializeJsWord(buff, pos + 12),
-		optional: deserializeIdentifierOptional(buff, pos + 20)
+		optional: deserializeIdentifierOptional(buff, pos + 20),
+		typeAnnotation: deserializeBindingIdentifierTypeAnnotation(buff, pos + 20)
 	};
 }
 
@@ -764,12 +774,7 @@ function deserializeJsWord(buff, pos) {
 
 function deserializeIdentifierOptional() { return false; }
 
-function deserializeBindingIdentifier(buff, pos) {
-	return {
-		...deserializeIdentifier(buff, pos),
-		typeAnnotation: null // TODO
-	};
-}
+function deserializeBindingIdentifierTypeAnnotation() { return null; }
 
 function deserializeBooleanLiteralValue(buff, pos) {
 	const value = buff.readUInt32LE(pos);

@@ -114,15 +114,18 @@ const types = {
 		],
 		{ length: 52 }
 	],
-	BindingIdentifier: {
-		deserialize: function deserializeBindingIdentifier(buff, pos) {
-			return {
-				...deserializeIdentifier(buff, pos),
-				typeAnnotation: null // TODO
-			};
+	BindingIdentifier: [
+		NODE,
+		{
+			value: 'JsWord',
+			optional: 'IdentifierOptional',
+			typeAnnotation: 'BindingIdentifierTypeAnnotation'
 		},
-		dependencies: ['Identifier'],
-		length: 20
+		{ name: 'Identifier' }
+	],
+	BindingIdentifierTypeAnnotation: {
+		deserialize: function deserializeBindingIdentifierTypeAnnotation() { return null; }, // TODO
+		length: 0
 	},
 	ArrayPattern: [NODE, {}], // TODO
 	RestElement: [NODE, {}], // TODO

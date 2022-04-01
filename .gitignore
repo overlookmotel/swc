@@ -61,3 +61,5 @@ pkg/
 
 # Used by scripts
 *.tmp.txt
+
+!bench.js

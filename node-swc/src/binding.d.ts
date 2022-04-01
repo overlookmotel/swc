@@ -12,7 +12,10 @@ export function minify(code: Buffer, opts: Buffer, signal?: AbortSignal | undefi
 export function minifySync(code: Buffer, opts: Buffer): TransformOutput
 export function parse(src: string, options: Buffer, filename?: string | undefined | null, signal?: AbortSignal | undefined | null): Promise<string>
 export function parseSync(src: string, opts: Buffer, filename?: string | undefined | null): string
+export function parseSyncNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncToBuffer(src: string, opts: Buffer, filename?: string | undefined | null): Buffer
+export function parseSyncToBufferNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
+export function parseSyncNoSerialization(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseFileSync(path: string, opts: Buffer): string
 export function parseFile(path: string, options: Buffer, signal?: AbortSignal | undefined | null): Promise<string>
 export function print(programJson: string, options: Buffer, signal?: AbortSignal | undefined | null): Promise<TransformOutput>

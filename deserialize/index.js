@@ -447,13 +447,6 @@ function deserializeBooleanLiteral(buff, pos) {
 	};
 }
 
-function deserializeBoolean(buff, pos) {
-	const value = buff.readUInt32LE(pos);
-	if (value === 0) return false;
-	assert(value === 1);
-	return true;
-}
-
 function deserializeStringLiteral(buff, pos) {
 	return {
 		type: 'StringLiteral',
@@ -468,7 +461,7 @@ function deserializeIdentifier(buff, pos) {
 		type: 'Identifier',
 		span: deserializeSpan(buff, pos),
 		value: deserializeJsWord(buff, pos + 12),
-		optional: deserializeIdentifierOptional(buff, pos + 20)
+		optional: deserializeBoolean(buff, pos + 20)
 	};
 }
 
@@ -633,14 +626,31 @@ function deserializeBindingIdentifier(buff, pos) {
 		type: 'Identifier',
 		span: deserializeSpan(buff, pos),
 		value: deserializeJsWord(buff, pos + 12),
-		optional: deserializeIdentifierOptional(buff, pos + 20),
-		typeAnnotation: deserializeBindingIdentifierTypeAnnotation(buff, pos + 20)
+		optional: deserializeBoolean(buff, pos + 20),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 24)
 	};
 }
 
-function deserializeBindingIdentifierTypeAnnotation() { return null; }
+function deserializeOptionalTsTypeAnnotation(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeTsTypeAnnotation(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
 
-function deserializeIdentifierOptional() { return false; }
+function deserializeTsTypeAnnotation(buff, pos) {
+	return {
+		type: 'TsTypeAnnotation',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeBoolean(buff, pos) {
+	const value = buff.readUInt32LE(pos);
+	if (value === 0) return false;
+	assert(value === 1);
+	return true;
+}
 
 function deserializeJsWord(buff, pos) {
 	// 8 bytes. Last byte is length.

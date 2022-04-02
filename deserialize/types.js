@@ -32,10 +32,11 @@ const types = {
 	Statement: [
 		ENUM,
 		[
-			'BlockStatement', 'EmptyStatement', 'DebuggerStatement', 'WithStatement', 'ReturnStatement',
-			'LabeledStatement', 'BreakStatement', 'ContinueStatement', 'IfStatement', 'SwitchStatement',
-			'ThrowStatement', 'TryStatement', 'WhileStatement', 'DoWhileStatement', 'ForStatement',
-			'ForInStatement', 'ForOfStatement', 'Declaration', 'ExpressionStatement'
+			'BlockStatement', 'EmptyStatement', 'DebuggerStatement', 'WithStatement',
+			'ReturnStatement', 'LabeledStatement', 'BreakStatement', 'ContinueStatement',
+			'IfStatement', 'SwitchStatement', 'ThrowStatement', 'TryStatement',
+			'WhileStatement', 'DoWhileStatement', 'ForStatement', 'ForInStatement',
+			'ForOfStatement', 'Declaration', 'ExpressionStatement'
 		],
 		{ length: 152 }
 	],
@@ -110,8 +111,8 @@ const types = {
 	Pattern: [
 		ENUM,
 		[
-			'BindingIdentifier', 'ArrayPattern', 'RestElement', 'ObjectPattern', 'AssignmentPattern',
-			'Invalid', 'ExpressionPattern'
+			'BindingIdentifier', 'ArrayPattern', 'RestElement', 'ObjectPattern',
+			'AssignmentPattern', 'Invalid', 'ExpressionPattern'
 		],
 		{ length: 52 }
 	],
@@ -146,15 +147,16 @@ const types = {
 	Expression: [
 		ENUM,
 		[
-			'ThisExpression', 'ArrayExpression', 'ObjectExpression', 'FunctionExpression', 'UnaryExpression',
-			'UpdateExpression', 'BinaryExpression', 'AssignmentExpression', 'MemberExpression',
-			'SuperPropExpression', 'ConditionalExpression', 'CallExpression', 'NewExpression',
-			'SequenceExpression', 'Identifier', 'Literal', 'TemplateLiteral', 'TaggedTemplateExpression',
-			'ArrowFunctionExpression', 'ClassExpression', 'YieldExpression', 'MetaProperty',
-			'AwaitExpression', 'ParenthesisExpression', 'JSXMemberExpression', 'JSXNamespacedName',
-			'JSXEmptyExpression', 'JSXElement', 'JSXFragment', 'TsTypeAssertion', 'TsConstAssertion',
-			'TsNonNullExpression', 'TsAsExpression', 'TsInstantiation', 'PrivateName',
-			'OptionalChainingExpression', 'Invalid'
+			'ThisExpression', 'ArrayExpression', 'ObjectExpression', 'FunctionExpression',
+			'UnaryExpression', 'UpdateExpression', 'BinaryExpression', 'AssignmentExpression',
+			'MemberExpression', 'SuperPropExpression', 'ConditionalExpression', 'CallExpression',
+			'NewExpression', 'SequenceExpression', 'Identifier', 'Literal',
+			'TemplateLiteral', 'TaggedTemplateExpression', 'ArrowFunctionExpression', 'ClassExpression',
+			'YieldExpression', 'MetaProperty', 'AwaitExpression', 'ParenthesisExpression',
+			'JSXMemberExpression', 'JSXNamespacedName', 'JSXEmptyExpression', 'JSXElement',
+			'JSXFragment', 'TsTypeAssertion', 'TsConstAssertion', 'TsNonNullExpression',
+			'TsAsExpression', 'TsInstantiation', 'PrivateName', 'OptionalChainingExpression',
+			'Invalid'
 		],
 		{ length: 0 } // TODO
 	],
@@ -195,8 +197,8 @@ const types = {
 
 	// Literals
 	Literal: [ENUM, [
-		'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral', 'BigIntLiteral',
-		'RegExpLiteral', 'JSXText'
+		'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
+		'BigIntLiteral', 'RegExpLiteral', 'JSXText'
 	]],
 	StringLiteral: [NODE, { value: 'JsWord', raw: 'JsWord' }],
 	BooleanLiteral: [NODE, { value: 'BooleanLiteralValue' }],

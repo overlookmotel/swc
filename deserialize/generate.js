@@ -11,6 +11,8 @@ const { kinds, types, utilities } = require('./types.js'),
 
 // Generate deserialization code
 
+const DEBUG = !!process.env.DEBUG;
+
 let generatedCode = '';
 
 const generatedTypes = {};
@@ -54,16 +56,16 @@ function generateType(typeName) {
 			length = generateEnumValue(typeName, deserializerName, typeDef[1]);
 			break;
 		case OPTION:
-			length = generateOption(deserializerName, typeDef[1]);
+			length = generateOption(typeName, deserializerName, typeDef[1]);
 			break;
 		case BOX:
-			length = generateBox(deserializerName, typeDef[1]);
+			length = generateBox(typeName, deserializerName, typeDef[1]);
 			break;
 		case VEC:
-			length = generateVec(deserializerName, typeDef[1]);
+			length = generateVec(typeName, deserializerName, typeDef[1]);
 			break;
 		case CUSTOM:
-			length = generateCustom(deserializerName, typeDef);
+			length = generateCustom(typeName, deserializerName, typeDef);
 			break;
 		default:
 			throw new Error('Unexpected type kind');
@@ -88,7 +90,9 @@ function generateNode(typeName, deserializerName, props, options = {}) {
 		})
 	].join(',\n\t\t\t\t');
 
-	outputCode(`
+	if (options.length != null) length = options.length;
+
+	outputCode(typeName, length, `
 		function ${deserializerName}(buff, pos) {
 			return {
 				${propsCode}
@@ -96,7 +100,7 @@ function generateNode(typeName, deserializerName, props, options = {}) {
 		}
 	`);
 
-	return options.length ?? length;
+	return length;
 }
 
 function generateEnum(typeName, deserializerName, enumOptions, options = {}) {
@@ -107,7 +111,9 @@ function generateEnum(typeName, deserializerName, enumOptions, options = {}) {
 		return typeDef.deserializerName;
 	});
 
-	outputCode(`
+	length = options.length ?? length + 4;
+
+	outputCode(typeName, length, `
 		const enumOptions${typeName} = [
 			${enumDeserializerNames.join(',\n\t\t\t')}
 		];
@@ -119,13 +125,13 @@ function generateEnum(typeName, deserializerName, enumOptions, options = {}) {
 		}
 	`);
 
-	return options.length ?? length + 4;
+	return length;
 }
 
 function generateEnumValue(typeName, deserializerName, enumOptions) {
 	const enumOptionCodes = enumOptions.map(opt => typeof opt === 'string' ? `'${opt}'` : opt + '');
 
-	outputCode(`
+	outputCode(typeName, 4, `
 		const enumOptions${typeName} = [${enumOptionCodes.join(', ')}];
 
 		function ${deserializerName}(buff, pos) {
@@ -139,10 +145,12 @@ function generateEnumValue(typeName, deserializerName, enumOptions) {
 	return 4;
 }
 
-function generateOption(deserializerName, optionalTypeName) {
+function generateOption(typeName, deserializerName, optionalTypeName) {
 	const optionalTypeDef = generateType(optionalTypeName);
 
-	outputCode(`
+	const length = optionalTypeDef.length + 4;
+
+	outputCode(typeName, length, `
 		function ${deserializerName}(buff, pos) {
 			const opt = buff.readUInt32LE(pos);
 			if (opt === 1) return ${optionalTypeDef.deserializerName}(buff, pos + 4);
@@ -151,13 +159,13 @@ function generateOption(deserializerName, optionalTypeName) {
 		}
 	`);
 
-	return optionalTypeDef.length + 4;
+	return length;
 }
 
-function generateBox(deserializerName, boxedTypeName) {
+function generateBox(typeName, deserializerName, boxedTypeName) {
 	const boxedTypeDef = generateType(boxedTypeName);
 
-	outputCode(`
+	outputCode(typeName, 4, `
 		function ${deserializerName}(buff, pos) {
 			const ptr = getPtr(buff, pos);
 			return ${boxedTypeDef.deserializerName}(buff, ptr);
@@ -167,10 +175,10 @@ function generateBox(deserializerName, boxedTypeName) {
 	return 4;
 }
 
-function generateVec(deserializerName, childTypeName) {
+function generateVec(typeName, deserializerName, childTypeName) {
 	const childTypeDef = generateType(childTypeName);
 
-	outputCode(`
+	outputCode(typeName, 8, `
 		function ${deserializerName}(buff, pos) {
 			const vecPos = getPtr(buff, pos),
 				numEntries = buff.readUInt32LE(pos + 4);
@@ -185,7 +193,7 @@ function generateVec(deserializerName, childTypeName) {
 	return 8;
 }
 
-function generateCustom(deserializerName, typeDef) {
+function generateCustom(typeName, deserializerName, typeDef) {
 	assert(typeDef.length != null);
 
 	if (typeDef.dependencies) typeDef.dependencies.forEach(depTypeName => generateType(depTypeName));
@@ -196,6 +204,8 @@ function generateCustom(deserializerName, typeDef) {
 	deserializerCode = removeFunctionIndent(
 		`function ${deserializerName}${deserializerCode.slice('deserialize'.length)}`
 	);
+
+	deserializerCode = insertDebugger(deserializerCode, typeName, typeDef.length);
 
 	generatedCode = deserializerCode + '\n\n' + generatedCode;
 
@@ -212,17 +222,27 @@ function removeFunctionIndent(code) {
 	return [lines[0], ...lines.slice(1).map(line => line.slice(indent))].join('\n');
 }
 
-function outputCode(code) {
+function outputCode(typeName, length, code) {
 	const lines = code.split('\n').slice(1, -1);
 	const indent = lines[0].match(/^\t*/)[0].length;
 	code = lines.map(line => line.slice(indent)).join('\n');
+	code = insertDebugger(code, typeName, length);
 	generatedCode = code + '\n\n' + generatedCode;
+}
+
+function insertDebugger(code, typeName, length) {
+	if (!DEBUG || !typeName) return code;
+
+	return code.replace(
+		/function deserialize.+\n/,
+		line => line + `\tdebugBuff('${typeName}', buff, pos, ${length});\n`
+	);
 }
 
 const programTypeDef = generateType('Program');
 assert(programTypeDef.length === 36);
 
-outputCode(`
+outputCode(null, 0, `
 // Generated code. Do not edit.
 
 'use strict';
@@ -233,7 +253,9 @@ module.exports = ${utilities.deserialize.toString()};
 `);
 
 for (const [name, fn] of Object.entries(utilities)) {
-	if (name !== 'deserialize') generatedCode += fn.toString() + '\n\n';
+	if (name === 'deserialize') continue;
+	if (name === 'debugBuff' && !DEBUG) continue;
+	generatedCode += fn.toString() + '\n\n';
 }
 
 generatedCode = generatedCode.slice(0, -1);

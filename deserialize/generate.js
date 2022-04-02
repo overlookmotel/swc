@@ -7,7 +7,7 @@ const { writeFileSync } = require('fs'),
 
 // Imports
 const { kinds, types, utilities } = require('./types.js'),
-	{ NODE, ENUM, ENUM_VALUE, OPTION, CUSTOM } = kinds;
+	{ NODE, ENUM, ENUM_VALUE, OPTION, VEC, CUSTOM } = kinds;
 
 // Generate deserialization code
 
@@ -15,31 +15,48 @@ let generatedCode = '';
 
 const generatedTypes = {};
 function generateType(typeName) {
+	// If already generated, return type definition
 	const generatedTypeDef = generatedTypes[typeName];
 	if (generatedTypeDef) return generatedTypeDef;
 
-	let typeDef = types[typeName],
-		kind,
-		length;
-	const deserializerName = `deserialize${typeName}`;
+	// Get options
+	const deserializerName = `deserialize${typeName}`,
+		typeDef = types[typeName];
+	let kind, options;
 	if (Array.isArray(typeDef)) {
 		kind = typeDef[0];
-		if (kind === NODE) {
-			length = generateNode(typeName, deserializerName, typeDef[1], typeDef[2]);
-		} else if (kind === ENUM) {
-			length = generateEnum(typeName, deserializerName, typeDef[1], typeDef[2]);
-		} else if (kind === ENUM_VALUE) {
-			length = generateEnumValue(typeName, deserializerName, typeDef[1]);
-		} else if (kind === OPTION) {
-			length = generateOption(deserializerName, typeDef[1]);
-		} else { // VEC
-			length = generateVec(deserializerName, typeDef[1]);
-		}
+		options = typeDef[2] || {}
 	} else {
-		length = generateCustom(deserializerName, typeDef);
 		kind = CUSTOM;
+		options = typeDef;
 	}
 
+	// Generate type def
+	let length;
+	switch (kind) {
+		case NODE:
+			length = generateNode(typeName, deserializerName, typeDef[1], options);
+			break;
+		case ENUM:
+			length = generateEnum(typeName, deserializerName, typeDef[1], options);
+			break;
+		case ENUM_VALUE:
+			length = generateEnumValue(typeName, deserializerName, typeDef[1]);
+			break;
+		case OPTION:
+			length = generateOption(deserializerName, typeDef[1]);
+			break;
+		case VEC:
+			length = generateVec(deserializerName, typeDef[1]);
+			break;
+		case CUSTOM:
+			length = generateCustom(deserializerName, typeDef);
+			break;
+		default:
+			throw new Error('Unexpected type kind');
+	}
+
+	// Store and return type def
 	return generatedTypes[typeName] = { kind, deserializerName, length };
 }
 

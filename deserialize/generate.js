@@ -16,7 +16,7 @@ let generatedCode = '';
 const generatedTypes = {};
 function generateType(typeName) {
 	// If already generated, return type definition
-	const generatedTypeDef = generatedTypes[typeName];
+	let generatedTypeDef = generatedTypes[typeName];
 	if (generatedTypeDef) return generatedTypeDef;
 
 	// Get options
@@ -31,7 +31,17 @@ function generateType(typeName) {
 		options = typeDef;
 	}
 
-	// Generate type def
+	// Generate type def.
+	// Store in `generatedTypes` before `length` is definitively known to avoid circularity
+	// for e.g. `Statement` and `Expression`.
+	// Types which are referred to in cycle must define `length` manually.
+	generatedTypeDef = {
+		kind,
+		deserializerName,
+		length: options.length
+	};
+	generatedTypes[typeName] = generatedTypeDef;
+
 	let length;
 	switch (kind) {
 		case NODE:
@@ -56,8 +66,10 @@ function generateType(typeName) {
 			throw new Error('Unexpected type kind');
 	}
 
-	// Store and return type def
-	return generatedTypes[typeName] = { kind, deserializerName, length };
+	generatedTypeDef.length = length;
+
+	// Return type def
+	return generatedTypeDef;
 }
 
 function generateNode(typeName, deserializerName, props, options = {}) {

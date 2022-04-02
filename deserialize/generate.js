@@ -135,11 +135,13 @@ function generateEnumValue(typeName, deserializerName, enumOptions) {
 			return value;
 		}
 	`);
+
 	return 4;
 }
 
 function generateOption(deserializerName, optionalTypeName) {
 	const optionalTypeDef = generateType(optionalTypeName);
+
 	outputCode(`
 		function ${deserializerName}(buff, pos) {
 			const opt = buff.readUInt32LE(pos);
@@ -148,11 +150,13 @@ function generateOption(deserializerName, optionalTypeName) {
 			return null;
 		}
 	`);
+
 	return optionalTypeDef.length + 4;
 }
 
 function generateBox(deserializerName, boxedTypeName) {
 	const boxedTypeDef = generateType(boxedTypeName);
+
 	outputCode(`
 		function ${deserializerName}(buff, pos) {
 			const ptr = getPtr(buff, pos);
@@ -165,6 +169,7 @@ function generateBox(deserializerName, boxedTypeName) {
 
 function generateVec(deserializerName, childTypeName) {
 	const childTypeDef = generateType(childTypeName);
+
 	outputCode(`
 		function ${deserializerName}(buff, pos) {
 			const vecPos = getPtr(buff, pos),
@@ -176,6 +181,7 @@ function generateVec(deserializerName, childTypeName) {
 			return entries;
 		}
 	`);
+
 	return 8;
 }
 

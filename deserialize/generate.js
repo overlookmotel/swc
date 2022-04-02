@@ -169,7 +169,9 @@ function outputCode(code) {
 	generatedCode = code + '\n\n' + generatedCode;
 }
 
-generateType('Program');
+const programTypeDef = generateType('Program');
+assert(programTypeDef.length === 36);
+
 for (const fn of [utilities.deserializeSpan, utilities.getPtr]) {
 	generatedCode += fn.toString() + '\n\n';
 }

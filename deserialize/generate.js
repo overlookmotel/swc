@@ -172,10 +172,6 @@ function outputCode(code) {
 const programTypeDef = generateType('Program');
 assert(programTypeDef.length === 36);
 
-for (const fn of [utilities.deserializeSpan, utilities.getPtr]) {
-	generatedCode += fn.toString() + '\n\n';
-}
-
 outputCode(`
 // Generated code. Do not edit.
 
@@ -185,6 +181,10 @@ const assert = require('assert');
 
 module.exports = ${utilities.deserialize.toString()};
 `);
+
+for (const [name, fn] of Object.entries(utilities)) {
+	if (name !== 'deserialize') generatedCode += fn.toString() + '\n\n';
+}
 
 generatedCode = generatedCode.slice(0, -1);
 

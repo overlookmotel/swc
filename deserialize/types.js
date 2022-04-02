@@ -82,7 +82,7 @@ const types = {
 	}],
 	VariableDeclarationKind: [ENUM_VALUE, ['var', 'let', 'const']],
 	VariableDeclarationDeclare: {
-		deserialize: function deserializeVariableDeclarationDeclare() { return false; }, // TODO
+		deserialize() { return false; }, // TODO
 		length: 0
 	},
 	VariableDeclarationDeclarators: [VEC, 'VariableDeclarator'],
@@ -93,11 +93,11 @@ const types = {
 	}],
 	VariableDeclaratorInit: [OPTION, 'BoxedExpression'],
 	VariableDeclaratorDefinite: {
-		deserialize: function deserializeVariableDeclaratorDefinite() { return false; }, // TODO
+		deserialize() { return false; }, // TODO
 		length: 4
 	},
 	BoxedExpression: {
-		deserialize: function deserializeBoxedExpression(buff, pos) {
+		deserialize(buff, pos) {
 			const ptr = getPtr(buff, pos);
 			const deserialize = enumOptionsExpression[buff.readUInt32LE(ptr)];
 			assert(deserialize);
@@ -126,7 +126,7 @@ const types = {
 		{ name: 'Identifier' }
 	],
 	BindingIdentifierTypeAnnotation: {
-		deserialize: function deserializeBindingIdentifierTypeAnnotation() { return null; }, // TODO
+		deserialize() { return null; }, // TODO
 		length: 0
 	},
 	ArrayPattern: [NODE, {}], // TODO
@@ -139,7 +139,7 @@ const types = {
 	// Identifier
 	Identifier: [NODE, { value: 'JsWord', optional: 'IdentifierOptional' }],
 	IdentifierOptional: {
-		deserialize: function deserializeIdentifierOptional() { return false; }, // TODO
+		deserialize() { return false; }, // TODO
 		length: 0
 	},
 
@@ -203,7 +203,7 @@ const types = {
 	StringLiteral: [NODE, { value: 'JsWord', raw: 'JsWord' }],
 	BooleanLiteral: [NODE, { value: 'BooleanLiteralValue' }],
 	BooleanLiteralValue: {
-		deserialize: function deserializeBooleanLiteralValue(buff, pos) {
+		deserialize(buff, pos) {
 			const value = buff.readUInt32LE(pos);
 			assert(value === 0 || value === 1);
 			return !!value;
@@ -212,7 +212,7 @@ const types = {
 	},
 	NullLiteral: [NODE, {}],
 	NumericLiteral: {
-		deserialize: function deserializeNumericLiteral(buff, pos) {
+		deserialize(buff, pos) {
 			return {
 				type: 'NumericLiteral',
 				span: deserializeSpan(buff, pos + 4), // TODO Not sure why +4
@@ -228,7 +228,7 @@ const types = {
 
 	// Primitives
 	JsWord: {
-		deserialize: function deserializeJsWord(buff, pos) {
+		deserialize(buff, pos) {
 			// 8 bytes. Last byte is length.
 			// If length <= 7, bytes 0-6 contain the word.
 			// Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.

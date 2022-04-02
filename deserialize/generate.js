@@ -136,25 +136,30 @@ function generateVec(deserializerName, childTypeName) {
 }
 
 function generateCustom(deserializerName, typeDef) {
-	assert(typeof typeDef.deserialize === 'function');
-	assert(typeDef.deserialize.name === deserializerName);
 	assert(typeDef.length != null);
 
 	if (typeDef.dependencies) typeDef.dependencies.forEach(depTypeName => generateType(depTypeName));
 
-	outputFunction(typeDef.deserialize);
+	assert(typeof typeDef.deserialize === 'function');
+	let deserializerCode = typeDef.deserialize.toString();
+	assert(deserializerCode.startsWith('deserialize('));
+	deserializerCode = removeFunctionIndent(
+		`function ${deserializerName}${deserializerCode.slice('deserialize'.length)}`
+	);
+
+	generatedCode = deserializerCode + '\n\n' + generatedCode;
 
 	return typeDef.length;
 }
 
-function outputFunction(fn) {
-	let code = fn.toString();
+function removeFunctionIndent(code) {
 	const lines = code.toString().split('\n');
-	if (lines.length > 1) {
-		const indent = (lines[1].match(/^\t+/) || [' '])[0].length - 1;
-		if (indent > 0) code = [lines[0], ...lines.slice(1).map(line => line.slice(indent))].join('\n');
-	}
-	generatedCode += code + '\n\n';
+	if (lines.length === 1) return code;
+
+	const indent = (lines[1].match(/^\t+/) || [' '])[0].length - 1;
+	if (indent === 0) return code;
+
+	return [lines[0], ...lines.slice(1).map(line => line.slice(indent))].join('\n');
 }
 
 function outputCode(code) {

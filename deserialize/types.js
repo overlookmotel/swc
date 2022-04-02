@@ -10,8 +10,9 @@ const NODE = 1,
 	ENUM = 2,
 	ENUM_VALUE = 3,
 	OPTION = 4,
-	VEC = 5,
-	CUSTOM = 6;
+	BOX = 5,
+	VEC = 6,
+	CUSTOM = 7;
 
 /*
  * Type definitions
@@ -88,20 +89,9 @@ const types = {
 	VariableDeclarationDeclarators: [VEC, 'VariableDeclarator'],
 	VariableDeclarator: [NODE, {
 		id: 'Pattern',
-		init: 'VariableDeclaratorInit',
+		init: 'OptionalBoxedExpression',
 		definite: 'Boolean'
 	}],
-	VariableDeclaratorInit: [OPTION, 'BoxedExpression'],
-	BoxedExpression: {
-		deserialize(buff, pos) {
-			const ptr = getPtr(buff, pos);
-			const deserialize = enumOptionsExpression[buff.readUInt32LE(ptr)];
-			assert(deserialize);
-			return deserialize(buff, ptr + 8); // TODO Don't know why +8 instead of +4
-		},
-		dependencies: ['Expression'],
-		length: 4
-	},
 
 	// Patterns
 	Pattern: [
@@ -156,6 +146,9 @@ const types = {
 		],
 		{ length: 0 } // TODO
 	],
+	BoxedExpression: [BOX, 'Expression'],
+	OptionalBoxedExpression: [OPTION, 'BoxedExpression'],
+
 	ThisExpression: [NODE, {}], // TODO
 	ArrayExpression: [NODE, {}], // TODO
 	ObjectExpression: [NODE, {}], // TODO
@@ -192,7 +185,14 @@ const types = {
 	OptionalChainingExpression: [NODE, {}], // TODO
 
 	// Literals
-	Literal: [ENUM, [
+	Literal: {
+		deserialize(buff, pos) {
+			return deserializeLiteralWrapped(buff, pos + 4);// TODO Not sure why +4
+		},
+		dependencies: ['LiteralWrapped'],
+		length: 28 // TODO Should be able to deduce this
+	},
+	LiteralWrapped: [ENUM, [
 		'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
 		'BigIntLiteral', 'RegExpLiteral', 'JSXText'
 	]],
@@ -268,7 +268,7 @@ function getPtr(buff, pos) {
  */
 
 module.exports = {
-	kinds: { NODE, ENUM, ENUM_VALUE, OPTION, VEC, CUSTOM },
+	kinds: { NODE, ENUM, ENUM_VALUE, OPTION, BOX, VEC, CUSTOM },
 	types,
 	utilities: {
 		deserialize,

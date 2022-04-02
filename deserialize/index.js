@@ -184,11 +184,20 @@ function deserializeVariableDeclarator(buff, pos) {
 	};
 }
 
+function deserializeVariableDeclaratorDefinite() { return false; }
+
 function deserializeVariableDeclaratorInit(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
 	if (opt === 1) return deserializeBoxedExpression(buff, pos + 4);
 	assert(opt === 0);
 	return null;
+}
+
+function deserializeBoxedExpression(buff, pos) {
+	const ptr = getPtr(buff, pos);
+	const deserialize = enumOptionsExpression[buff.readUInt32LE(ptr)];
+	assert(deserialize);
+	return deserialize(buff, ptr + 8); // TODO Don't know why +8 instead of +4
 }
 
 const enumOptionsExpression = [
@@ -414,6 +423,15 @@ function deserializeBigIntLiteral(buff, pos) {
 	};
 }
 
+function deserializeNumericLiteral(buff, pos) {
+	return {
+		type: 'NumericLiteral',
+		span: deserializeSpan(buff, pos + 4), // TODO Not sure why +4
+		// TODO Not sure why +4 after span
+		value: new Float64Array(buff.buffer, buff.byteOffset + pos + 20, 1)[0]
+	};
+}
+
 function deserializeNullLiteral(buff, pos) {
 	return {
 		type: 'NullLiteral',
@@ -427,6 +445,12 @@ function deserializeBooleanLiteral(buff, pos) {
 		span: deserializeSpan(buff, pos),
 		value: deserializeBooleanLiteralValue(buff, pos + 12)
 	};
+}
+
+function deserializeBooleanLiteralValue(buff, pos) {
+	const value = buff.readUInt32LE(pos);
+	assert(value === 0 || value === 1);
+	return !!value;
 }
 
 function deserializeStringLiteral(buff, pos) {
@@ -613,6 +637,27 @@ function deserializeBindingIdentifier(buff, pos) {
 	};
 }
 
+function deserializeBindingIdentifierTypeAnnotation() { return null; }
+
+function deserializeIdentifierOptional() { return false; }
+
+function deserializeJsWord(buff, pos) {
+	// 8 bytes. Last byte is length.
+	// If length <= 7, bytes 0-6 contain the word.
+	// Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
+	// TODO I don't think this can be correct.
+	// How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
+	let len = buff.readUInt8(pos + 7);
+	if (len > 7) {
+		len = buff.readUint32LE(pos);
+		pos = getPtr(buff, pos + 4) - 4;
+	}
+
+	return buff.toString('utf8', pos, pos + len); // TODO What encoding?
+}
+
+function deserializeVariableDeclarationDeclare() { return false; }
+
 const enumOptionsVariableDeclarationKind = ['var', 'let', 'const'];
 
 function deserializeVariableDeclarationKind(buff, pos) {
@@ -761,51 +806,6 @@ function deserializeModuleDecl(buff, pos) {
 		span: deserializeSpan(buff, pos)
 	};
 }
-
-function deserializeVariableDeclarationDeclare() { return false; }
-
-function deserializeJsWord(buff, pos) {
-	// 8 bytes. Last byte is length.
-	// If length <= 7, bytes 0-6 contain the word.
-	// Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
-	// TODO I don't think this can be correct.
-	// How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
-	let len = buff.readUInt8(pos + 7);
-	if (len > 7) {
-		len = buff.readUint32LE(pos);
-		pos = getPtr(buff, pos + 4) - 4;
-	}
-
-	return buff.toString('utf8', pos, pos + len); // TODO What encoding?
-}
-
-function deserializeIdentifierOptional() { return false; }
-
-function deserializeBindingIdentifierTypeAnnotation() { return null; }
-
-function deserializeBooleanLiteralValue(buff, pos) {
-	const value = buff.readUInt32LE(pos);
-	assert(value === 0 || value === 1);
-	return !!value;
-}
-
-function deserializeNumericLiteral(buff, pos) {
-	return {
-		type: 'NumericLiteral',
-		span: deserializeSpan(buff, pos + 4), // TODO Not sure why +4
-		// TODO Not sure why +4 after span
-		value: new Float64Array(buff.buffer, buff.byteOffset + pos + 20, 1)[0]
-	};
-}
-
-function deserializeBoxedExpression(buff, pos) {
-	const ptr = getPtr(buff, pos);
-	const deserialize = enumOptionsExpression[buff.readUInt32LE(ptr)];
-	assert(deserialize);
-	return deserialize(buff, ptr + 8); // TODO Don't know why +8 instead of +4
-}
-
-function deserializeVariableDeclaratorDefinite() { return false; }
 
 function deserializeSpan(buff, pos) {
 	return {

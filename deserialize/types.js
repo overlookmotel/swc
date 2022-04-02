@@ -89,13 +89,9 @@ const types = {
 	VariableDeclarator: [NODE, {
 		id: 'Pattern',
 		init: 'VariableDeclaratorInit',
-		definite: 'VariableDeclaratorDefinite'
+		definite: 'Boolean'
 	}],
 	VariableDeclaratorInit: [OPTION, 'BoxedExpression'],
-	VariableDeclaratorDefinite: {
-		deserialize() { return false; }, // TODO
-		length: 4
-	},
 	BoxedExpression: {
 		deserialize(buff, pos) {
 			const ptr = getPtr(buff, pos);
@@ -201,15 +197,7 @@ const types = {
 		'BigIntLiteral', 'RegExpLiteral', 'JSXText'
 	]],
 	StringLiteral: [NODE, { value: 'JsWord', raw: 'JsWord' }],
-	BooleanLiteral: [NODE, { value: 'BooleanLiteralValue' }],
-	BooleanLiteralValue: {
-		deserialize(buff, pos) {
-			const value = buff.readUInt32LE(pos);
-			assert(value === 0 || value === 1);
-			return !!value;
-		},
-		length: 4
-	},
+	BooleanLiteral: [NODE, { value: 'Boolean' }],
 	NullLiteral: [NODE, {}],
 	NumericLiteral: {
 		deserialize(buff, pos) {
@@ -243,6 +231,15 @@ const types = {
 			return buff.toString('utf8', pos, pos + len); // TODO What encoding?
 		},
 		length: 8
+	},
+	Boolean: {
+		deserialize(buff, pos) {
+			const value = buff.readUInt32LE(pos);
+			if (value === 0) return false;
+			assert(value === 1);
+			return true;
+		},
+		length: 4
 	}
 };
 

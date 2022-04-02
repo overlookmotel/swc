@@ -180,11 +180,9 @@ function deserializeVariableDeclarator(buff, pos) {
 		span: deserializeSpan(buff, pos),
 		id: deserializePattern(buff, pos + 12),
 		init: deserializeVariableDeclaratorInit(buff, pos + 64),
-		definite: deserializeVariableDeclaratorDefinite(buff, pos + 72)
+		definite: deserializeBoolean(buff, pos + 72)
 	};
 }
-
-function deserializeVariableDeclaratorDefinite() { return false; }
 
 function deserializeVariableDeclaratorInit(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
@@ -443,14 +441,15 @@ function deserializeBooleanLiteral(buff, pos) {
 	return {
 		type: 'BooleanLiteral',
 		span: deserializeSpan(buff, pos),
-		value: deserializeBooleanLiteralValue(buff, pos + 12)
+		value: deserializeBoolean(buff, pos + 12)
 	};
 }
 
-function deserializeBooleanLiteralValue(buff, pos) {
+function deserializeBoolean(buff, pos) {
 	const value = buff.readUInt32LE(pos);
-	assert(value === 0 || value === 1);
-	return !!value;
+	if (value === 0) return false;
+	assert(value === 1);
+	return true;
 }
 
 function deserializeStringLiteral(buff, pos) {

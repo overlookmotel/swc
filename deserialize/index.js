@@ -179,12 +179,12 @@ function deserializeVariableDeclarator(buff, pos) {
 		type: 'VariableDeclarator',
 		span: deserializeSpan(buff, pos),
 		id: deserializePattern(buff, pos + 12),
-		init: deserializeVariableDeclaratorInit(buff, pos + 64),
+		init: deserializeOptionalBoxedExpression(buff, pos + 64),
 		definite: deserializeBoolean(buff, pos + 72)
 	};
 }
 
-function deserializeVariableDeclaratorInit(buff, pos) {
+function deserializeOptionalBoxedExpression(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
 	if (opt === 1) return deserializeBoxedExpression(buff, pos + 4);
 	assert(opt === 0);
@@ -193,9 +193,7 @@ function deserializeVariableDeclaratorInit(buff, pos) {
 
 function deserializeBoxedExpression(buff, pos) {
 	const ptr = getPtr(buff, pos);
-	const deserialize = enumOptionsExpression[buff.readUInt32LE(ptr)];
-	assert(deserialize);
-	return deserialize(buff, ptr + 8); // TODO Don't know why +8 instead of +4
+	return deserializeExpression(buff, ptr);
 }
 
 const enumOptionsExpression = [
@@ -384,7 +382,11 @@ function deserializeTemplateLiteral(buff, pos) {
 	};
 }
 
-const enumOptionsLiteral = [
+function deserializeLiteral(buff, pos) {
+	return deserializeLiteralWrapped(buff, pos + 4);// TODO Not sure why +4
+}
+
+const enumOptionsLiteralWrapped = [
 	deserializeStringLiteral,
 	deserializeBooleanLiteral,
 	deserializeNullLiteral,
@@ -394,8 +396,8 @@ const enumOptionsLiteral = [
 	deserializeJSXText
 ];
 
-function deserializeLiteral(buff, pos) {
-	const deserialize = enumOptionsLiteral[buff.readUInt32LE(pos)];
+function deserializeLiteralWrapped(buff, pos) {
+	const deserialize = enumOptionsLiteralWrapped[buff.readUInt32LE(pos)];
 	assert(deserialize);
 	return deserialize(buff, pos + 4);
 }

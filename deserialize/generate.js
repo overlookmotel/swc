@@ -7,7 +7,7 @@ const { writeFileSync } = require('fs'),
 
 // Imports
 const { kinds, types, utilities } = require('./types.js'),
-	{ NODE, ENUM, ENUM_VALUE, OPTION, VEC, CUSTOM } = kinds;
+	{ NODE, ENUM, ENUM_VALUE, OPTION, BOX, VEC, CUSTOM } = kinds;
 
 // Generate deserialization code
 
@@ -55,6 +55,9 @@ function generateType(typeName) {
 			break;
 		case OPTION:
 			length = generateOption(deserializerName, typeDef[1]);
+			break;
+		case BOX:
+			length = generateBox(deserializerName, typeDef[1]);
 			break;
 		case VEC:
 			length = generateVec(deserializerName, typeDef[1]);
@@ -146,6 +149,18 @@ function generateOption(deserializerName, optionalTypeName) {
 		}
 	`);
 	return optionalTypeDef.length + 4;
+}
+
+function generateBox(deserializerName, boxedTypeName) {
+	const boxedTypeDef = generateType(boxedTypeName);
+	outputCode(`
+		function ${deserializerName}(buff, pos) {
+			const ptr = getPtr(buff, pos);
+			return ${boxedTypeDef.deserializerName}(buff, ptr);
+		}
+	`);
+
+	return 4;
 }
 
 function generateVec(deserializerName, childTypeName) {

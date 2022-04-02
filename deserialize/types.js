@@ -106,15 +106,11 @@ const types = {
 		NODE,
 		{
 			value: 'JsWord',
-			optional: 'IdentifierOptional',
-			typeAnnotation: 'BindingIdentifierTypeAnnotation'
+			optional: 'Boolean', // TODO Needs test
+			typeAnnotation: 'OptionalTsTypeAnnotation'
 		},
 		{ name: 'Identifier' }
 	],
-	BindingIdentifierTypeAnnotation: {
-		deserialize() { return null; }, // TODO
-		length: 0
-	},
 	ArrayPattern: [NODE, {}], // TODO
 	RestElement: [NODE, {}], // TODO
 	ObjectPattern: [NODE, {}], // TODO
@@ -123,11 +119,7 @@ const types = {
 	ExpressionPattern: [NODE, {}], // TODO
 
 	// Identifier
-	Identifier: [NODE, { value: 'JsWord', optional: 'IdentifierOptional' }],
-	IdentifierOptional: {
-		deserialize() { return false; }, // TODO
-		length: 0
-	},
+	Identifier: [NODE, { value: 'JsWord', optional: 'Boolean' }], // TODO Needs tests
 
 	// Expressions
 	Expression: [
@@ -213,6 +205,10 @@ const types = {
 	BigIntLiteral: [NODE, {}], // TODO
 	RegExpLiteral: [NODE, {}], // TODO
 	JSXText: [NODE, {}], // TODO
+
+	// TypeScript
+	TsTypeAnnotation: [NODE, {}], // TODO
+	OptionalTsTypeAnnotation: [OPTION, 'TsTypeAnnotation'],
 
 	// Primitives
 	JsWord: {

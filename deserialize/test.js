@@ -178,6 +178,13 @@ describe('Parses correctly', () => {
 			'1'
 		]);
 	});
+
+	describe('Expressions', () => {
+		itParses('Parenthesis expressions', [
+			'(x)',
+			'(1)'
+		]);
+	});
 });
 
 // Utils

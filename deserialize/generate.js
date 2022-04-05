@@ -78,10 +78,11 @@ function generateType(typeName) {
 }
 
 function generateNode(typeName, deserializerName, props, options = {}) {
-	let length = 12; // Span length
+	const spanTypeDef = generateType('Span');
+	let length = spanTypeDef.length;
 	const propsCode = [
 		`type: '${options.name || typeName}'`,
-		`span: deserializeSpan(buff, pos)`,
+		`span: ${spanTypeDef.deserializerName}(buff, pos)`,
 		...Object.entries(props).map(([key, propTypeName]) => {
 			const propTypeDef = generateType(propTypeName);
 			const relPos = length;

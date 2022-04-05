@@ -660,7 +660,8 @@ function deserializeJSXMemberExpression(buff, pos) {
 function deserializeParenthesisExpression(buff, pos) {
 	return {
 		type: 'ParenthesisExpression',
-		span: deserializeSpan(buff, pos)
+		span: deserializeSpan(buff, pos),
+		expression: deserializeBoxedExpression(buff, pos + 12)
 	};
 }
 

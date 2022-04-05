@@ -204,7 +204,7 @@ const types = {
 	YieldExpression: [NODE, {}], // TODO
 	MetaProperty: [NODE, {}], // TODO
 	AwaitExpression: [NODE, {}], // TODO
-	ParenthesisExpression: [NODE, {}], // TODO
+	ParenthesisExpression: [NODE, { expression: 'BoxedExpression' }],
 	JSXMemberExpression: [NODE, {}], // TODO
 	JSXNamespacedName: [NODE, {}], // TODO
 	JSXEmptyExpression: [NODE, {}], // TODO

@@ -106,15 +106,15 @@ const types = {
 			'ClassDeclaration', 'FunctionDeclaration', 'VariableDeclaration', 'TsInterfaceDeclaration',
 			'TsTypeAliasDeclaration', 'TsEnumDeclaration', 'TsModuleDeclaration'
 		]
-	], // TODO
 	ClassDeclaration: [NODE, {}], // TODO
 	FunctionDeclaration: [NODE, {}], // TODO
 	TsInterfaceDeclaration: [NODE, {}], // TODO
 	TsTypeAliasDeclaration: [NODE, {}], // TODO
 	TsEnumDeclaration: [NODE, {}], // TODO
 	TsModuleDeclaration: [NODE, {}], // TODO
+	],
 
-	// Variable declaration
+	// Variable declarations
 	VariableDeclaration: [NODE, {
 		kind: 'VariableDeclarationKind',
 		declare: 'VariableDeclarationDeclare',

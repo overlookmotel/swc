@@ -49,7 +49,7 @@ const types = {
 	EmptyStatement: [NODE, {}],
 	DebuggerStatement: [NODE, {}],
 	WithStatement: [NODE, { object: 'BoxedExpression', body: 'BoxedStatement' }],
-	ReturnStatement: [NODE, { argument: 'OptionalBoxedExpression' }], // TODO Needs tests
+	ReturnStatement: [NODE, { argument: 'OptionalBoxedExpression' }],
 	LabeledStatement: [NODE, { label: 'Identifier', body: 'BoxedStatement' }],
 	BreakStatement: [NODE, { label: 'OptionalIdentifier' }],
 	ContinueStatement: [NODE, { label: 'OptionalIdentifier' }],
@@ -106,12 +106,6 @@ const types = {
 			'ClassDeclaration', 'FunctionDeclaration', 'VariableDeclaration', 'TsInterfaceDeclaration',
 			'TsTypeAliasDeclaration', 'TsEnumDeclaration', 'TsModuleDeclaration'
 		]
-	ClassDeclaration: [NODE, {}], // TODO
-	FunctionDeclaration: [NODE, {}], // TODO
-	TsInterfaceDeclaration: [NODE, {}], // TODO
-	TsTypeAliasDeclaration: [NODE, {}], // TODO
-	TsEnumDeclaration: [NODE, {}], // TODO
-	TsModuleDeclaration: [NODE, {}], // TODO
 	],
 
 	// Variable declarations
@@ -132,6 +126,80 @@ const types = {
 		definite: 'Boolean'
 	}],
 
+	// Functions
+	FunctionDeclaration: [
+		NODE,
+		{
+			identifier: 'Identifier',
+			declare: 'Boolean',
+			params: 'Parameters',
+			decorators: 'Decorators',
+			span: 'Span',
+			body: 'OptionalBlockStatement',
+			typeParameters: 'OptionalTsTypeParamDeclaration',
+			generator: 'BooleanBit',
+			async: 'BooleanBitAnd2Empty',
+			returnType: 'OptionalTsTypeAnnotation'
+		},
+		{
+			keys: [
+				'identifier', 'declare', 'params', 'decorators',
+				'span', 'body', 'generator', 'async',
+				'typeParameters', 'returnType'
+			]
+		}
+	],
+	FunctionExpression: [
+		NODE, {
+			// Same as `FunctionDeclaration` except `identifier` is optional and no `declare` property
+			identifier: 'OptionalIdentifier',
+			params: 'Parameters',
+			decorators: 'Decorators',
+			span: 'Span',
+			body: 'OptionalBlockStatement',
+			typeParameters: 'OptionalTsTypeParamDeclaration',
+			generator: 'BooleanBit',
+			async: 'BooleanBitAnd2Empty',
+			returnType: 'OptionalTsTypeAnnotation'
+		},
+		{
+			keys: [
+				'identifier', 'params', 'decorators', 'span',
+				'body', 'generator', 'async', 'typeParameters',
+				'returnType'
+			]
+		}
+	],
+	ArrowFunctionExpression: [
+		NODE,
+		{
+			params: 'Patterns',
+			body: 'BlockStatementOrExpression',
+			typeParameters: 'OptionalTsTypeParamDeclaration',
+			async: 'BooleanBit',
+			generator: 'BooleanBitAnd2Empty', // TODO Needs test. Do generator arrow functions exist?
+			returnType: 'OptionalTsTypeAnnotation'
+		},
+		{
+			keys: [
+				'span', 'params', 'body', 'async',
+				'generator', 'typeParameters', 'returnType'
+			]
+		}
+	],
+
+	Parameter: [NODE, { decorators: 'Decorators', pat: 'Pattern' }],
+	Parameters: [VEC, 'Parameter'],
+
+	Decorator: [NODE, { expression: 'BoxedExpression' }], // TODO Needs tests
+	Decorators: [VEC, 'Decorator'],
+
+	BlockStatementOrExpression: [ENUM, ['BlockStatement', 'BoxedExpression']],
+
+	// Classes
+	ClassDeclaration: [NODE, {}], // TODO
+	ClassExpression: [NODE, {}], // TODO
+
 	// Patterns
 	Pattern: [
 		ENUM,
@@ -142,6 +210,7 @@ const types = {
 		{ length: 52 }
 	],
 	OptionalPattern: [OPTION, 'Pattern'],
+	Patterns: [VEC, 'Pattern'],
 
 	BindingIdentifier: [
 		NODE,
@@ -186,7 +255,6 @@ const types = {
 	ThisExpression: [NODE, {}], // TODO
 	ArrayExpression: [NODE, {}], // TODO
 	ObjectExpression: [NODE, {}], // TODO
-	FunctionExpression: [NODE, {}], // TODO
 	UnaryExpression: [NODE, {}], // TODO
 	UpdateExpression: [NODE, {}], // TODO
 	BinaryExpression: [NODE, {}], // TODO
@@ -199,8 +267,6 @@ const types = {
 	SequenceExpression: [NODE, {}], // TODO
 	TemplateLiteral: [NODE, {}], // TODO
 	TaggedTemplateExpression: [NODE, {}], // TODO
-	ArrowFunctionExpression: [NODE, {}], // TODO
-	ClassExpression: [NODE, {}], // TODO
 	YieldExpression: [NODE, {}], // TODO
 	MetaProperty: [NODE, {}], // TODO
 	AwaitExpression: [NODE, {}], // TODO
@@ -252,6 +318,16 @@ const types = {
 	// TypeScript
 	TsTypeAnnotation: [NODE, {}], // TODO
 	OptionalTsTypeAnnotation: [OPTION, 'TsTypeAnnotation'],
+
+	TsInterfaceDeclaration: [NODE, {}], // TODO
+	TsTypeAliasDeclaration: [NODE, {}], // TODO
+	TsEnumDeclaration: [NODE, {}], // TODO
+	TsModuleDeclaration: [NODE, {}], // TODO
+
+	TsTypeParamDeclaration: [NODE, { parameters: 'TsTypeParams' }],
+	OptionalTsTypeParamDeclaration: [OPTION, 'TsTypeParamDeclaration'],
+	TsTypeParam: [NODE, {}], // TODO
+	TsTypeParams: [VEC, 'TsTypeParam'],
 
 	// Primitives
 	JsWord: {

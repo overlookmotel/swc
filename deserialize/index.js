@@ -148,7 +148,16 @@ function deserializeTsInterfaceDeclaration(buff, pos) {
 function deserializeFunctionDeclaration(buff, pos) {
 	return {
 		type: 'FunctionDeclaration',
-		span: deserializeSpan(buff, pos)
+		identifier: deserializeIdentifier(buff, pos),
+		declare: deserializeBoolean(buff, pos + 24),
+		params: deserializeParameters(buff, pos + 28),
+		decorators: deserializeDecorators(buff, pos + 36),
+		span: deserializeSpan(buff, pos + 44),
+		body: deserializeOptionalBlockStatement(buff, pos + 56),
+		generator: deserializeBooleanBit(buff, pos + 104),
+		async: deserializeBooleanBitAnd2Empty(buff, pos + 105),
+		typeParameters: deserializeOptionalTsTypeParamDeclaration(buff, pos + 80),
+		returnType: deserializeOptionalTsTypeAnnotation(buff, pos + 108)
 	};
 }
 
@@ -296,13 +305,6 @@ function deserializeTryStatement(buff, pos) {
 	};
 }
 
-function deserializeOptionalBlockStatement(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeBlockStatement(buff, pos + 4);
-	assert(opt === 0);
-	return null;
-}
-
 function deserializeOptionalCatchClause(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
 	if (opt === 1) return deserializeCatchClause(buff, pos + 4);
@@ -324,81 +326,6 @@ function deserializeOptionalPattern(buff, pos) {
 	if (opt === 1) return deserializePattern(buff, pos + 4);
 	assert(opt === 0);
 	return null;
-}
-
-const enumOptionsPattern = [
-	deserializeBindingIdentifier,
-	deserializeArrayPattern,
-	deserializeRestElement,
-	deserializeObjectPattern,
-	deserializeAssignmentPattern,
-	deserializeInvalid,
-	deserializeExpressionPattern
-];
-
-function deserializePattern(buff, pos) {
-	const deserialize = enumOptionsPattern[buff.readUInt32LE(pos)];
-	assert(deserialize);
-	return deserialize(buff, pos + 4);
-}
-
-function deserializeExpressionPattern(buff, pos) {
-	return {
-		type: 'ExpressionPattern',
-		span: deserializeSpan(buff, pos)
-	};
-}
-
-function deserializeAssignmentPattern(buff, pos) {
-	return {
-		type: 'AssignmentPattern',
-		span: deserializeSpan(buff, pos)
-	};
-}
-
-function deserializeObjectPattern(buff, pos) {
-	return {
-		type: 'ObjectPattern',
-		span: deserializeSpan(buff, pos)
-	};
-}
-
-function deserializeRestElement(buff, pos) {
-	return {
-		type: 'RestElement',
-		span: deserializeSpan(buff, pos)
-	};
-}
-
-function deserializeArrayPattern(buff, pos) {
-	return {
-		type: 'ArrayPattern',
-		span: deserializeSpan(buff, pos)
-	};
-}
-
-function deserializeBindingIdentifier(buff, pos) {
-	return {
-		type: 'Identifier',
-		span: deserializeSpan(buff, pos),
-		value: deserializeJsWord(buff, pos + 12),
-		optional: deserializeBoolean(buff, pos + 20),
-		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 24)
-	};
-}
-
-function deserializeOptionalTsTypeAnnotation(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeTsTypeAnnotation(buff, pos + 4);
-	assert(opt === 0);
-	return null;
-}
-
-function deserializeTsTypeAnnotation(buff, pos) {
-	return {
-		type: 'TsTypeAnnotation',
-		span: deserializeSpan(buff, pos)
-	};
 }
 
 function deserializeThrowStatement(buff, pos) {
@@ -468,13 +395,6 @@ function deserializeBreakStatement(buff, pos) {
 		span: deserializeSpan(buff, pos),
 		label: deserializeOptionalIdentifier(buff, pos + 12)
 	};
-}
-
-function deserializeOptionalIdentifier(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeIdentifier(buff, pos + 4);
-	assert(opt === 0);
-	return null;
 }
 
 function deserializeLabeledStatement(buff, pos) {
@@ -564,13 +484,6 @@ function deserializeExpression(buff, pos) {
 	const deserialize = enumOptionsExpression[buff.readUInt32LE(pos)];
 	assert(deserialize);
 	return deserialize(buff, pos + 4);
-}
-
-function deserializeInvalid(buff, pos) {
-	return {
-		type: 'Invalid',
-		span: deserializeSpan(buff, pos)
-	};
 }
 
 function deserializeOptionalChainingExpression(buff, pos) {
@@ -696,8 +609,35 @@ function deserializeClassExpression(buff, pos) {
 function deserializeArrowFunctionExpression(buff, pos) {
 	return {
 		type: 'ArrowFunctionExpression',
-		span: deserializeSpan(buff, pos)
+		span: deserializeSpan(buff, pos),
+		params: deserializePatterns(buff, pos + 12),
+		body: deserializeBlockStatementOrExpression(buff, pos + 20),
+		async: deserializeBooleanBit(buff, pos + 68),
+		generator: deserializeBooleanBitAnd2Empty(buff, pos + 69),
+		typeParameters: deserializeOptionalTsTypeParamDeclaration(buff, pos + 44),
+		returnType: deserializeOptionalTsTypeAnnotation(buff, pos + 72)
 	};
+}
+
+const enumOptionsBlockStatementOrExpression = [
+	deserializeBlockStatement,
+	deserializeBoxedExpression
+];
+
+function deserializeBlockStatementOrExpression(buff, pos) {
+	const deserialize = enumOptionsBlockStatementOrExpression[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializePatterns(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializePattern(buff, vecPos + i * 52));
+	}
+	return entries;
 }
 
 function deserializeTaggedTemplateExpression(buff, pos) {
@@ -788,37 +728,6 @@ function deserializeStringLiteral(buff, pos) {
 	};
 }
 
-function deserializeIdentifier(buff, pos) {
-	return {
-		type: 'Identifier',
-		span: deserializeSpan(buff, pos),
-		value: deserializeJsWord(buff, pos + 12),
-		optional: deserializeBoolean(buff, pos + 20)
-	};
-}
-
-function deserializeBoolean(buff, pos) {
-	const value = buff.readUInt32LE(pos);
-	if (value === 0) return false;
-	assert(value === 1);
-	return true;
-}
-
-function deserializeJsWord(buff, pos) {
-	// 8 bytes. Last byte is length.
-	// If length <= 7, bytes 0-6 contain the word.
-	// Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
-	// TODO I don't think this can be correct.
-	// How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
-	let len = buff.readUInt8(pos + 7);
-	if (len > 7) {
-		len = buff.readUint32LE(pos);
-		pos = getPtr(buff, pos + 4) - 4;
-	}
-
-	return buff.toString('utf8', pos, pos + len); // TODO What encoding?
-}
-
 function deserializeSequenceExpression(buff, pos) {
 	return {
 		type: 'SequenceExpression',
@@ -892,8 +801,226 @@ function deserializeUnaryExpression(buff, pos) {
 function deserializeFunctionExpression(buff, pos) {
 	return {
 		type: 'FunctionExpression',
+		identifier: deserializeOptionalIdentifier(buff, pos),
+		params: deserializeParameters(buff, pos + 28),
+		decorators: deserializeDecorators(buff, pos + 36),
+		span: deserializeSpan(buff, pos + 44),
+		body: deserializeOptionalBlockStatement(buff, pos + 56),
+		generator: deserializeBooleanBit(buff, pos + 104),
+		async: deserializeBooleanBitAnd2Empty(buff, pos + 105),
+		typeParameters: deserializeOptionalTsTypeParamDeclaration(buff, pos + 80),
+		returnType: deserializeOptionalTsTypeAnnotation(buff, pos + 108)
+	};
+}
+
+function deserializeBooleanBitAnd2Empty(buff, pos) {
+	const value = buff.readUInt8(pos);
+	if (value === 0) return false;
+	assert(value === 1);
+	return true;
+}
+
+function deserializeBooleanBit(buff, pos) {
+	const value = buff.readUInt8(pos);
+	if (value === 0) return false;
+	assert(value === 1);
+	return true;
+}
+
+function deserializeOptionalTsTypeParamDeclaration(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeTsTypeParamDeclaration(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
+function deserializeTsTypeParamDeclaration(buff, pos) {
+	return {
+		type: 'TsTypeParamDeclaration',
+		span: deserializeSpan(buff, pos),
+		parameters: deserializeTsTypeParams(buff, pos + 12)
+	};
+}
+
+function deserializeTsTypeParams(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeTsTypeParam(buff, vecPos + i * 12));
+	}
+	return entries;
+}
+
+function deserializeTsTypeParam(buff, pos) {
+	return {
+		type: 'TsTypeParam',
 		span: deserializeSpan(buff, pos)
 	};
+}
+
+function deserializeOptionalBlockStatement(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeBlockStatement(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
+function deserializeParameters(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeParameter(buff, vecPos + i * 72));
+	}
+	return entries;
+}
+
+function deserializeParameter(buff, pos) {
+	return {
+		type: 'Parameter',
+		span: deserializeSpan(buff, pos),
+		decorators: deserializeDecorators(buff, pos + 12),
+		pat: deserializePattern(buff, pos + 20)
+	};
+}
+
+const enumOptionsPattern = [
+	deserializeBindingIdentifier,
+	deserializeArrayPattern,
+	deserializeRestElement,
+	deserializeObjectPattern,
+	deserializeAssignmentPattern,
+	deserializeInvalid,
+	deserializeExpressionPattern
+];
+
+function deserializePattern(buff, pos) {
+	const deserialize = enumOptionsPattern[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializeExpressionPattern(buff, pos) {
+	return {
+		type: 'ExpressionPattern',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeInvalid(buff, pos) {
+	return {
+		type: 'Invalid',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeAssignmentPattern(buff, pos) {
+	return {
+		type: 'AssignmentPattern',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeObjectPattern(buff, pos) {
+	return {
+		type: 'ObjectPattern',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeRestElement(buff, pos) {
+	return {
+		type: 'RestElement',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeArrayPattern(buff, pos) {
+	return {
+		type: 'ArrayPattern',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeBindingIdentifier(buff, pos) {
+	return {
+		type: 'Identifier',
+		span: deserializeSpan(buff, pos),
+		value: deserializeJsWord(buff, pos + 12),
+		optional: deserializeBoolean(buff, pos + 20),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 24)
+	};
+}
+
+function deserializeOptionalTsTypeAnnotation(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeTsTypeAnnotation(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
+function deserializeTsTypeAnnotation(buff, pos) {
+	return {
+		type: 'TsTypeAnnotation',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeDecorators(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeDecorator(buff, vecPos + i * NaN));
+	}
+	return entries;
+}
+
+function deserializeDecorator(buff, pos) {
+	return {
+		type: 'Decorator',
+		span: deserializeSpan(buff, pos),
+		expression: deserializeBoxedExpression(buff, pos + 12)
+	};
+}
+
+function deserializeOptionalIdentifier(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeIdentifier(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
+function deserializeIdentifier(buff, pos) {
+	return {
+		type: 'Identifier',
+		span: deserializeSpan(buff, pos),
+		value: deserializeJsWord(buff, pos + 12),
+		optional: deserializeBoolean(buff, pos + 20)
+	};
+}
+
+function deserializeBoolean(buff, pos) {
+	const value = buff.readUInt32LE(pos);
+	if (value === 0) return false;
+	assert(value === 1);
+	return true;
+}
+
+function deserializeJsWord(buff, pos) {
+	// 8 bytes. Last byte is length.
+	// If length <= 7, bytes 0-6 contain the word.
+	// Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
+	// TODO I don't think this can be correct.
+	// How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
+	let len = buff.readUInt8(pos + 7);
+	if (len > 7) {
+		len = buff.readUint32LE(pos);
+		pos = getPtr(buff, pos + 4) - 4;
+	}
+
+	return buff.toString('utf8', pos, pos + len); // TODO What encoding?
 }
 
 function deserializeObjectExpression(buff, pos) {

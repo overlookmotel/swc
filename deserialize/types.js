@@ -22,11 +22,10 @@ const types = {
 	// Program
 	Program: [ENUM, ['Module', 'Script']],
 	Module: [NODE, { body: 'ModuleBody', interpreter: 'Interpreter' }],
-	Script: [NODE, { body: 'ScriptBody', interpreter: 'Interpreter' }],
+	Script: [NODE, { body: 'Statements', interpreter: 'Interpreter' }],
 	ModuleBody: [VEC, 'ModuleItem'],
 	ModuleItem: [ENUM, ['ModuleDecl', 'Statement']],
 	ModuleDecl: [NODE, {}], // TODO
-	ScriptBody: [VEC, 'Statement'],
 	Interpreter: [OPTION, 'JsWord'],
 
 	// Statements
@@ -41,24 +40,64 @@ const types = {
 		],
 		{ length: 152 }
 	],
-	BlockStatement: [NODE, {}], // TODO
-	EmptyStatement: [NODE, {}], // TODO
-	DebuggerStatement: [NODE, {}], // TODO
-	WithStatement: [NODE, {}], // TODO
-	ReturnStatement: [NODE, {}], // TODO
-	LabeledStatement: [NODE, {}], // TODO
-	BreakStatement: [NODE, {}], // TODO
-	ContinueStatement: [NODE, {}], // TODO
-	IfStatement: [NODE, {}], // TODO
-	SwitchStatement: [NODE, {}], // TODO
-	ThrowStatement: [NODE, {}], // TODO
-	TryStatement: [NODE, {}], // TODO
-	WhileStatement: [NODE, {}], // TODO
-	DoWhileStatement: [NODE, {}], // TODO
-	ForStatement: [NODE, {}], // TODO
-	ForInStatement: [NODE, {}], // TODO
-	ForOfStatement: [NODE, {}], // TODO
-	ExpressionStatement: [NODE, {}], // TODO
+	BoxedStatement: [BOX, 'Statement'],
+	OptionalBoxedStatement: [OPTION, 'BoxedStatement'],
+	Statements: [VEC, 'Statement'],
+
+	BlockStatement: [NODE, { stmts: 'Statements' }],
+	OptionalBlockStatement: [OPTION, 'BlockStatement'],
+	EmptyStatement: [NODE, {}],
+	DebuggerStatement: [NODE, {}],
+	WithStatement: [NODE, { object: 'BoxedExpression', body: 'BoxedStatement' }],
+	ReturnStatement: [NODE, { argument: 'OptionalBoxedExpression' }], // TODO Needs tests
+	LabeledStatement: [NODE, { label: 'Identifier', body: 'BoxedStatement' }],
+	BreakStatement: [NODE, { label: 'OptionalIdentifier' }],
+	ContinueStatement: [NODE, { label: 'OptionalIdentifier' }],
+	IfStatement: [NODE, {
+		test: 'BoxedExpression',
+		consequent: 'BoxedStatement',
+		alternate: 'OptionalBoxedStatement'
+	}],
+	SwitchStatement: [NODE, {
+		discriminant: 'BoxedExpression',
+		cases: 'SwitchStatementCases'
+	}],
+	SwitchStatementCases: [VEC, 'SwitchCase'],
+	SwitchCase: [NODE, {
+		test: 'OptionalBoxedExpression',
+		consequent: 'Statements'
+	}],
+	ThrowStatement: [NODE, { argument: 'BoxedExpression' }],
+	TryStatement: [NODE, {
+		block: 'BlockStatement',
+		handler: 'OptionalCatchClause',
+		finalizer: 'OptionalBlockStatement'
+	}],
+	CatchClause: [NODE, { param: 'OptionalPattern', body: 'BlockStatement' }],
+	OptionalCatchClause: [OPTION, 'CatchClause'],
+	WhileStatement: [NODE, { test: 'BoxedExpression', body: 'BoxedStatement' }],
+	DoWhileStatement: [NODE, { test: 'BoxedExpression', body: 'BoxedStatement' }],
+	ForStatement: [NODE, {
+		init: 'ForStatementInit',
+		test: 'OptionalBoxedExpression',
+		update: 'OptionalBoxedExpression',
+		body: 'BoxedStatement'
+	}],
+	ForStatementInit: [OPTION, 'VariableDeclarationOrExpression'],
+	VariableDeclarationOrExpression: [ENUM, ['VariableDeclaration', 'BoxedExpression']],
+	ForInStatement: [NODE, {
+		left: 'VariableDeclarationOrPattern',
+		right: 'BoxedExpression',
+		body: 'BoxedStatement'
+	}],
+	ForOfStatement: [NODE, {
+		await: 'OptionalSpan',
+		left: 'VariableDeclarationOrPattern',
+		right: 'BoxedExpression',
+		body: 'BoxedStatement'
+	}],
+	VariableDeclarationOrPattern: [ENUM, ['VariableDeclaration', 'Pattern']],
+	ExpressionStatement: [NODE, { expression: 'BoxedExpression' }],
 
 	// Declarations
 	Declaration: [
@@ -102,6 +141,8 @@ const types = {
 		],
 		{ length: 52 }
 	],
+	OptionalPattern: [OPTION, 'Pattern'],
+
 	BindingIdentifier: [
 		NODE,
 		{
@@ -120,6 +161,7 @@ const types = {
 
 	// Identifier
 	Identifier: [NODE, { value: 'JsWord', optional: 'Boolean' }], // TODO Needs tests
+	OptionalIdentifier: [OPTION, 'Identifier'],
 
 	// Expressions
 	Expression: [
@@ -200,6 +242,7 @@ const types = {
 				value: new Float64Array(buff.buffer, buff.byteOffset + pos + 20, 1)[0]
 			};
 		},
+		dependencies: ['Span'],
 		length: 28
 	},
 	BigIntLiteral: [NODE, {}], // TODO
@@ -236,7 +279,20 @@ const types = {
 			return true;
 		},
 		length: 4
-	}
+	},
+
+	// Span
+	Span: {
+		deserialize(buff, pos) {
+			return {
+				start: buff.readUInt32LE(pos),
+				end: buff.readUInt32LE(pos + 4),
+				ctxt: buff.readUInt32LE(pos + 8)
+			};
+		},
+		length: 12
+	},
+	OptionalSpan: [OPTION, 'Span']
 };
 
 /*
@@ -245,14 +301,6 @@ const types = {
 
 function deserialize(buff) {
 	return deserializeProgram(buff, buff.length - 36);
-}
-
-function deserializeSpan(buff, pos) {
-	return {
-		start: buff.readUInt32LE(pos),
-		end: buff.readUInt32LE(pos + 4),
-		ctxt: buff.readUInt32LE(pos + 8)
-	};
 }
 
 function getPtr(buff, pos) {
@@ -285,7 +333,6 @@ module.exports = {
 	types,
 	utilities: {
 		deserialize,
-		deserializeSpan,
 		getPtr,
 		debugBuff
 	}

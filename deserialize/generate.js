@@ -179,6 +179,10 @@ function generateBox(typeName, deserializerName, boxedTypeName) {
 function generateVec(typeName, deserializerName, childTypeName) {
 	const childTypeDef = generateType(childTypeName);
 
+	// TODO Initialize `entries` with size `const entries = Array(numEntries);`
+	// TODO Optimize for empty vector - common with e.g. decorators.
+	// Determine `numEntries` first and return `[]` immediately if zero.
+
 	outputCode(typeName, 8, `
 		function ${deserializerName}(buff, pos) {
 			const vecPos = getPtr(buff, pos),

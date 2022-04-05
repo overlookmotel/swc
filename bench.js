@@ -136,7 +136,8 @@ function conformSpans(ast) {
 // Strip extra properties off Jest's error object for comprehensible output
 function assertAstsEqual(ast1, ast2) {
 	try {
-		expect(ast1).toEqual(ast2);
+		expect(ast1).toStrictEqual(ast2);
+		expect(JSON.stringify(ast1)).toBe(JSON.stringify(ast2));
 	} catch (err) {
 		throw new Error(err.message);
 	}

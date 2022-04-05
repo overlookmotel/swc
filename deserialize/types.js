@@ -307,13 +307,14 @@ function getPtr(buff, pos) {
 	return pos + buff.readInt32LE(pos);
 }
 
-function debugBuff(typeName, buff, pos, len) {
+function debugBuff(typeName, buff, pos, length) {
 	console.log(`${typeName}:`, pos, pos % 16);
 
-	const str = buff.slice(pos, pos + (len || 128)).toString('hex');
+	if (length === undefined) length = 128;
+	const str = buff.slice(pos, pos + length).toString('hex');
 	const mod = (pos % 16) * 2;
 	let out = ' '.repeat(mod + Math.floor(mod / 8));
-	for (let offset = 0; offset < Math.min(str.length, 128); offset += 2) {
+	for (let offset = 0; offset < str.length; offset += 2) {
 		out += str.slice(offset, offset + 2);
 		if ((offset + mod) % 32 === 30) {
 			out += '\n';

@@ -78,25 +78,29 @@ function generateType(typeName) {
 }
 
 function generateNode(typeName, deserializerName, props, options = {}) {
-	const spanTypeDef = generateType('Span');
-	let length = spanTypeDef.length;
-	const propsCode = [
-		`type: '${options.name || typeName}'`,
-		`span: ${spanTypeDef.deserializerName}(buff, pos)`,
-		...Object.entries(props).map(([key, propTypeName]) => {
-			const propTypeDef = generateType(propTypeName);
-			const relPos = length;
-			length += propTypeDef.length;
-			return `${key}: ${propTypeDef.deserializerName}(buff, pos + ${relPos})`;
-		})
-	].join(',\n\t\t\t\t');
+	// Add `span` as first property if not already included in properties.
+	// `FunctionDeclaration`s and a few other nodes don't have `.span` as first property.
+	// In those cases a `span` is included explicitly in `props`.
+	if (!props.span) props = { span: 'Span', ...props };
+
+	let length = 0;
+	const propsCodes = {};
+	for (const [key, propTypeName] of Object.entries(props)) {
+		const propTypeDef = generateType(propTypeName);
+		const posStr = 'pos' + (length ? ` + ${length}` : '');
+		length += propTypeDef.length;
+		propsCodes[key] = `${key}: ${propTypeDef.deserializerName}(buff, ${posStr})`;
+	}
 
 	if (options.length != null) length = options.length;
+
+	const keys = options.keys || Object.keys(propsCodes);
 
 	outputCode(typeName, length, `
 		function ${deserializerName}(buff, pos) {
 			return {
-				${propsCode}
+				type: '${options.name || typeName}',
+				${keys.map(key => propsCodes[key]).join(',\n\t\t\t\t')}
 			};
 		}
 	`);

@@ -200,7 +200,8 @@ function itParses(name, options, codes) {
 			it(testName, () => {
 				const ast = conformSpans(parseSync(code, options)),
 					astViaBuffer = conformSpans(parseSyncViaBuffer(code, options));
-				expect(astViaBuffer).toEqual(ast);
+				expect(astViaBuffer).toStrictEqual(ast);
+				expect(JSON.stringify(astViaBuffer)).toBe(JSON.stringify(ast));
 			});
 		}
 	})

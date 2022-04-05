@@ -280,6 +280,24 @@ const types = {
 		},
 		length: 4
 	},
+	BooleanBit: {
+		deserialize(buff, pos) {
+			const value = buff.readUInt8(pos);
+			if (value === 0) return false;
+			assert(value === 1);
+			return true;
+		},
+		length: 1
+	},
+	BooleanBitAnd2Empty: {
+		deserialize(buff, pos) {
+			const value = buff.readUInt8(pos);
+			if (value === 0) return false;
+			assert(value === 1);
+			return true;
+		},
+		length: 3
+	},
 
 	// Span
 	Span: {

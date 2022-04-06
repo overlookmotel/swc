@@ -318,19 +318,21 @@ function itParses(name, options, codes) {
 function conformSpans(ast) {
 	const offset = ast.span.start;
 	function conformNode(node) {
-		node.span.start -= offset;
-		node.span.end -= offset;
+		if (node.span) {
+			node.span.start -= offset;
+			node.span.end -= offset;
+		}
 		for (const [key, child] of Object.entries(node)) {
 			if (key === 'span') continue;
 			if (!child || typeof child !== 'object') continue;
 			if (Array.isArray(child)) {
 				child.forEach(conformNode);
-			} else if (child.span) {
-				conformNode(child);
 			} else if (key === 'await' && node.type === 'ForOfStatement') {
 				// Special case for `ForOfStatement` which has an additional span under `await key`
 				child.start -= offset;
 				child.end -= offset;
+			} else {
+				conformNode(child);
 			}
 		}
 	}

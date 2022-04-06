@@ -85,6 +85,7 @@ const types = {
 		body: 'BoxedStatement'
 	}],
 	ForStatementInit: [OPTION, 'VariableDeclarationOrExpression'],
+	// TODO Should be called `VariableDeclarationOrBoxedExpression`
 	VariableDeclarationOrExpression: [ENUM, ['VariableDeclaration', 'BoxedExpression']],
 	ForInStatement: [NODE, {
 		left: 'VariableDeclarationOrPattern',
@@ -195,6 +196,7 @@ const types = {
 	Decorator: [NODE, { expression: 'BoxedExpression' }], // TODO Needs tests
 	Decorators: [VEC, 'Decorator'],
 
+	// TODO Should be called `BlockStatementOrBoxedExpression`
 	BlockStatementOrExpression: [ENUM, ['BlockStatement', 'BoxedExpression']],
 
 	// Classes
@@ -278,7 +280,7 @@ const types = {
 	// Literals
 	Literal: {
 		deserialize(buff, pos) {
-			return deserializeLiteralWrapped(buff, pos + 4);// TODO Not sure why +4
+			return deserializeLiteralWrapped(buff, pos + 4); // TODO Not sure why +4
 		},
 		dependencies: ['LiteralWrapped'],
 		length: 28 // TODO Should be able to deduce this

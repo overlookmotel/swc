@@ -7,12 +7,13 @@
  */
 
 const NODE = 1,
-	ENUM = 2,
-	ENUM_VALUE = 3,
-	OPTION = 4,
-	BOX = 5,
-	VEC = 6,
-	CUSTOM = 7;
+	STRUCT = 2,
+	ENUM = 3,
+	ENUM_VALUE = 4,
+	OPTION = 5,
+	BOX = 6,
+	VEC = 7,
+	CUSTOM = 8;
 
 /*
  * Type definitions
@@ -424,7 +425,7 @@ function debugBuff(typeName, buff, pos, length) {
  */
 
 module.exports = {
-	kinds: { NODE, ENUM, ENUM_VALUE, OPTION, BOX, VEC, CUSTOM },
+	kinds: { NODE, STRUCT, ENUM, ENUM_VALUE, OPTION, BOX, VEC, CUSTOM },
 	types,
 	utilities: {
 		deserialize,

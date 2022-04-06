@@ -61,7 +61,7 @@ function generateType(typeName) {
 			length = generateEnum(typeName, deserializerName, typeDef[1], options);
 			break;
 		case ENUM_VALUE:
-			generateEnumValue(typeName, deserializerName, typeDef[1]);
+			generateEnumValue(typeName, deserializerName, typeDef[1], options);
 			break;
 		case OPTION:
 			length = generateOption(typeName, deserializerName, typeDef[1]);
@@ -161,14 +161,17 @@ function generateEnum(typeName, deserializerName, enumOptions, options = {}) {
 	return length;
 }
 
-function generateEnumValue(typeName, deserializerName, enumOptions) {
+function generateEnumValue(typeName, deserializerName, enumOptions, options) {
 	const enumOptionCodes = enumOptions.map(opt => typeof opt === 'string' ? `'${opt}'` : opt + '');
 
-	outputCode(typeName, 4, `
+	let length = options.length ?? 4;
+	assert(length === 1 || length === 4);
+
+	outputCode(typeName, length, `
 		const enumOptions${typeName} = [${enumOptionCodes.join(', ')}];
 
 		function ${deserializerName}(buff, pos) {
-			const opt = buff.readUInt32LE(pos);
+			const opt = buff.${length === 1 ? 'readUInt8' : 'readUInt32LE'}(pos);
 			const value = enumOptions${typeName}[opt];
 			assert(value);
 			return value;

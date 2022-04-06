@@ -972,7 +972,7 @@ function deserializeDecorators(buff, pos) {
 		numEntries = buff.readUInt32LE(pos + 4);
 	const entries = [];
 	for (let i = 0; i < numEntries; i++) {
-		entries.push(deserializeDecorator(buff, vecPos + i * NaN));
+		entries.push(deserializeDecorator(buff, vecPos + i * 16));
 	}
 	return entries;
 }

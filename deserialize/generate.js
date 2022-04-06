@@ -7,7 +7,7 @@ const { writeFileSync } = require('fs'),
 
 // Imports
 const { kinds, types, utilities } = require('./types.js'),
-	{ NODE, ENUM, ENUM_VALUE, OPTION, BOX, VEC, CUSTOM } = kinds;
+	{ NODE, STRUCT, ENUM, ENUM_VALUE, OPTION, BOX, VEC, CUSTOM } = kinds;
 
 // Generate deserialization code
 
@@ -49,6 +49,9 @@ function generateType(typeName) {
 		case NODE:
 			length = generateNode(typeName, deserializerName, typeDef[1], options);
 			break;
+		case STRUCT:
+			length = generateStruct(typeName, deserializerName, typeDef[1], options);
+			break;
 		case ENUM:
 			length = generateEnum(typeName, deserializerName, typeDef[1], options);
 			break;
@@ -83,29 +86,49 @@ function generateNode(typeName, deserializerName, props, options = {}) {
 	// In those cases a `span` is included explicitly in `props`.
 	if (!props.span) props = { span: 'Span', ...props };
 
-	let length = 0;
-	const propsCodes = {};
-	for (const [key, propTypeName] of Object.entries(props)) {
-		const propTypeDef = generateType(propTypeName);
-		const posStr = 'pos' + (length ? ` + ${length}` : '');
-		length += propTypeDef.length;
-		propsCodes[key] = `${key}: ${propTypeDef.deserializerName}(buff, ${posStr})`;
-	}
-
-	if (options.length != null) length = options.length;
-
-	const keys = options.keys || Object.keys(propsCodes);
+	const { length, propsCodes } = getPropsCodes(props, options);
 
 	outputCode(typeName, length, `
 		function ${deserializerName}(buff, pos) {
 			return {
 				type: '${options.name || typeName}',
-				${keys.map(key => propsCodes[key]).join(',\n\t\t\t\t')}
+				${propsCodes.join(',\n\t\t\t\t')}
 			};
 		}
 	`);
 
 	return length;
+}
+
+function generateStruct(typeName, deserializerName, props, options) {
+	const { length, propsCodes } = getPropsCodes(props, options);
+
+	outputCode(typeName, length, `
+		function ${deserializerName}(buff, pos) {
+			return {
+				${propsCodes.join(',\n\t\t\t\t')}
+			};
+		}
+	`);
+
+	return length;
+}
+
+function getPropsCodes(props, options) {
+	let length = 0;
+	const propsCodesMap = {};
+	for (const [key, propTypeName] of Object.entries(props)) {
+		const propTypeDef = generateType(propTypeName);
+		const posStr = 'pos' + (length ? ` + ${length}` : '');
+		length += propTypeDef.length;
+		propsCodesMap[key] = `${key}: ${propTypeDef.deserializerName}(buff, ${posStr})`;
+	}
+
+	if (options.length != null) length = options.length;
+
+	const keys = options.keys || Object.keys(propsCodesMap),
+		propsCodes = keys.map(key => propsCodesMap[key]);
+	return { length, propsCodes };
 }
 
 function generateEnum(typeName, deserializerName, enumOptions, options = {}) {

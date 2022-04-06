@@ -36,15 +36,20 @@ function generateType(typeName) {
 	// Generate type def.
 	// Store in `generatedTypes` before `length` is definitively known to avoid circularity
 	// for e.g. `Statement` and `Expression`.
-	// Types which are referred to in cycle must define `length` manually.
-	generatedTypeDef = {
-		kind,
-		deserializerName,
-		length: options.length
-	};
+	// `NODE`, `ENUM`, `OPTION` and `CUSTOM` types which are referred to in cycle
+	// must define `length` manually.
+	let { length } = options;
+	if (length === undefined) {
+		if (kind === ENUM_VALUE || kind === BOX) {
+			length = 4;
+		} else if (kind === VEC) {
+			length = 8;
+		}
+	}
+
+	generatedTypeDef = { kind, deserializerName, length };
 	generatedTypes[typeName] = generatedTypeDef;
 
-	let length;
 	switch (kind) {
 		case NODE:
 			length = generateNode(typeName, deserializerName, typeDef[1], options);
@@ -56,16 +61,16 @@ function generateType(typeName) {
 			length = generateEnum(typeName, deserializerName, typeDef[1], options);
 			break;
 		case ENUM_VALUE:
-			length = generateEnumValue(typeName, deserializerName, typeDef[1]);
+			generateEnumValue(typeName, deserializerName, typeDef[1]);
 			break;
 		case OPTION:
 			length = generateOption(typeName, deserializerName, typeDef[1]);
 			break;
 		case BOX:
-			length = generateBox(typeName, deserializerName, typeDef[1]);
+			generateBox(typeName, deserializerName, typeDef[1]);
 			break;
 		case VEC:
-			length = generateVec(typeName, deserializerName, typeDef[1]);
+			generateVec(typeName, deserializerName, typeDef[1]);
 			break;
 		case CUSTOM:
 			length = generateCustom(typeName, deserializerName, typeDef);
@@ -169,8 +174,6 @@ function generateEnumValue(typeName, deserializerName, enumOptions) {
 			return value;
 		}
 	`);
-
-	return 4;
 }
 
 function generateOption(typeName, deserializerName, optionalTypeName) {
@@ -199,8 +202,6 @@ function generateBox(typeName, deserializerName, boxedTypeName) {
 			return ${boxedTypeDef.deserializerName}(buff, ptr);
 		}
 	`);
-
-	return 4;
 }
 
 function generateVec(typeName, deserializerName, childTypeName) {
@@ -221,8 +222,6 @@ function generateVec(typeName, deserializerName, childTypeName) {
 			return entries;
 		}
 	`);
-
-	return 8;
 }
 
 function generateCustom(typeName, deserializerName, typeDef) {

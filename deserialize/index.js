@@ -655,7 +655,7 @@ function deserializeTemplateLiteral(buff, pos) {
 }
 
 function deserializeLiteral(buff, pos) {
-	return deserializeLiteralWrapped(buff, pos + 4);// TODO Not sure why +4
+	return deserializeLiteralWrapped(buff, pos + 4); // TODO Not sure why +4
 }
 
 const enumOptionsLiteralWrapped = [

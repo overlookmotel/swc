@@ -724,8 +724,15 @@ function deserializeStringLiteral(buff, pos) {
 		type: 'StringLiteral',
 		span: deserializeSpan(buff, pos),
 		value: deserializeJsWord(buff, pos + 12),
-		raw: deserializeJsWord(buff, pos + 20)
+		raw: deserializeOptionalJsWord(buff, pos + 20)
 	};
+}
+
+function deserializeOptionalJsWord(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeJsWord(buff, pos + 4);
+	assert(opt === 0);
+	return null;
 }
 
 function deserializeSequenceExpression(buff, pos) {

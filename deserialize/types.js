@@ -137,7 +137,7 @@ const types = {
 			decorators: 'Decorators',
 			span: 'Span',
 			body: 'OptionalBlockStatement',
-			typeParameters: 'OptionalTsTypeParamDeclaration',
+			typeParameters: 'OptionalTsTypeParameterDeclaration',
 			generator: 'BooleanBit',
 			async: 'BooleanBitAnd2Empty',
 			returnType: 'OptionalTsTypeAnnotation'
@@ -158,7 +158,7 @@ const types = {
 			decorators: 'Decorators',
 			span: 'Span',
 			body: 'OptionalBlockStatement',
-			typeParameters: 'OptionalTsTypeParamDeclaration',
+			typeParameters: 'OptionalTsTypeParameterDeclaration',
 			generator: 'BooleanBit',
 			async: 'BooleanBitAnd2Empty',
 			returnType: 'OptionalTsTypeAnnotation'
@@ -176,7 +176,7 @@ const types = {
 		{
 			params: 'Patterns',
 			body: 'BlockStatementOrExpression',
-			typeParameters: 'OptionalTsTypeParamDeclaration',
+			typeParameters: 'OptionalTsTypeParameterDeclaration',
 			async: 'BooleanBit',
 			generator: 'BooleanBitAnd2Empty', // TODO Needs test. Do generator arrow functions exist?
 			returnType: 'OptionalTsTypeAnnotation'
@@ -329,6 +329,14 @@ const types = {
 	OptionalTsTypeParamDeclaration: [OPTION, 'TsTypeParamDeclaration'],
 	TsTypeParam: [NODE, {}], // TODO
 	TsTypeParams: [VEC, 'TsTypeParam'],
+	TsTypeParameterDeclaration: [NODE, { parameters: 'TsTypeParameters' }],
+	OptionalTsTypeParameterDeclaration: [OPTION, 'TsTypeParameterDeclaration'],
+
+	TsTypeParameterInstantiation: [NODE, { params: 'BoxedTsTypes' }],
+	OptionalTsTypeParameterInstantiation: [OPTION, 'TsTypeParameterInstantiation'],
+
+	TsTypeParameter: [NODE, {}], // TODO
+	TsTypeParameters: [VEC, 'TsTypeParameter'],
 
 	// Primitives
 	JsWord: {

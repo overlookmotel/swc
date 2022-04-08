@@ -156,7 +156,7 @@ function deserializeFunctionDeclaration(buff, pos) {
 		body: deserializeOptionalBlockStatement(buff, pos + 56),
 		generator: deserializeBooleanBit(buff, pos + 104),
 		async: deserializeBooleanBitAnd2Empty(buff, pos + 105),
-		typeParameters: deserializeOptionalTsTypeParamDeclaration(buff, pos + 80),
+		typeParameters: deserializeOptionalTsTypeParameterDeclaration(buff, pos + 80),
 		returnType: deserializeOptionalTsTypeAnnotation(buff, pos + 108)
 	};
 }
@@ -614,7 +614,7 @@ function deserializeArrowFunctionExpression(buff, pos) {
 		body: deserializeBlockStatementOrExpression(buff, pos + 20),
 		async: deserializeBooleanBit(buff, pos + 68),
 		generator: deserializeBooleanBitAnd2Empty(buff, pos + 69),
-		typeParameters: deserializeOptionalTsTypeParamDeclaration(buff, pos + 44),
+		typeParameters: deserializeOptionalTsTypeParameterDeclaration(buff, pos + 44),
 		returnType: deserializeOptionalTsTypeAnnotation(buff, pos + 72)
 	};
 }
@@ -815,7 +815,7 @@ function deserializeFunctionExpression(buff, pos) {
 		body: deserializeOptionalBlockStatement(buff, pos + 56),
 		generator: deserializeBooleanBit(buff, pos + 104),
 		async: deserializeBooleanBitAnd2Empty(buff, pos + 105),
-		typeParameters: deserializeOptionalTsTypeParamDeclaration(buff, pos + 80),
+		typeParameters: deserializeOptionalTsTypeParameterDeclaration(buff, pos + 80),
 		returnType: deserializeOptionalTsTypeAnnotation(buff, pos + 108)
 	};
 }
@@ -834,34 +834,34 @@ function deserializeBooleanBit(buff, pos) {
 	return true;
 }
 
-function deserializeOptionalTsTypeParamDeclaration(buff, pos) {
+function deserializeOptionalTsTypeParameterDeclaration(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeTsTypeParamDeclaration(buff, pos + 4);
+	if (opt === 1) return deserializeTsTypeParameterDeclaration(buff, pos + 4);
 	assert(opt === 0);
 	return null;
 }
 
-function deserializeTsTypeParamDeclaration(buff, pos) {
+function deserializeTsTypeParameterDeclaration(buff, pos) {
 	return {
-		type: 'TsTypeParamDeclaration',
+		type: 'TsTypeParameterDeclaration',
 		span: deserializeSpan(buff, pos),
-		parameters: deserializeTsTypeParams(buff, pos + 12)
+		parameters: deserializeTsTypeParameters(buff, pos + 12)
 	};
 }
 
-function deserializeTsTypeParams(buff, pos) {
+function deserializeTsTypeParameters(buff, pos) {
 	const vecPos = getPtr(buff, pos),
 		numEntries = buff.readUInt32LE(pos + 4);
 	const entries = [];
 	for (let i = 0; i < numEntries; i++) {
-		entries.push(deserializeTsTypeParam(buff, vecPos + i * 12));
+		entries.push(deserializeTsTypeParameter(buff, vecPos + i * 12));
 	}
 	return entries;
 }
 
-function deserializeTsTypeParam(buff, pos) {
+function deserializeTsTypeParameter(buff, pos) {
 	return {
-		type: 'TsTypeParam',
+		type: 'TsTypeParameter',
 		span: deserializeSpan(buff, pos)
 	};
 }

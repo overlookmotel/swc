@@ -297,7 +297,7 @@ const types = {
 		'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
 		'BigIntLiteral', 'RegExpLiteral', 'JSXText'
 	]],
-	StringLiteral: [NODE, { value: 'JsWord', raw: 'JsWord' }],
+	StringLiteral: [NODE, { value: 'JsWord', raw: 'OptionalJsWord' }],
 	BooleanLiteral: [NODE, { value: 'Boolean' }],
 	NullLiteral: [NODE, {}],
 	NumericLiteral: {
@@ -348,6 +348,7 @@ const types = {
 		},
 		length: 8
 	},
+	OptionalJsWord: [OPTION, 'JsWord'],
 	Boolean: {
 		deserialize(buff, pos) {
 			const value = buff.readUInt32LE(pos);

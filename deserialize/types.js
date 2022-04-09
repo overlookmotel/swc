@@ -259,7 +259,82 @@ const types = {
 
 	ThisExpression: [NODE, {}],
 	ArrayExpression: [NODE, { elements: 'OptionalExpressionOrSpreads' }],
-	ObjectExpression: [NODE, {}], // TODO
+
+	ObjectExpression: [NODE, { properties: 'SpreadElementOrBoxedObjectProperties' }],
+	SpreadElementOrBoxedObjectProperty: [ENUM, ['SpreadElement', 'BoxedObjectProperty']],
+	SpreadElementOrBoxedObjectProperties: [VEC, 'SpreadElementOrBoxedObjectProperty'],
+	SpreadElement: [
+		NODE,
+		{ spread: 'Span', arguments: 'BoxedExpression' },
+		{ keys: ['spread', 'arguments'] } // No span
+	],
+	ObjectProperty: [ENUM, [
+		'Identifier', 'KeyValueProperty', 'AssignmentProperty', 'GetterProperty',
+		'SetterProperty', 'MethodProperty'
+	]],
+	BoxedObjectProperty: [BOX, 'ObjectProperty'],
+	KeyValueProperty: [
+		NODE,
+		{ key: 'PropertyName', value: 'BoxedExpression' },
+		{ keys: ['key', 'value'] } // No span
+	],
+	AssignmentProperty: [NODE, { key: 'Identifier', value: 'BoxedExpression' }],
+	GetterProperty: [
+		NODE,
+		{
+			key: 'PropertyName',
+			span: 'Span',
+			typeAnnotation: 'OptionalTsTypeAnnotation',
+			body: 'OptionalBlockStatement'
+		},
+		{ keys: ['span', 'key', 'typeAnnotation', 'body'] }
+	],
+	SetterProperty: [
+		NODE,
+		{
+			key: 'PropertyName',
+			span: 'Span',
+			param: 'Pattern',
+			body: 'OptionalBlockStatement'
+		},
+		{ keys: ['span', 'key', 'param', 'body'] }
+	],
+	MethodProperty: [
+		NODE,
+		{
+			key: 'PropertyName',
+			params: 'Parameters',
+			decorators: 'Decorators',
+			span: 'Span',
+			body: 'OptionalBlockStatement',
+			typeParameters: 'OptionalTsTypeParameterDeclaration',
+			generator: 'BooleanBit',
+			async: 'BooleanBitAnd2Empty',
+			returnType: 'OptionalTsTypeAnnotation'
+		},
+		{
+			keys: [
+				'key', 'params', 'decorators', 'span',
+				'body', 'generator', 'async', 'typeParameters',
+				'returnType'
+			]
+		}
+	],
+	PropertyName: {
+		// `PropertyNameWrapped` is 36 bytes length.
+		// 4 empty bytes before and after `PropertyNameWrapped`.
+		// TODO Not sure why
+		deserialize(buff, pos) {
+			return deserializePropertyNameWrapped(buff, pos + 4);
+		},
+		dependencies: ['PropertyNameWrapped'],
+		length: 44
+	},
+	PropertyNameWrapped: [ENUM, [
+		'Identifier', 'StringLiteral', 'NumericLiteral', 'Computed',
+		'BigIntLiteral'
+	]],
+
 	UnaryExpression: [NODE, { operator: 'UnaryOperator', argument: 'BoxedExpression' }],
 	UnaryOperator: [ENUM_VALUE, ['-', '+', '!', '~', 'typeof', 'void', 'delete']],
 	UpdateExpression: [NODE, {

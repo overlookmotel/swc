@@ -852,18 +852,6 @@ function deserializeBoxedTsTypes(buff, pos) {
 	return entries;
 }
 
-function deserializeBoxedTsType(buff, pos) {
-	const ptr = getPtr(buff, pos);
-	return deserializeTsType(buff, ptr);
-}
-
-function deserializeTsType(buff, pos) {
-	return {
-		type: 'TsType',
-		span: deserializeSpan(buff, pos)
-	};
-}
-
 function deserializeExpressionOrSpreads(buff, pos) {
 	const vecPos = getPtr(buff, pos),
 		numEntries = buff.readUInt32LE(pos + 4);
@@ -1210,6 +1198,19 @@ function deserializeOptionalTsTypeAnnotation(buff, pos) {
 function deserializeTsTypeAnnotation(buff, pos) {
 	return {
 		type: 'TsTypeAnnotation',
+		span: deserializeSpan(buff, pos),
+		typeAnnotation: deserializeBoxedTsType(buff, pos + 12)
+	};
+}
+
+function deserializeBoxedTsType(buff, pos) {
+	const ptr = getPtr(buff, pos);
+	return deserializeTsType(buff, ptr);
+}
+
+function deserializeTsType(buff, pos) {
+	return {
+		type: 'TsType',
 		span: deserializeSpan(buff, pos)
 	};
 }

@@ -207,6 +207,167 @@ describe('Parses correctly', () => {
 			'[, , x, , , y, , , ...z]'
 		]);
 
+		describe('Object expressions', () => {
+			itParses('Shortcut notation', [
+				'({})',
+				'({x})',
+				'({x, y, z})',
+				'({prop_name_longer_than_7_chars})',
+				`({
+					prop_name_longer_than_7_chars,
+					prop_name_longer_than_7_chars2,
+					prop_name_longer_than_7_chars3
+				})`
+			]);
+
+			itParses('Properties', [
+				'({x: xx})',
+				'({x: xx, y: yy, z: zz})',
+				'({x: 1})',
+				'({x: 1, y: 2, z: 3})',
+				"({'x x': 1})",
+				"({'x x': 1, 'y y': 2, 'z z': 3})",
+				'({1: 2})',
+				'({1: 2, 3: 4, 5: 6})',
+				// TODO Tests for BigInt keys
+				'({ [x]: 1 })',
+				'({ [x]: 1, [y]: 2, [z]: 3 })',
+				'({ [1]: 2 })',
+				'({ [1]: 2, [3]: 4, [5]: 6 })'
+			]);
+
+			itParses('Spread', [
+				'({ ...x })',
+				'({ ...x, ...y, ...z })',
+				'({ ...1 })',
+				'({ ...1, ...2, ...3 })',
+				'({ x, ...y, z })',
+				'({ x: xx, ...y, z: zz })',
+				'({ ...x, y, ...z })',
+				'({ ...x, y: yy, ...z })'
+			]);
+
+			itParses('Getter properties', [
+				'({ get x() {} })',
+				'({ get x() {}, get y() {}, get z() {} })',
+				'({ get x() { return 1; } })',
+				`({
+					get x() { return 1; },
+					get y() { return 2; },
+					get z() { return 3; }
+				})`,
+				"({ get 'x x'() {} })",
+				`({
+					get 'x x'() { return 1; },
+					get 'y y'() { return 2; },
+					get 'z z'() { return 3; }
+				})`,
+				'({ get 1() {} })',
+				`({
+					get 1() { return 2; },
+					get 3() { return 4; },
+					get 5() { return 6; }
+				})`,
+				// TODO Tests for BigInt keys
+				'({ get [x]() { return 1; } })',
+				`({
+					get [x]() { return 1; },
+					get [y]() { return 2; },
+					get [z]() { return 3; }
+				})`,
+				`({
+					get [1]() { return 2; },
+					get [3]() { return 4; },
+					get [5]() { return 6; }
+				})`
+			]);
+
+			itParses('Setter properties', [
+				'({ set x(v) {} })',
+				'({ set x(v) {}, set y(v2) {}, set z(v3) {} })',
+				'({ set x(v) { this.xx += v; } })',
+				`({
+					set x(v) { this.xx += v; },
+					set y(v2) { this.yy += v2; },
+					set z(v3) { this.zz += v3; }
+				})`,
+				"({ set 'x x'(v) {} })",
+				`({
+					set 'x x'(v) { this.xx += v; },
+					set 'y y'(v2) { this.yy += v2; },
+					set 'z z'(v3) { this.zz += v3; }
+				})`,
+				'({ set 1(v) {} })',
+				`({
+					set 1(v) { this.xx += v; },
+					set 3(v2) { this.yy += v2; },
+					set 5(v3) { this.zz += v3; }
+				})`,
+				// TODO Tests for BigInt keys
+				'({ set [x](v) {} })',
+				`({
+					set [x](v) { this.xx += v; },
+					set [y](v2) { this.yy += v2; },
+					set [z](v3) { this.zz += v3; }
+				})`,
+				`({
+					set [1](v) { this.xx += v; },
+					set [3](v2) { this.yy += v2; },
+					set [5](v3) { this.zz += v3; }
+				})`
+			]);
+
+			itParses('Methods', [
+				'({ m() {} })',
+				'({ method_name_longer_than_7_chars() {} })',
+				'({ m() {}, n() {}, o() {} })',
+				`({
+					method_name_longer_than_7_chars() {},
+					method_name_longer_than_7_chars2() {},
+					method_name_longer_than_7_chars3() {}
+				})`,
+				'({ m() { let x = 1; return x; } })',
+
+				'({ m(x) {} })',
+				'({ m(x, y, z) {} })',
+				`({
+					m(
+						param_name_longer_than_7_chars,
+						y, z
+					) {}
+				})`,
+				`({
+					m(
+						param_name_longer_than_7_chars,
+						param_name_longer_than_7_chars2,
+						param_name_longer_than_7_chars3
+					) {}
+				})`,
+				`({
+					method_name_longer_than_7_chars(
+						param_name_longer_than_7_chars,
+						param_name_longer_than_7_chars2,
+						param_name_longer_than_7_chars3
+					) {}
+				})`,
+				'({ m() { let x = 1; } })',
+				'({ m() { let x = 1; let y = 2; } })',
+				`({
+					m(x, y) {
+						if (x) return 1;
+						if (y) return 2;
+						return 3;
+					}
+				})`,
+
+				'({ *m() {} })',
+				'({ async m() {} })',
+				'({ async *m() {} })'
+
+				// TODO `super`
+			]);
+		});
+
 		itParses('Unary expressions', [
 			'+1',
 			'-1',
@@ -609,11 +770,18 @@ function conformSpans(ast) {
 			} else if (
 				(key === 'await' && node.type === 'ForOfStatement')
 				|| (key === 'questionDotToken' && node.type === 'OptionalChainingExpression')
-				|| (key === 'spread' && Object.keys(node).length === 2 && node.expression)
+				|| (
+					key === 'spread'
+					&& (
+						node.type === 'SpreadElement'
+						|| (Object.keys(node).length === 2 && node.expression)
+					)
+				)
 			) {
 				// Special cases for:
 				// - `ForOfStatement` which has an additional span under `await` key
 				// - `OptionalChainingExpression` which has an additional span under `questionDotToken` key
+				// - `SpreadElement` which has an additional span under `spread` key
 				// - `ExpressionOrSpread` which may have a span under `spread` key
 				child.start -= offset;
 				child.end -= offset;

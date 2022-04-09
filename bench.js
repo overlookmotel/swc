@@ -126,8 +126,15 @@ function conformSpans(ast) {
 			if (!child || typeof child !== 'object') continue;
 			if (Array.isArray(child)) {
 				child.forEach(conformNode);
-			} else if (key === 'await' && node.type === 'ForOfStatement') {
-				// Special case for `ForOfStatement` which has an additional span under `await key`
+			} else if (
+				(key === 'await' && node.type === 'ForOfStatement')
+				|| (key === 'questionDotToken' && node.type === 'OptionalChainingExpression')
+				|| (key === 'spread' && Object.keys(node).length === 2 && node.expression)
+			) {
+				// Special cases for:
+				// - `ForOfStatement` which has an additional span under `await` key
+				// - `OptionalChainingExpression` which has an additional span under `questionDotToken` key
+				// - `ExpressionOrSpread` which may have a span under `spread` key
 				child.start -= offset;
 				child.end -= offset;
 			} else {

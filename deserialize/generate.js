@@ -89,7 +89,9 @@ function generateNode(typeName, deserializerName, props, options = {}) {
 	// Add `span` as first property if not already included in properties.
 	// `FunctionDeclaration`s and a few other nodes don't have `.span` as first property.
 	// In those cases a `span` is included explicitly in `props`.
-	if (!props.span) props = { span: 'Span', ...props };
+	if (!props.span && (!options.keys || options.keys.includes('span'))) {
+		props = { span: 'Span', ...props };
+	}
 
 	const { length, propsCodes } = getPropsCodes(props, options);
 

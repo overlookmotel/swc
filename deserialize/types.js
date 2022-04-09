@@ -424,7 +424,7 @@ const types = {
 	TsAsExpression: [NODE, {}], // TODO
 	TsInstantiation: [NODE, {}], // TODO
 
-	TsTypeAnnotation: [NODE, {}], // TODO
+	TsTypeAnnotation: [NODE, { typeAnnotation: 'BoxedTsType' }], // TODO Needs tests
 	OptionalTsTypeAnnotation: [OPTION, 'TsTypeAnnotation'],
 
 	TsInterfaceDeclaration: [NODE, {}], // TODO

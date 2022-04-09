@@ -735,22 +735,6 @@ function deserializeRegExpLiteral(buff, pos) {
 	};
 }
 
-function deserializeBigIntLiteral(buff, pos) {
-	return {
-		type: 'BigIntLiteral',
-		span: deserializeSpan(buff, pos)
-	};
-}
-
-function deserializeNumericLiteral(buff, pos) {
-	return {
-		type: 'NumericLiteral',
-		span: deserializeSpan(buff, pos + 4), // TODO Not sure why +4
-		// TODO Not sure why +4 after span
-		value: new Float64Array(buff.buffer, buff.byteOffset + pos + 20, 1)[0]
-	};
-}
-
 function deserializeNullLiteral(buff, pos) {
 	return {
 		type: 'NullLiteral',
@@ -764,22 +748,6 @@ function deserializeBooleanLiteral(buff, pos) {
 		span: deserializeSpan(buff, pos),
 		value: deserializeBoolean(buff, pos + 12)
 	};
-}
-
-function deserializeStringLiteral(buff, pos) {
-	return {
-		type: 'StringLiteral',
-		span: deserializeSpan(buff, pos),
-		value: deserializeJsWord(buff, pos + 12),
-		raw: deserializeOptionalJsWord(buff, pos + 20)
-	};
-}
-
-function deserializeOptionalJsWord(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeJsWord(buff, pos + 4);
-	assert(opt === 0);
-	return null;
 }
 
 function deserializeSequenceExpression(buff, pos) {
@@ -926,14 +894,6 @@ function deserializeMemberExpressionProperty(buff, pos) {
 	return deserialize(buff, pos + 4);
 }
 
-function deserializeComputed(buff, pos) {
-	return {
-		type: 'Computed',
-		span: deserializeSpan(buff, pos),
-		expression: deserializeBoxedExpression(buff, pos + 12)
-	};
-}
-
 function deserializePrivateName(buff, pos) {
 	return {
 		type: 'PrivateName',
@@ -1048,6 +1008,77 @@ function deserializeFunctionExpression(buff, pos) {
 	};
 }
 
+function deserializeOptionalIdentifier(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeIdentifier(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
+function deserializeObjectExpression(buff, pos) {
+	return {
+		type: 'ObjectExpression',
+		span: deserializeSpan(buff, pos),
+		properties: deserializeSpreadElementOrBoxedObjectProperties(buff, pos + 12)
+	};
+}
+
+function deserializeSpreadElementOrBoxedObjectProperties(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeSpreadElementOrBoxedObjectProperty(buff, vecPos + i * 20));
+	}
+	return entries;
+}
+
+const enumOptionsSpreadElementOrBoxedObjectProperty = [
+	deserializeSpreadElement,
+	deserializeBoxedObjectProperty
+];
+
+function deserializeSpreadElementOrBoxedObjectProperty(buff, pos) {
+	const deserialize = enumOptionsSpreadElementOrBoxedObjectProperty[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializeBoxedObjectProperty(buff, pos) {
+	const ptr = getPtr(buff, pos);
+	return deserializeObjectProperty(buff, ptr);
+}
+
+const enumOptionsObjectProperty = [
+	deserializeIdentifier,
+	deserializeKeyValueProperty,
+	deserializeAssignmentProperty,
+	deserializeGetterProperty,
+	deserializeSetterProperty,
+	deserializeMethodProperty
+];
+
+function deserializeObjectProperty(buff, pos) {
+	const deserialize = enumOptionsObjectProperty[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializeMethodProperty(buff, pos) {
+	return {
+		type: 'MethodProperty',
+		key: deserializePropertyName(buff, pos),
+		params: deserializeParameters(buff, pos + 44),
+		decorators: deserializeDecorators(buff, pos + 52),
+		span: deserializeSpan(buff, pos + 60),
+		body: deserializeOptionalBlockStatement(buff, pos + 72),
+		generator: deserializeBooleanBit(buff, pos + 120),
+		async: deserializeBooleanBitAnd2Empty(buff, pos + 121),
+		typeParameters: deserializeOptionalTsTypeParameterDeclaration(buff, pos + 96),
+		returnType: deserializeOptionalTsTypeAnnotation(buff, pos + 124)
+	};
+}
+
 function deserializeBooleanBitAnd2Empty(buff, pos) {
 	const value = buff.readUInt8(pos);
 	if (value === 0) return false;
@@ -1094,13 +1125,6 @@ function deserializeTsTypeParameter(buff, pos) {
 	};
 }
 
-function deserializeOptionalBlockStatement(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeBlockStatement(buff, pos + 4);
-	assert(opt === 0);
-	return null;
-}
-
 function deserializeParameters(buff, pos) {
 	const vecPos = getPtr(buff, pos),
 		numEntries = buff.readUInt32LE(pos + 4);
@@ -1117,6 +1141,34 @@ function deserializeParameter(buff, pos) {
 		span: deserializeSpan(buff, pos),
 		decorators: deserializeDecorators(buff, pos + 12),
 		pat: deserializePattern(buff, pos + 20)
+	};
+}
+
+function deserializeDecorators(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeDecorator(buff, vecPos + i * 16));
+	}
+	return entries;
+}
+
+function deserializeDecorator(buff, pos) {
+	return {
+		type: 'Decorator',
+		span: deserializeSpan(buff, pos),
+		expression: deserializeBoxedExpression(buff, pos + 12)
+	};
+}
+
+function deserializeSetterProperty(buff, pos) {
+	return {
+		type: 'SetterProperty',
+		span: deserializeSpan(buff, pos + 44),
+		key: deserializePropertyName(buff, pos),
+		param: deserializePattern(buff, pos + 56),
+		body: deserializeOptionalBlockStatement(buff, pos + 108)
 	};
 }
 
@@ -1188,6 +1240,23 @@ function deserializeBindingIdentifier(buff, pos) {
 	};
 }
 
+function deserializeGetterProperty(buff, pos) {
+	return {
+		type: 'GetterProperty',
+		span: deserializeSpan(buff, pos + 44),
+		key: deserializePropertyName(buff, pos),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 56),
+		body: deserializeOptionalBlockStatement(buff, pos + 76)
+	};
+}
+
+function deserializeOptionalBlockStatement(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeBlockStatement(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
 function deserializeOptionalTsTypeAnnotation(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
 	if (opt === 1) return deserializeTsTypeAnnotation(buff, pos + 4);
@@ -1215,27 +1284,77 @@ function deserializeTsType(buff, pos) {
 	};
 }
 
-function deserializeDecorators(buff, pos) {
-	const vecPos = getPtr(buff, pos),
-		numEntries = buff.readUInt32LE(pos + 4);
-	const entries = [];
-	for (let i = 0; i < numEntries; i++) {
-		entries.push(deserializeDecorator(buff, vecPos + i * 16));
-	}
-	return entries;
+function deserializeAssignmentProperty(buff, pos) {
+	return {
+		type: 'AssignmentProperty',
+		span: deserializeSpan(buff, pos),
+		key: deserializeIdentifier(buff, pos + 12),
+		value: deserializeBoxedExpression(buff, pos + 36)
+	};
 }
 
-function deserializeDecorator(buff, pos) {
+function deserializeKeyValueProperty(buff, pos) {
 	return {
-		type: 'Decorator',
+		type: 'KeyValueProperty',
+		key: deserializePropertyName(buff, pos),
+		value: deserializeBoxedExpression(buff, pos + 44)
+	};
+}
+
+function deserializePropertyName(buff, pos) {
+	return deserializePropertyNameWrapped(buff, pos + 4);
+}
+
+const enumOptionsPropertyNameWrapped = [
+	deserializeIdentifier,
+	deserializeStringLiteral,
+	deserializeNumericLiteral,
+	deserializeComputed,
+	deserializeBigIntLiteral
+];
+
+function deserializePropertyNameWrapped(buff, pos) {
+	const deserialize = enumOptionsPropertyNameWrapped[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializeBigIntLiteral(buff, pos) {
+	return {
+		type: 'BigIntLiteral',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeComputed(buff, pos) {
+	return {
+		type: 'Computed',
 		span: deserializeSpan(buff, pos),
 		expression: deserializeBoxedExpression(buff, pos + 12)
 	};
 }
 
-function deserializeOptionalIdentifier(buff, pos) {
+function deserializeNumericLiteral(buff, pos) {
+	return {
+		type: 'NumericLiteral',
+		span: deserializeSpan(buff, pos + 4), // TODO Not sure why +4
+		// TODO Not sure why +4 after span
+		value: new Float64Array(buff.buffer, buff.byteOffset + pos + 20, 1)[0]
+	};
+}
+
+function deserializeStringLiteral(buff, pos) {
+	return {
+		type: 'StringLiteral',
+		span: deserializeSpan(buff, pos),
+		value: deserializeJsWord(buff, pos + 12),
+		raw: deserializeOptionalJsWord(buff, pos + 20)
+	};
+}
+
+function deserializeOptionalJsWord(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeIdentifier(buff, pos + 4);
+	if (opt === 1) return deserializeJsWord(buff, pos + 4);
 	assert(opt === 0);
 	return null;
 }
@@ -1271,10 +1390,11 @@ function deserializeJsWord(buff, pos) {
 	return buff.toString('utf8', pos, pos + len); // TODO What encoding?
 }
 
-function deserializeObjectExpression(buff, pos) {
+function deserializeSpreadElement(buff, pos) {
 	return {
-		type: 'ObjectExpression',
-		span: deserializeSpan(buff, pos)
+		type: 'SpreadElement',
+		spread: deserializeSpan(buff, pos),
+		arguments: deserializeBoxedExpression(buff, pos + 12)
 	};
 }
 

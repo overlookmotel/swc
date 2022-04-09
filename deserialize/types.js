@@ -272,16 +272,6 @@ const types = {
 	MetaProperty: [NODE, {}], // TODO
 	AwaitExpression: [NODE, {}], // TODO
 	ParenthesisExpression: [NODE, { expression: 'BoxedExpression' }],
-	JSXMemberExpression: [NODE, {}], // TODO
-	JSXNamespacedName: [NODE, {}], // TODO
-	JSXEmptyExpression: [NODE, {}], // TODO
-	JSXElement: [NODE, {}], // TODO
-	JSXFragment: [NODE, {}], // TODO
-	TsTypeAssertion: [NODE, {}], // TODO
-	TsConstAssertion: [NODE, {}], // TODO
-	TsNonNullExpression: [NODE, {}], // TODO
-	TsAsExpression: [NODE, {}], // TODO
-	TsInstantiation: [NODE, {}], // TODO
 	PrivateName: [NODE, {}], // TODO
 	OptionalChainingExpression: [NODE, {}], // TODO
 
@@ -314,9 +304,22 @@ const types = {
 	},
 	BigIntLiteral: [NODE, {}], // TODO
 	RegExpLiteral: [NODE, {}], // TODO
+
+	// JSX
 	JSXText: [NODE, {}], // TODO
+	JSXMemberExpression: [NODE, {}], // TODO
+	JSXNamespacedName: [NODE, {}], // TODO
+	JSXEmptyExpression: [NODE, {}], // TODO
+	JSXElement: [NODE, {}], // TODO
+	JSXFragment: [NODE, {}], // TODO
 
 	// TypeScript
+	TsTypeAssertion: [NODE, {}], // TODO
+	TsConstAssertion: [NODE, {}], // TODO
+	TsNonNullExpression: [NODE, {}], // TODO
+	TsAsExpression: [NODE, {}], // TODO
+	TsInstantiation: [NODE, {}], // TODO
+
 	TsTypeAnnotation: [NODE, {}], // TODO
 	OptionalTsTypeAnnotation: [OPTION, 'TsTypeAnnotation'],
 

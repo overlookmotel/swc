@@ -213,6 +213,7 @@ const types = {
 		{ length: 52 }
 	],
 	OptionalPattern: [OPTION, 'Pattern'],
+	BoxedPattern: [BOX, 'Pattern'],
 	Patterns: [VEC, 'Pattern'],
 
 	BindingIdentifier: [
@@ -254,28 +255,129 @@ const types = {
 	],
 	BoxedExpression: [BOX, 'Expression'],
 	OptionalBoxedExpression: [OPTION, 'BoxedExpression'],
+	BoxedExpressions: [VEC, 'BoxedExpression'],
 
-	ThisExpression: [NODE, {}], // TODO
-	ArrayExpression: [NODE, {}], // TODO
+	ThisExpression: [NODE, {}],
+	ArrayExpression: [NODE, { elements: 'OptionalExpressionOrSpreads' }],
 	ObjectExpression: [NODE, {}], // TODO
-	UnaryExpression: [NODE, {}], // TODO
-	UpdateExpression: [NODE, {}], // TODO
-	BinaryExpression: [NODE, {}], // TODO
-	AssignmentExpression: [NODE, {}], // TODO
-	MemberExpression: [NODE, {}], // TODO
+	UnaryExpression: [NODE, { operator: 'UnaryOperator', argument: 'BoxedExpression' }],
+	UnaryOperator: [ENUM_VALUE, ['-', '+', '!', '~', 'typeof', 'void', 'delete']],
+	UpdateExpression: [NODE, {
+		operator: 'UpdateOperator',
+		prefix: 'BooleanBitAnd2Empty',
+		argument: 'BoxedExpression'
+	}],
+	UpdateOperator: [ENUM_VALUE, ['++', '--'], { length: 1 }],
+	BinaryExpression: [
+		NODE,
+		{
+			left: 'BoxedExpression',
+			operator: 'BinaryOperator',
+			right: 'BoxedExpression'
+		},
+		{
+			keys: ['span', 'operator', 'left', 'right']
+		}
+	],
+	BinaryOperator: [ENUM_VALUE, [
+		'==', '!=', '===', '!==',
+		'<', '<=', '>', '>=',
+		'<<', '>>', '>>>', '+',
+		'-', '*', '/', '%',
+		'|', '^', '&', '||',
+		'&&', 'in', 'instanceof', '**',
+		'??'
+	]],
+	AssignmentExpression: [
+		NODE,
+		{
+			left: 'BoxedExpressionOrBoxedPattern',
+			operator: 'AssignmentOperator',
+			right: 'BoxedExpression'
+		},
+		{
+			keys: ['span', 'operator', 'left', 'right']
+		}
+	],
+	AssignmentOperator: [ENUM_VALUE, [
+		'=', '+=', '-=', '*=',
+		'/=', '%=', '<<=', '>>=',
+		'>>>=', '|=', '^=', '&=',
+		'**=', '&&=', '||=', '??='
+	]],
+	BoxedExpressionOrBoxedPattern: [ENUM, ['BoxedExpression', 'BoxedPattern']],
+	MemberExpression: [NODE, { object: 'BoxedExpression', property: 'MemberExpressionProperty' }],
+	MemberExpressionProperty: [ENUM, ['Identifier', 'PrivateName', 'Computed']],
 	SuperPropExpression: [NODE, {}], // TODO
-	ConditionalExpression: [NODE, {}], // TODO
-	CallExpression: [NODE, {}], // TODO
-	NewExpression: [NODE, {}], // TODO
-	SequenceExpression: [NODE, {}], // TODO
-	TemplateLiteral: [NODE, {}], // TODO
-	TaggedTemplateExpression: [NODE, {}], // TODO
-	YieldExpression: [NODE, {}], // TODO
-	MetaProperty: [NODE, {}], // TODO
-	AwaitExpression: [NODE, {}], // TODO
+	ConditionalExpression: [NODE, {
+		test: 'BoxedExpression',
+		consequent: 'BoxedExpression',
+		alternate: 'BoxedExpression'
+	}],
+	CallExpression: [NODE, {
+		callee: 'Callee',
+		arguments: 'ExpressionOrSpreads',
+		typeArguments: 'OptionalTsTypeParameterInstantiation'
+	}],
+	Callee: [ENUM, ['Super', 'Import', 'BoxedExpression']],
+	NewExpression: [NODE, {
+		callee: 'BoxedExpression',
+		arguments: 'OptionalExpressionOrSpreadsOptionFirst',
+		typeArguments: 'OptionalTsTypeParameterInstantiation'
+	}],
+	SequenceExpression: [NODE, { expressions: 'BoxedExpressions' }],
+	TemplateLiteral: [NODE, { expressions: 'BoxedExpressions', quasis: 'TemplateElements' }],
+	TemplateElement: [
+		NODE,
+		{
+			cooked: 'OptionalJsWord',
+			tail: 'Boolean',
+			raw: 'JsWord'
+		},
+		{
+			keys: ['span', 'tail', 'cooked', 'raw']
+		}
+	],
+	TemplateElements: [VEC, 'TemplateElement'],
+	TaggedTemplateExpression: [NODE, {
+		tag: 'BoxedExpression',
+		typeParameters: 'OptionalTsTypeParameterInstantiation',
+		template: 'TemplateLiteral'
+	}],
+	YieldExpression: [NODE, { argument: 'OptionalBoxedExpression', delegate: 'Boolean' }],
+	MetaProperty: [NODE, { kind: 'MetaPropertyKind' }],
+	MetaPropertyKind: [ENUM_VALUE, ['new.target', 'import.meta']],
+	AwaitExpression: [NODE, { argument: 'BoxedExpression' }],
 	ParenthesisExpression: [NODE, { expression: 'BoxedExpression' }],
-	PrivateName: [NODE, {}], // TODO
-	OptionalChainingExpression: [NODE, {}], // TODO
+	PrivateName: [NODE, { id: 'Identifier' }],
+	OptionalChainingExpression: [NODE, {
+		questionDotToken: 'Span',
+		base: 'OptionalChainingBase'
+	}],
+	OptionalChainingBase: [ENUM, ['MemberExpression', 'OptionalChainingCall']],
+	OptionalChainingCall: [
+		NODE,
+		{
+			callee: 'BoxedExpression',
+			arguments: 'ExpressionOrSpreads',
+			typeArguments: 'OptionalTsTypeParameterInstantiation'
+		},
+		{ name: 'CallExpression' }
+	],
+
+	Computed: [NODE, { expression: 'BoxedExpression' }],
+
+	Super: [NODE, {}], // TODO Needs tests
+	Import: [NODE, {}],
+
+	ExpressionOrSpread: [STRUCT, {
+		spread: 'OptionalSpan',
+		expression: 'BoxedExpression'
+	}],
+	ExpressionOrSpreads: [VEC, 'ExpressionOrSpread'],
+	OptionalExpressionOrSpread: [OPTION, 'ExpressionOrSpread'],
+	OptionalExpressionOrSpreads: [VEC, 'OptionalExpressionOrSpread'],
+	OptionalExpressionOrSpreadsOptionFirst: [OPTION, 'ExpressionOrSpreads'],
 
 	// Literals
 	Literal: {
@@ -332,6 +434,10 @@ const types = {
 
 	TsTypeParamDeclaration: [NODE, { parameters: 'TsTypeParams' }],
 	OptionalTsTypeParamDeclaration: [OPTION, 'TsTypeParamDeclaration'],
+
+	TsTypeParameterInstantiation: [NODE, { params: 'BoxedTsTypes' }],
+	OptionalTsTypeParameterInstantiation: [OPTION, 'TsTypeParameterInstantiation'],
+
 	TsTypeParam: [NODE, {}], // TODO
 	TsTypeParams: [VEC, 'TsTypeParam'],
 	TsTypeParameterDeclaration: [NODE, { parameters: 'TsTypeParameters' }],
@@ -342,6 +448,10 @@ const types = {
 
 	TsTypeParameter: [NODE, {}], // TODO
 	TsTypeParameters: [VEC, 'TsTypeParameter'],
+
+	TsType: [NODE, {}], // TODO
+	BoxedTsType: [BOX, 'TsType'],
+	BoxedTsTypes: [VEC, 'BoxedTsType'],
 
 	// Primitives
 	JsWord: {

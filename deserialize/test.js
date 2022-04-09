@@ -189,9 +189,284 @@ describe('Parses correctly', () => {
 	});
 
 	describe('Expressions', () => {
+		itParses('`this` expressions', [
+			'this',
+			'this; this; this;'
+		]);
+
+		itParses('Array expressions', [
+			'[]',
+			'[1]',
+			'[1, 2, 3]',
+			'[x, y, z]',
+			'[, , ,]',
+			'[x, , z]',
+			'[, , x, , , , y, , , z, , ]',
+			'[...x]',
+			'[x, y, ...z]',
+			'[, , x, , , y, , , ...z]'
+		]);
+
+		itParses('Unary expressions', [
+			'+1',
+			'-1',
+			'!1',
+			'~1',
+			'typeof 1',
+			'void 1',
+			'delete 1',
+			'+1; -1; !1; ~1; typeof 1; void 1; delete 1;'
+		]);
+
+		itParses('Update expressions', [
+			'x++',
+			'x--',
+			'++x',
+			'--x',
+			'x++; x--; ++x; --x;'
+		]);
+
+		itParses('Binary expressions', [
+			'x == y',
+			'x != y',
+			'x === y',
+			'x !== y',
+			'x < y',
+			'x <= y',
+			'x > y',
+			'x >= y',
+			'x << y',
+			'x >> y',
+			'x >>> y',
+			'x + y',
+			'x - y',
+			'x * y',
+			'x / y',
+			'x % y',
+			'x | y',
+			'x ^ y',
+			'x & y',
+			'x || y',
+			'x && y',
+			'x in y',
+			'x instanceof y',
+			'x ** y',
+			'x ?? y',
+			`x == y; x != y; x === y; x !== y;
+			x < y; x <= y; x > y; x >= y; x << y; x >> y; x >>> y;
+			x + y; x - y; x * y; x / y; x % y; x | y; x ^ y; x & y;
+			x || y; x && y; x in y; x instanceof y; x ** y; x ?? y`
+		]);
+
+		itParses('Assignment expressions', [
+			// TODO Add test cases for where left side is a pattern e.g. `[x] = y`
+			'x = 1',
+			'x += 1',
+			'x -= 1',
+			'x *= 1',
+			'x /= 1',
+			'x %= 1',
+			'x <<= 1',
+			'x >>= 1',
+			'x >>>= 1',
+			'x |= 1',
+			'x ^= 1',
+			'x &= 1',
+			'x **= 1',
+			'x &&= 1',
+			'x ||= 1',
+			'x ??= 1',
+			`x = 1; x += 1; x -= 1; x *= 1; x /= 1; x %= 1;
+			x <<= 1; x >>= 1; x >>>= 1; x |= 1; x ^= 1; x &= 1;
+			x **= 1; x &&= 1; x ||= 1; x ??= 1`
+		]);
+
+		itParses('Member expressions', [
+			'x.y',
+			'x.#y',
+			'x[y]',
+			'x[1]',
+			'x[y + z]',
+			"x['foo bar']",
+			"x['foo bar qux']",
+			'x.y.z',
+			'x.#y.z',
+			"x.#y[1][2][3].z['foo']['bar qux'][a + 3]"
+		]);
+
+		itParses('Conditional expressions', [
+			'x ? y : z',
+			'1 ? 2 : 3',
+			'x ? 1 : y ? 2 : z ? 3 : 4'
+		]);
+
+		itParses('Call expressions', [
+			// TODO Tests for `super()` call
+			'f()',
+			'func_name_longer_than_7_chars()',
+			'f(1)',
+			'f(x)',
+			'f(x, y, z)',
+			'f(param_name_longer_than_7_chars)',
+			'f(param_name_longer_than_7_chars, x, y)',
+			`func_name_longer_than_7_chars(
+				param_name_longer_than_7_chars,
+				param_name_longer_than_7_chars2,
+				param_name_longer_than_7_chars3
+			)`,
+			'f(...x)',
+			'f(...param_name_longer_than_7_chars)',
+			'f(x, y, ...z)',
+			'f(x, y, ...param_name_longer_than_7_chars)',
+			`func_name_longer_than_7_chars(
+				param_name_longer_than_7_chars,
+				param_name_longer_than_7_chars2,
+				...param_name_longer_than_7_chars3
+			)`,
+
+			"import(x)",
+			"import(param_name_longer_than_7_chars)",
+			"import('foo')",
+			"import('foo/bar/qux.js')",
+			'import(x, y, z)',
+			'import(...x)',
+			'import(x, y, ...z)'
+		]);
+
+		itParses('`new` expressions', [
+			'new C()',
+			'new Class_name_longer_than_7_chars()',
+			'new C(x)',
+			'new C(x, y, z)',
+			'new C(param_name_longer_than_7_chars)',
+			'new C(param_name_longer_than_7_chars, x, y)',
+			`new Class_name_longer_than_7_chars(
+				param_name_longer_than_7_chars,
+				param_name_longer_than_7_chars2,
+				param_name_longer_than_7_chars3
+			)`,
+			'new C(...x)',
+			'new C(...param_name_longer_than_7_chars)',
+			'new C(x, y, ...z)',
+			'new C(x, y, ...param_name_longer_than_7_chars)',
+			`new Class_name_longer_than_7_chars(
+				param_name_longer_than_7_chars,
+				param_name_longer_than_7_chars2,
+				...param_name_longer_than_7_chars3
+			)`
+		]);
+
+		itParses('Sequence expressions', [
+			'x, x',
+			'x, x, x',
+			'1, 1',
+			'1, 1, 1'
+		]);
+
+		itParses('Template literals', [
+			'``',
+			'`a`',
+			'`str_longer_than_7_chars`',
+			'`${x}`',
+			'`${x}${y}${z}`',
+			'`${x}a${y}b${z}`',
+			'`a${x}b${y}c${z}d`',
+			'`str_longer_than_7_chars${x}str_longer_than_7_chars2${y}str_longer_than_7_chars3${z}str_longer_than_7_chars4`',
+			// Multi-line
+			['`', 'a', '${x}', 'b', '${y}', 'c', '${z}', 'd', '`'].join('\n')
+		]);
+
+		itParses('Tagged template expressions', [
+			'f``',
+			'f`a`',
+			'f`str_longer_than_7_chars`',
+			'f`${x}`',
+			'f`${x}${y}${z}`',
+			'f`${x}a${y}b${z}`',
+			'f`a${x}b${y}c${z}d`',
+			'f`str_longer_than_7_chars${x}str_longer_than_7_chars2${y}str_longer_than_7_chars3${z}str_longer_than_7_chars4`',
+			// Multi-line
+			['f`', 'a', '${x}', 'b', '${y}', 'c', '${z}', 'd', '`'].join('\n')
+		]);
+
+		itParses('`yield` expressions', [
+			'function *f() { yield; }',
+			'function *f() { yield x; }',
+			'function *f() { yield var_name_longer_than_7_chars; }',
+			'function *f() { yield 1; }',
+			'function *f() { yield 1; yield 2; yield 3; }',
+			'function *f() { yield* x; }',
+			'function *f() { yield* var_name_longer_than_7_chars; }',
+			'function *f() { yield* 1; }',
+			'function *f() { yield* x; yield* y; yield* z; }'
+		]);
+
+		describe('Meta properties', () => {
+			itParses('new.target', [
+				'new.target',
+				'function f() { return new.target; }'
+			]);
+
+			itParses('import.meta', [
+				'import.meta',
+				'import.meta.url',
+				'import.meta.resolve',
+				'import.meta[x]'
+			]);
+		});
+
+		describe('`await` expressions', () => {
+			itParses('top level', { target: 'es2017', topLevelAwait: true }, [
+				'await 1;',
+				'await x;',
+				'await var_name_longer_than_7_chars;'
+			]);
+
+			itParses('in functions', [
+				'async function f() { await x; await y; await z; }',
+				'async function *f() { await x; await y; await z; }'
+			]);
+		});
+
 		itParses('Parenthesis expressions', [
 			'(x)',
 			'(1)'
+		]);
+
+		itParses('Optional chaining expressions', [
+			'x?.y',
+			'x?.[y]',
+			'x?.[1]',
+			'x?.y?.z',
+			'x?.[y]?.[z]',
+			'x?.[1]?.[2]',
+			'var_name_longer_than_7_chars?.prop_name_longer_than_7_chars?.prop_name_longer_than_7_chars2',
+			'var_name_longer_than_7_chars?.[var_name_longer_than_7_chars2]?.[var_name_longer_than_7_chars3]',
+
+			'f?.()',
+			'func_name_longer_than_7_chars?.()',
+			'f?.(1)',
+			'f?.(x)',
+			'f?.(x, y, z)',
+			'f?.(param_name_longer_than_7_chars)',
+			'f?.(param_name_longer_than_7_chars, x, y)',
+			`func_name_longer_than_7_chars?.(
+				param_name_longer_than_7_chars,
+				param_name_longer_than_7_chars2,
+				param_name_longer_than_7_chars3
+			)`,
+			'f?.(...x)',
+			'f?.(...param_name_longer_than_7_chars)',
+			'f?.(x, y, ...z)',
+			'f?.(x, y, ...param_name_longer_than_7_chars)',
+			`func_name_longer_than_7_chars?.(
+				param_name_longer_than_7_chars,
+				param_name_longer_than_7_chars2,
+				...param_name_longer_than_7_chars3
+			)`,
+
+			'x.y?.()',
+			'var_name_longer_than_7_chars.prop_name_longer_than_7_chars?.()'
 		]);
 	});
 
@@ -328,9 +603,18 @@ function conformSpans(ast) {
 			if (key === 'span') continue;
 			if (!child || typeof child !== 'object') continue;
 			if (Array.isArray(child)) {
-				child.forEach(conformNode);
-			} else if (key === 'await' && node.type === 'ForOfStatement') {
-				// Special case for `ForOfStatement` which has an additional span under `await key`
+				for (const childNode of child) {
+					if (childNode) conformNode(childNode);
+				}
+			} else if (
+				(key === 'await' && node.type === 'ForOfStatement')
+				|| (key === 'questionDotToken' && node.type === 'OptionalChainingExpression')
+				|| (key === 'spread' && Object.keys(node).length === 2 && node.expression)
+			) {
+				// Special cases for:
+				// - `ForOfStatement` which has an additional span under `await` key
+				// - `OptionalChainingExpression` which has an additional span under `questionDotToken` key
+				// - `ExpressionOrSpread` which may have a span under `spread` key
 				child.start -= offset;
 				child.end -= offset;
 			} else {

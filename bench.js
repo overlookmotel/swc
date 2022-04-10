@@ -129,6 +129,7 @@ function conformSpans(ast) {
 			} else if (
 				(key === 'await' && node.type === 'ForOfStatement')
 				|| (key === 'questionDotToken' && node.type === 'OptionalChainingExpression')
+				|| (key === 'rest' && node.type === 'RestElement')
 				|| (
 					key === 'spread'
 					&& (
@@ -140,6 +141,7 @@ function conformSpans(ast) {
 				// Special cases for:
 				// - `ForOfStatement` which has an additional span under `await` key
 				// - `OptionalChainingExpression` which has an additional span under `questionDotToken` key
+				// - `RestElement` which has an additional span under `rest` key
 				// - `SpreadElement` which has an additional span under `spread` key
 				// - `ExpressionOrSpread` which may have a span under `spread` key
 				child.start -= offset;

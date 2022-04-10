@@ -461,6 +461,17 @@ describe('Parses correctly', () => {
 			'x ? 1 : y ? 2 : z ? 3 : 4'
 		]);
 
+		itParses('`super` prop expressions', [
+			'({ m() { return super.x; } })',
+			'({ m() { return super.x(); } })',
+			'({ m() { super.x = 1; } })',
+			'({ m() { return super[x]; } })',
+			'({ m() { return super[x](); } })',
+			'({ m() { super[x] = 1; } })',
+			'({ m() { return super.x(y, ...z); } })',
+			'({ m() { return super[x](y, ...z); } })'
+		]);
+
 		itParses('Call expressions', [
 			// TODO Tests for `super()` call
 			'f()',

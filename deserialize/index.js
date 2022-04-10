@@ -835,13 +835,6 @@ function deserializeImport(buff, pos) {
 	};
 }
 
-function deserializeSuper(buff, pos) {
-	return {
-		type: 'Super',
-		span: deserializeSpan(buff, pos)
-	};
-}
-
 function deserializeConditionalExpression(buff, pos) {
 	return {
 		type: 'ConditionalExpression',
@@ -855,6 +848,26 @@ function deserializeConditionalExpression(buff, pos) {
 function deserializeSuperPropExpression(buff, pos) {
 	return {
 		type: 'SuperPropExpression',
+		span: deserializeSpan(buff, pos),
+		obj: deserializeSuper(buff, pos + 12),
+		property: deserializeSuperProp(buff, pos + 24)
+	};
+}
+
+const enumOptionsSuperProp = [
+	deserializeIdentifier,
+	deserializeComputed
+];
+
+function deserializeSuperProp(buff, pos) {
+	const deserialize = enumOptionsSuperProp[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializeSuper(buff, pos) {
+	return {
+		type: 'Super',
 		span: deserializeSpan(buff, pos)
 	};
 }

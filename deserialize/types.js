@@ -412,7 +412,8 @@ const types = {
 	BoxedExpressionOrBoxedPattern: [ENUM, ['BoxedExpression', 'BoxedPattern']],
 	MemberExpression: [NODE, { object: 'BoxedExpression', property: 'MemberExpressionProperty' }],
 	MemberExpressionProperty: [ENUM, ['Identifier', 'PrivateName', 'Computed']],
-	SuperPropExpression: [NODE, {}], // TODO
+	SuperPropExpression: [NODE, { obj: 'Super', property: 'SuperProp' }],
+	SuperProp: [ENUM, ['Identifier', 'Computed']],
 	ConditionalExpression: [NODE, {
 		test: 'BoxedExpression',
 		consequent: 'BoxedExpression',
@@ -471,7 +472,7 @@ const types = {
 
 	Computed: [NODE, { expression: 'BoxedExpression' }],
 
-	Super: [NODE, {}], // TODO Needs tests
+	Super: [NODE, {}], // TODO Needs tests for `super()` call
 	Import: [NODE, {}],
 
 	ExpressionOrSpread: [STRUCT, {

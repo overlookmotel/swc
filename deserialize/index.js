@@ -717,7 +717,9 @@ function deserializeJSXText(buff, pos) {
 function deserializeRegExpLiteral(buff, pos) {
 	return {
 		type: 'RegExpLiteral',
-		span: deserializeSpan(buff, pos)
+		span: deserializeSpan(buff, pos),
+		pattern: deserializeJsWord(buff, pos + 12),
+		flags: deserializeJsWord(buff, pos + 20)
 	};
 }
 
@@ -1389,8 +1391,30 @@ function deserializePropertyNameWrapped(buff, pos) {
 function deserializeBigIntLiteral(buff, pos) {
 	return {
 		type: 'BigIntLiteral',
-		span: deserializeSpan(buff, pos)
+		span: deserializeSpan(buff, pos),
+		value: deserializeBigIntValue(buff, pos + 12)
 	};
+}
+
+function deserializeBigIntValue(buff, pos) {
+	// TODO This implementation could be more efficient
+	const str = deserializeJsWord(buff, pos);
+	if (str === '0') return [0, []];
+
+	let current = BigInt(str);
+	const parts = [];
+	while (true) {
+		const next = current >> 32n;
+		if (next === 0n) {
+			parts.push(Number(current));
+			break;
+		}
+
+		parts.push(Number(current & 4294967295n)); // 4294967295n === (2 ** 32) - 1
+		current = next;
+	}
+
+	return [1, parts]; // TODO What is the initial 1 for?
 }
 
 function deserializeComputed(buff, pos) {

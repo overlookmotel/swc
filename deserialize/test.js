@@ -229,7 +229,8 @@ describe('Parses correctly', () => {
 				"({'x x': 1, 'y y': 2, 'z z': 3})",
 				'({1: 2})',
 				'({1: 2, 3: 4, 5: 6})',
-				// TODO Tests for BigInt keys
+				'({1n: 2})',
+				'({1n: 2, 3n: 4, 5n: 6})',
 				'({ [x]: 1 })',
 				'({ [x]: 1, [y]: 2, [z]: 3 })',
 				'({ [1]: 2 })',
@@ -268,7 +269,12 @@ describe('Parses correctly', () => {
 					get 3() { return 4; },
 					get 5() { return 6; }
 				})`,
-				// TODO Tests for BigInt keys
+				'({ get 1n() {} })',
+				`({
+					get 1n() { return 2; },
+					get 3n() { return 4; },
+					get 5n() { return 6; }
+				})`,
 				'({ get [x]() { return 1; } })',
 				`({
 					get [x]() { return 1; },
@@ -303,7 +309,12 @@ describe('Parses correctly', () => {
 					set 3(v2) { this.yy += v2; },
 					set 5(v3) { this.zz += v3; }
 				})`,
-				// TODO Tests for BigInt keys
+				'({ set 1n(v) {} })',
+				`({
+					set 1n(v) { this.xx += v; },
+					set 3n(v2) { this.yy += v2; },
+					set 5n(v3) { this.zz += v3; }
+				})`,
 				'({ set [x](v) {} })',
 				`({
 					set [x](v) { this.xx += v; },
@@ -696,7 +707,8 @@ describe('Parses correctly', () => {
 				"({'x x': x, 'y y': y, 'z z': z} = a)",
 				'({1: x} = a)',
 				'({1: x, 2: y, 3: z} = a)',
-				// TODO Tests for BigInt keys
+				'({1n: x} = a)',
+				'({1n: x, 2n: y, 3n: z} = a)',
 				'({ [xx]: x } = a)',
 				'({ [xx]: x, [yy]: y, [zz]: z} = a)',
 				'({ [1]: x } = a)',
@@ -724,7 +736,8 @@ describe('Parses correctly', () => {
 				"({'x x': x = 1, 'y y': y = 2, 'z z': z = 3} = a)",
 				'({1: x = 2} = a)',
 				'({1: x = 2, 3: y = 4, 5: z = 6} = a)',
-				// TODO Tests for BigInt keys
+				'({1n: x = 2} = a)',
+				'({1n: x = 2, 3n: y = 4, 5n: z = 6} = a)',
 				'({ [xx]: x = 1 } = a)',
 				'({ [xx]: x = 1, [yy]: y = 2, [zz]: z = 3 } = a)',
 				'({ [1]: x = 2 } = a)',
@@ -739,7 +752,10 @@ describe('Parses correctly', () => {
 				'({b: x.c, d: y.e, ...z.g} = a)',
 				"({'x x': x.b} = a)",
 				"({'x x': x.b, 'y y': y.c, 'z z': z.d} = a)",
-				// TODO Tests for BigInt keys
+				"({1: x.b} = a)",
+				"({1: x.b, 2: y.c, 3: z.d} = a)",
+				"({1n: x.b} = a)",
+				"({1n: x.b, 2n: y.c, 3n: z.d} = a)",
 				'({ [xx]: x.b } = a)',
 				'({ [xx]: x.b, [yy]: y.c, [zz]: z.d} = a)',
 				'({ [1]: x.b } = a)',
@@ -864,6 +880,71 @@ describe('Parses correctly', () => {
 				if (z) return 3;
 				return;
 			}`
+		]);
+	});
+
+	describe('Literals', () => {
+		itParses('String literals', [
+			"''",
+			"'a'",
+			"'abc'",
+			"'string_longer_than_7_chars'",
+			"'😀'",
+			"'😀😂😇😍🤪💩abc😀😂😇😍🤪💩def😀😂😇😍🤪💩'",
+			"'a', 'b', 'c', 'string_longer_than_7_chars', '😀', 'd', 'e'"
+		]);
+
+		itParses('Boolean literals', [
+			'true',
+			'false',
+			'true, true, false, false, true, false, true, false'
+		]);
+
+		itParses('`null` literals', [
+			'null',
+			'null, null, null'
+		]);
+
+		itParses('Numeric literals', [
+			'0',
+			'1',
+			'1234',
+			'9007199254740991', // Number.MAX_SAFE_INTEGER
+			'-0',
+			'-1',
+			'-1234',
+			'-9007199254740991', // Number.MIN_SAFE_INTEGER
+			'0.1234',
+			'1234.5678',
+			'1e20',
+			'1.234e20'
+		]);
+
+		itParses('BigInt literals', [
+			'0n',
+			'1n',
+			'100000n',
+			'10000000000n',
+			'1000000000000000n',
+			'100000000000000000000n',
+			'10000000000000000000000000n',
+			'1000000000000000000000000000000n',
+			'100000000000000000000000000000000000n',
+			'10000000000000000000000000000000000000000n',
+			'1000000000000000000000000000000000000000000000n',
+			'1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000n',
+			'100n, 10000000n, 100n, 10000000n'
+		]);
+
+		itParses('RegExp literals', [
+			'/a/',
+			'/abc/',
+			'/string_longer_than_7_chars/',
+			'/^a\\tb(\\r\\n)+c$/',
+			'/abc/g',
+			'/abc/i',
+			'/abc/gi',
+			'/abc/, /def/, /ghi/'
 		]);
 	});
 });

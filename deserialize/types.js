@@ -490,7 +490,7 @@ const types = {
 			return deserializeLiteralWrapped(buff, pos + 4); // TODO Not sure why +4
 		},
 		dependencies: ['LiteralWrapped'],
-		length: 28 // TODO Should be able to deduce this
+		length: 40 // `LiteralWrapped` length = 36
 	},
 	LiteralWrapped: [ENUM, [
 		'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
@@ -511,8 +511,32 @@ const types = {
 		dependencies: ['Span'],
 		length: 28
 	},
-	BigIntLiteral: [NODE, {}], // TODO
-	RegExpLiteral: [NODE, {}], // TODO
+	BigIntLiteral: [NODE, { value: 'BigIntValue' }],
+	BigIntValue: {
+		deserialize(buff, pos) {
+			// TODO This implementation could be more efficient
+			const str = deserializeJsWord(buff, pos);
+			if (str === '0') return [0, []];
+
+			let current = BigInt(str);
+			const parts = [];
+			while (true) {
+				const next = current >> 32n;
+				if (next === 0n) {
+					parts.push(Number(current));
+					break;
+				}
+
+				parts.push(Number(current & 4294967295n)); // 4294967295n === (2 ** 32) - 1
+				current = next;
+			}
+
+			return [1, parts]; // TODO What is the initial 1 for?
+		},
+		dependencies: ['JsWord'],
+		length: 8
+	},
+	RegExpLiteral: [NODE, { pattern: 'JsWord', flags: 'JsWord' }],
 
 	// JSX
 	JSXText: [NODE, {}], // TODO

@@ -208,13 +208,14 @@ const types = {
 		ENUM,
 		[
 			'BindingIdentifier', 'ArrayPattern', 'RestElement', 'ObjectPattern',
-			'AssignmentPattern', 'Invalid', 'ExpressionPattern'
+			'AssignmentPattern', 'Invalid', 'BoxedExpression'
 		],
 		{ length: 52 }
 	],
-	OptionalPattern: [OPTION, 'Pattern'],
 	BoxedPattern: [BOX, 'Pattern'],
 	Patterns: [VEC, 'Pattern'],
+	OptionalPattern: [OPTION, 'Pattern'],
+	OptionalPatterns: [VEC, 'OptionalPattern'],
 
 	BindingIdentifier: [
 		NODE,
@@ -225,12 +226,40 @@ const types = {
 		},
 		{ name: 'Identifier' }
 	],
-	ArrayPattern: [NODE, {}], // TODO
-	RestElement: [NODE, {}], // TODO
-	ObjectPattern: [NODE, {}], // TODO
-	AssignmentPattern: [NODE, {}], // TODO
-	Invalid: [NODE, {}], // TODO
-	ExpressionPattern: [NODE, {}], // TODO
+	ArrayPattern: [NODE, {
+		elements: 'OptionalPatterns',
+		optional: 'Boolean', // TODO Needs test
+		typeAnnotation: 'OptionalTsTypeAnnotation'
+	}],
+	RestElement: [NODE, {
+		rest: 'Span',
+		argument: 'BoxedPattern',
+		typeAnnotation: 'OptionalTsTypeAnnotation'
+	}],
+	ObjectPattern: [NODE, {
+		properties: 'ObjectPatternProperties',
+		optional: 'Boolean', // TODO Needs test
+		typeAnnotation: 'OptionalTsTypeAnnotation'
+	}],
+	ObjectPatternProperty: [
+		ENUM,
+		['KeyValuePatternProperty', 'AssignmentPatternProperty', 'RestElement'],
+		{ length: 56 } // TODO Should be able to deduce this
+	],
+	ObjectPatternProperties: [VEC, 'ObjectPatternProperty'],
+	KeyValuePatternProperty: [
+		NODE,
+		{ key: 'PropertyName', value: 'BoxedPattern' },
+		{ keys: ['key', 'value'] } // No span
+	],
+	AssignmentPatternProperty: [NODE, { key: 'Identifier', value: 'OptionalBoxedExpression' }],
+	AssignmentPattern: [NODE, {
+		left: 'BoxedPattern',
+		right: 'BoxedExpression',
+		typeAnnotation: 'OptionalTsTypeAnnotation'
+	}],
+
+	Invalid: [NODE, {}], // TODO Needs tests. Not sure in what circumstances this is used.
 
 	// Identifier
 	Identifier: [NODE, { value: 'JsWord', optional: 'Boolean' }], // TODO Needs tests

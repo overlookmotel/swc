@@ -314,13 +314,6 @@ function deserializeCatchClause(buff, pos) {
 	};
 }
 
-function deserializeOptionalPattern(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializePattern(buff, pos + 4);
-	assert(opt === 0);
-	return null;
-}
-
 function deserializeThrowStatement(buff, pos) {
 	return {
 		type: 'ThrowStatement',
@@ -612,13 +605,6 @@ function deserializeYieldExpression(buff, pos) {
 		argument: deserializeOptionalBoxedExpression(buff, pos + 12),
 		delegate: deserializeBoolean(buff, pos + 20)
 	};
-}
-
-function deserializeOptionalBoxedExpression(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeBoxedExpression(buff, pos + 4);
-	assert(opt === 0);
-	return null;
 }
 
 function deserializeClassExpression(buff, pos) {
@@ -932,11 +918,6 @@ function deserializeBoxedExpressionOrBoxedPattern(buff, pos) {
 	return deserialize(buff, pos + 4);
 }
 
-function deserializeBoxedPattern(buff, pos) {
-	const ptr = getPtr(buff, pos);
-	return deserializePattern(buff, ptr);
-}
-
 function deserializeBinaryExpression(buff, pos) {
 	return {
 		type: 'BinaryExpression',
@@ -1179,20 +1160,13 @@ const enumOptionsPattern = [
 	deserializeObjectPattern,
 	deserializeAssignmentPattern,
 	deserializeInvalid,
-	deserializeExpressionPattern
+	deserializeBoxedExpression
 ];
 
 function deserializePattern(buff, pos) {
 	const deserialize = enumOptionsPattern[buff.readUInt32LE(pos)];
 	assert(deserialize);
 	return deserialize(buff, pos + 4);
-}
-
-function deserializeExpressionPattern(buff, pos) {
-	return {
-		type: 'ExpressionPattern',
-		span: deserializeSpan(buff, pos)
-	};
 }
 
 function deserializeInvalid(buff, pos) {
@@ -1205,29 +1179,109 @@ function deserializeInvalid(buff, pos) {
 function deserializeAssignmentPattern(buff, pos) {
 	return {
 		type: 'AssignmentPattern',
-		span: deserializeSpan(buff, pos)
+		span: deserializeSpan(buff, pos),
+		left: deserializeBoxedPattern(buff, pos + 12),
+		right: deserializeBoxedExpression(buff, pos + 16),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 20)
 	};
 }
 
 function deserializeObjectPattern(buff, pos) {
 	return {
 		type: 'ObjectPattern',
-		span: deserializeSpan(buff, pos)
+		span: deserializeSpan(buff, pos),
+		properties: deserializeObjectPatternProperties(buff, pos + 12),
+		optional: deserializeBoolean(buff, pos + 20),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 24)
+	};
+}
+
+function deserializeObjectPatternProperties(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeObjectPatternProperty(buff, vecPos + i * 56));
+	}
+	return entries;
+}
+
+const enumOptionsObjectPatternProperty = [
+	deserializeKeyValuePatternProperty,
+	deserializeAssignmentPatternProperty,
+	deserializeRestElement
+];
+
+function deserializeObjectPatternProperty(buff, pos) {
+	const deserialize = enumOptionsObjectPatternProperty[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializeAssignmentPatternProperty(buff, pos) {
+	return {
+		type: 'AssignmentPatternProperty',
+		span: deserializeSpan(buff, pos),
+		key: deserializeIdentifier(buff, pos + 12),
+		value: deserializeOptionalBoxedExpression(buff, pos + 36)
+	};
+}
+
+function deserializeOptionalBoxedExpression(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeBoxedExpression(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
+function deserializeKeyValuePatternProperty(buff, pos) {
+	return {
+		type: 'KeyValuePatternProperty',
+		key: deserializePropertyName(buff, pos),
+		value: deserializeBoxedPattern(buff, pos + 44)
 	};
 }
 
 function deserializeRestElement(buff, pos) {
 	return {
 		type: 'RestElement',
-		span: deserializeSpan(buff, pos)
+		span: deserializeSpan(buff, pos),
+		rest: deserializeSpan(buff, pos + 12),
+		argument: deserializeBoxedPattern(buff, pos + 24),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 28)
 	};
+}
+
+function deserializeBoxedPattern(buff, pos) {
+	const ptr = getPtr(buff, pos);
+	return deserializePattern(buff, ptr);
 }
 
 function deserializeArrayPattern(buff, pos) {
 	return {
 		type: 'ArrayPattern',
-		span: deserializeSpan(buff, pos)
+		span: deserializeSpan(buff, pos),
+		elements: deserializeOptionalPatterns(buff, pos + 12),
+		optional: deserializeBoolean(buff, pos + 20),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 24)
 	};
+}
+
+function deserializeOptionalPatterns(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeOptionalPattern(buff, vecPos + i * 56));
+	}
+	return entries;
+}
+
+function deserializeOptionalPattern(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializePattern(buff, pos + 4);
+	assert(opt === 0);
+	return null;
 }
 
 function deserializeBindingIdentifier(buff, pos) {

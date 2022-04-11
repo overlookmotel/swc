@@ -213,18 +213,18 @@ function deserializeForStatement(buff, pos) {
 
 function deserializeForStatementInit(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeVariableDeclarationOrExpression(buff, pos + 4);
+	if (opt === 1) return deserializeVariableDeclarationOrBoxedExpression(buff, pos + 4);
 	assert(opt === 0);
 	return null;
 }
 
-const enumOptionsVariableDeclarationOrExpression = [
+const enumOptionsVariableDeclarationOrBoxedExpression = [
 	deserializeVariableDeclaration,
 	deserializeBoxedExpression
 ];
 
-function deserializeVariableDeclarationOrExpression(buff, pos) {
-	const deserialize = enumOptionsVariableDeclarationOrExpression[buff.readUInt32LE(pos)];
+function deserializeVariableDeclarationOrBoxedExpression(buff, pos) {
+	const deserialize = enumOptionsVariableDeclarationOrBoxedExpression[buff.readUInt32LE(pos)];
 	assert(deserialize);
 	return deserialize(buff, pos + 4);
 }
@@ -619,7 +619,7 @@ function deserializeArrowFunctionExpression(buff, pos) {
 		type: 'ArrowFunctionExpression',
 		span: deserializeSpan(buff, pos),
 		params: deserializePatterns(buff, pos + 12),
-		body: deserializeBlockStatementOrExpression(buff, pos + 20),
+		body: deserializeBlockStatementOrBoxedExpression(buff, pos + 20),
 		async: deserializeBooleanBit(buff, pos + 68),
 		generator: deserializeBooleanBitAnd2Empty(buff, pos + 69),
 		typeParameters: deserializeOptionalTsTypeParameterDeclaration(buff, pos + 44),
@@ -627,13 +627,13 @@ function deserializeArrowFunctionExpression(buff, pos) {
 	};
 }
 
-const enumOptionsBlockStatementOrExpression = [
+const enumOptionsBlockStatementOrBoxedExpression = [
 	deserializeBlockStatement,
 	deserializeBoxedExpression
 ];
 
-function deserializeBlockStatementOrExpression(buff, pos) {
-	const deserialize = enumOptionsBlockStatementOrExpression[buff.readUInt32LE(pos)];
+function deserializeBlockStatementOrBoxedExpression(buff, pos) {
+	const deserialize = enumOptionsBlockStatementOrBoxedExpression[buff.readUInt32LE(pos)];
 	assert(deserialize);
 	return deserialize(buff, pos + 4);
 }

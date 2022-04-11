@@ -363,8 +363,6 @@ describe('Parses correctly', () => {
 				'({ *m() {} })',
 				'({ async m() {} })',
 				'({ async *m() {} })'
-
-				// TODO `super`
 			]);
 		});
 

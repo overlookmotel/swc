@@ -15,11 +15,20 @@ const DEBUG = !!process.env.DEBUG;
 
 let generatedCode = '';
 
-const generatedTypes = {};
+const generatedTypes = {},
+	path = [];
 function generateType(typeName) {
 	// If already generated, return type definition
 	let generatedTypeDef = generatedTypes[typeName];
-	if (generatedTypeDef) return generatedTypeDef;
+	if (generatedTypeDef) {
+		assert(
+			generatedTypeDef.length !== undefined,
+			`Circular relationship where length cannot be determined: ${path.join(' > ')} > ${typeName}`
+		);
+		return generatedTypeDef;
+	}
+
+	path.push(typeName);
 
 	// Get options
 	const deserializerName = `deserialize${typeName}`,
@@ -80,6 +89,8 @@ function generateType(typeName) {
 	}
 
 	generatedTypeDef.length = length;
+
+	path.pop();
 
 	// Return type def
 	return generatedTypeDef;

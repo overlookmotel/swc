@@ -431,7 +431,6 @@ describe('Parses correctly', () => {
 		]);
 
 		itParses('Assignment expressions', [
-			// TODO Add test cases for where left side is a pattern e.g. `[x] = y`
 			'x = 1',
 			'x += 1',
 			'x -= 1',
@@ -448,9 +447,33 @@ describe('Parses correctly', () => {
 			'x &&= 1',
 			'x ||= 1',
 			'x ??= 1',
+
+			'[x] = 1',
+			'({x} = 1)',
+
+			'x.y = 1',
+			'x.y += 1',
+			'x.y -= 1',
+			'x.y *= 1',
+			'x.y /= 1',
+			'x.y %= 1',
+			'x.y <<= 1',
+			'x.y >>= 1',
+			'x.y >>>= 1',
+			'x.y |= 1',
+			'x.y ^= 1',
+			'x.y &= 1',
+			'x.y **= 1',
+			'x.y &&= 1',
+			'x.y ||= 1',
+			'x.y ??= 1',
+
 			`x = 1; x += 1; x -= 1; x *= 1; x /= 1; x %= 1;
 			x <<= 1; x >>= 1; x >>>= 1; x |= 1; x ^= 1; x &= 1;
-			x **= 1; x &&= 1; x ||= 1; x ??= 1`
+			x **= 1; x &&= 1; x ||= 1; x ??= 1`,
+			`x.y = 1; x.y += 1; x.y -= 1; x.y *= 1; x.y /= 1; x.y %= 1;
+			x.y <<= 1; x.y >>= 1; x.y >>>= 1; x.y |= 1; x.y ^= 1; x.y &= 1;
+			x.y **= 1; x.y &&= 1; x.y ||= 1; x.y ??= 1`
 		]);
 
 		itParses('Member expressions', [

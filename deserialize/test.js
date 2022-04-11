@@ -9,15 +9,17 @@ const { parseSync, parseSyncToBuffer } = require('../index.js'),
 describe('Parses correctly', () => {
 	describe('Program', () => {
 		itParses('Module', { isModule: true }, [
-			// TODO Tests for `interpreter`
 			'',
-			'const x = 1'
+			'const x = 1',
+			'#!node\nconst x = 1',
+			'#!/usr/bin/env node\nconst x = 1'
 		]);
 
 		itParses('Script', { isModule: false }, [
-			// TODO Tests for `interpreter`
 			'',
-			'const x = 1'
+			'const x = 1',
+			'#!node\nconst x = 1',
+			'#!/usr/bin/env node\nconst x = 1'
 		]);
 	});
 

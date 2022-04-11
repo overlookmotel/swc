@@ -84,9 +84,8 @@ const types = {
 		update: 'OptionalBoxedExpression',
 		body: 'BoxedStatement'
 	}],
-	ForStatementInit: [OPTION, 'VariableDeclarationOrExpression'],
-	// TODO Should be called `VariableDeclarationOrBoxedExpression`
-	VariableDeclarationOrExpression: [ENUM, ['VariableDeclaration', 'BoxedExpression']],
+	ForStatementInit: [OPTION, 'VariableDeclarationOrBoxedExpression'],
+	VariableDeclarationOrBoxedExpression: [ENUM, ['VariableDeclaration', 'BoxedExpression']],
 	ForInStatement: [NODE, {
 		left: 'VariableDeclarationOrPattern',
 		right: 'BoxedExpression',
@@ -176,7 +175,7 @@ const types = {
 		NODE,
 		{
 			params: 'Patterns',
-			body: 'BlockStatementOrExpression',
+			body: 'BlockStatementOrBoxedExpression',
 			typeParameters: 'OptionalTsTypeParameterDeclaration',
 			async: 'BooleanBit',
 			generator: 'BooleanBitAnd2Empty', // TODO Needs test. Do generator arrow functions exist?
@@ -196,8 +195,7 @@ const types = {
 	Decorator: [NODE, { expression: 'BoxedExpression' }], // TODO Needs tests
 	Decorators: [VEC, 'Decorator'],
 
-	// TODO Should be called `BlockStatementOrBoxedExpression`
-	BlockStatementOrExpression: [ENUM, ['BlockStatement', 'BoxedExpression']],
+	BlockStatementOrBoxedExpression: [ENUM, ['BlockStatement', 'BoxedExpression']],
 
 	// Classes
 	ClassDeclaration: [NODE, {}], // TODO

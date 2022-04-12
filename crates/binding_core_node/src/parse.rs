@@ -316,6 +316,49 @@ pub fn parse_sync_to_buffer_no_return(
 }
 
 #[napi]
+pub fn parse_sync_rkyv_no_return(
+    src: String,
+    opts: Buffer,
+    filename: Option<String>,
+) -> napi::Result<String> {
+    crate::util::init_default_trace_subscriber();
+    let c = get_compiler();
+
+    let options: ParseOptions = get_deserialized(&opts)?;
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with(c.cm.clone(), false, |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+
+            let comments = if options.comments {
+                Some(c.comments() as &dyn Comments)
+            } else {
+                None
+            };
+
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    let _serialized = Serialized::serialize(&program).convert_err()?;
+
+    Ok("".to_string())
+}
+
+#[napi]
 pub fn parse_sync_no_serialization(
     src: String,
     opts: Buffer,

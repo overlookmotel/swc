@@ -1,18 +1,18 @@
 'use strict';
 
 const b = require('benny'),
+	{ readFile } = require('fs/promises'),
+	pathJoin = require('path').join,
 	expect = require('expect'),
 	filesize = require('filesize');
 
 const {
 	parseSync, parseSyncNoReturn,
-	parseSyncToBuffer, parseSyncToBufferNoReturn,
+	parseSyncToBuffer, parseSyncToBufferNoReturn, parseSyncRkyvNoReturn,
 	parseSyncNoSerialization
 } = require('./index.js'),
-	parseSyncWasm = require('./crates/wasm/pkg/wasm.js').parseSync,
 	parseSyncBinding = require('./binding.js').parseSync,
 	deserializeBuffer = require('./deserialize/index.js'),
-	deserializeJson = require('./deserialize/json.js'),
 	babelParse = require('@babel/parser').parse,
 	acornParse = require('acorn').parse;
 
@@ -27,69 +27,61 @@ function parseSyncRawJson(code, options, filename) {
 	return parseSyncBinding(code, Buffer.from(JSON.stringify(options)), filename);
 }
 
-function parseSyncCustomJsonDeserialize(code) {
-	return deserializeJson(parseSyncRawJson(code));
-}
+async function run() {
+	// Get input code
+	const code = await readFile(
+		// pathJoin(__dirname, 'node_modules/react/cjs/react-jsx-runtime.production.min.js'),
+		pathJoin(__dirname, 'node_modules/react/cjs/react.production.min.js'),
+		// pathJoin(__dirname, 'node_modules/react/cjs/react.development.js'),
+		'utf8'
+	);
 
-async function run(numLines) {
-	// Create input code
-	let code = '';
-	for (let i = 0; i < numLines; i++) {
-		code += `const _${i} = ${i};\n`;
-	}
-
-	// Check alternative parsers produce same result as `parseSync()`
+	// Check alternative parser produces same result as `parseSync()`
 	const ast = conformSpans(parseSync(code)),
-		astViaBuffer = conformSpans(parseSyncViaBuffer(code)),
-		astViaCustomJsonDeserialize = conformSpans(parseSyncCustomJsonDeserialize(code));
+		astViaBuffer = conformSpans(parseSyncViaBuffer(code));
 	assertAstsEqual(astViaBuffer, ast);
-	assertAstsEqual(astViaCustomJsonDeserialize, ast);
 
 	// Run benchmark
 	await b.suite(
-		`${numLines} lines (${filesize(code.length)})`,
+		`react.production.min.js (${filesize(code.length)})`,
 
-		b.add('swc WASM', () => {
-			parseSyncWasm(code, { syntax: 'ecmascript' });
-		}),
-
-		b.add('swc', () => {
+		b.add('SWC', () => {
 			parseSync(code);
 		}),
 
-		b.add('swc with buffer serialization and deserialization', () => {
+		b.add('SWC with buffer serialization and deserialization', () => {
 			parseSyncViaBuffer(code);
 		}),
 
-		b.add('swc with buffer serialization but no deserialization', () => {
+		b.add('SWC with buffer serialization but no deserialization', () => {
 			parseSyncToBuffer(code);
 		}),
 
-		b.add('swc with buffer serialization but buffer not returned to JS', () => {
+		b.add('SWC with buffer serialization but buffer not returned to JS', () => {
 			parseSyncToBufferNoReturn(code);
 		}),
 
-		b.add('swc with no serialization or deserialization', () => {
+		b.add('SWC with RKYV serialization but not returned to JS', () => {
+			parseSyncRkyvNoReturn(code);
+		}),
+
+		b.add('SWC with no serialization or deserialization', () => {
 			parseSyncNoSerialization(code);
 		}),
 
-		b.add('swc with custom JSON deserialization', () => {
-			parseSyncCustomJsonDeserialize(code);
-		}),
-
-		b.add('swc with JSON serialization but no deserialization', () => {
+		b.add('SWC with JSON serialization but no deserialization', () => {
 			parseSyncRawJson(code);
 		}),
 
-		b.add('swc with JSON serialization but JSON not returned to JS', () => {
+		b.add('SWC with JSON serialization but JSON not returned to JS', () => {
 			parseSyncNoReturn(code);
 		}),
 
-		b.add('babel', () => {
+		b.add('Babel', () => {
 			babelParse(code);
 		}),
 
-		b.add('acorn', () => {
+		b.add('Acorn', () => {
 			acornParse(code, { ecmaVersion: 2022 });
 		}),
 
@@ -97,7 +89,7 @@ async function run(numLines) {
 		b.complete(),
 
 		b.save({
-			file: `${numLines} lines`,
+			file: 'react',
 			folder: __dirname,
 			details: true,
 			format: 'chart.html'
@@ -105,11 +97,7 @@ async function run(numLines) {
 	);
 }
 
-(async () => {
-	await run(100);
-	await run(1000);
-	await run(10000);
-})().catch((e) => {
+run().catch((e) => {
 	console.log('ERROR:', e); // eslint-disable-line no-console
 });
 

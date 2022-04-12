@@ -15,6 +15,7 @@ export function parseSync(src: string, opts: Buffer, filename?: string | undefin
 export function parseSyncNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncToBuffer(src: string, opts: Buffer, filename?: string | undefined | null): Buffer
 export function parseSyncToBufferNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
+export function parseSyncRkyvNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncNoSerialization(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseFileSync(path: string, opts: Buffer): string
 export function parseFile(path: string, options: Buffer, signal?: AbortSignal | undefined | null): Promise<string>

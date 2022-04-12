@@ -22,12 +22,79 @@ const NODE = 1,
 const types = {
 	// Program
 	Program: [ENUM, ['Module', 'Script']],
-	Module: [NODE, { body: 'ModuleBody', interpreter: 'Interpreter' }],
+
+	Module: [NODE, { body: 'ModuleItems', interpreter: 'Interpreter' }],
+	ModuleItem: [ENUM, ['ModuleDeclaration', 'Statement']],
+	ModuleItems: [VEC, 'ModuleItem'],
+
 	Script: [NODE, { body: 'Statements', interpreter: 'Interpreter' }],
-	ModuleBody: [VEC, 'ModuleItem'],
-	ModuleItem: [ENUM, ['ModuleDecl', 'Statement']],
-	ModuleDecl: [NODE, {}], // TODO
+
 	Interpreter: [OPTION, 'JsWord'],
+
+	// Module declarations
+	ModuleDeclaration: [ENUM, [
+		'ImportDeclaration', 'ExportDeclaration', 'ExportNamedDeclaration', 'ExportDefaultDeclaration',
+		'ExportDefaultExpression', 'ExportAllDeclaration', 'TsImportEqualsDeclaration', 'TsExportAssignment',
+		'TsNamespaceExportDeclaration'
+	]],
+
+	ImportDeclaration: [NODE, {
+		specifiers: 'ImportSpecifiers',
+		source: 'StringLiteral',
+		typeOnly: 'Boolean', // TODO Needs tests
+		asserts: 'OptionalObjectExpression' // TODO Needs tests
+	}],
+	ImportSpecifier: [ENUM, [
+		'ImportNamedSpecifier', 'ImportDefaultSpecifier', 'ImportNamespaceSpecifier'
+	]],
+	ImportSpecifiers: [VEC, 'ImportSpecifier'],
+	ImportNamedSpecifier: [
+		NODE,
+		{
+			local: 'Identifier',
+			imported: 'OptionalModuleExportName',
+			isTypeOnly: 'Boolean' // TODO Needs tests
+		},
+		{ name: 'ImportSpecifier' }
+	],
+	ImportDefaultSpecifier: [NODE, { local: 'Identifier' }],
+	ImportNamespaceSpecifier: [NODE, { local: 'Identifier' }],
+
+	ExportDeclaration: [NODE, { declaration: 'Declaration' }],
+	ExportNamedDeclaration: [NODE, {
+		specifiers: 'ExportSpecifiers',
+		source: 'OptionalStringLiteral',
+		typeOnly: 'Boolean', // TODO Needs tests
+		asserts: 'OptionalObjectExpression' // TODO Needs tests
+	}],
+	ExportSpecifier: [ENUM, [
+		'ExportNamespaceSpecifier', 'ExportDefaultSpecifier', 'ExportNamedSpecifier'
+	]],
+	ExportSpecifiers: [VEC, 'ExportSpecifier'],
+	ExportNamespaceSpecifier: [NODE, { name: 'ModuleExportName' }],
+	ExportDefaultSpecifier: [NODE, { exported: 'Identifier' }],
+	ExportNamedSpecifier: [
+		NODE,
+		{
+			orig: 'ModuleExportName',
+			exported: 'OptionalModuleExportName',
+			isTypeOnly: 'Boolean' // TODO Needs tests
+		},
+		{ name: 'ExportSpecifier' }
+	],
+
+	ExportDefaultDeclaration: [NODE, { decl: 'DefaultDeclaration' }],
+	DefaultDeclaration: [ENUM, ['ClassExpression', 'FunctionExpression', 'TsInterfaceDeclaration']],
+
+	ExportDefaultExpression: [NODE, { expression: 'BoxedExpression' }],
+
+	ExportAllDeclaration: [NODE, {
+		source: 'StringLiteral',
+		asserts: 'OptionalObjectExpression' // TODO Needs tests
+	}],
+
+	ModuleExportName: [ENUM, ['Identifier', 'StringLiteral']],
+	OptionalModuleExportName: [OPTION, 'ModuleExportName'],
 
 	// Statements
 	Statement: [
@@ -45,8 +112,8 @@ const types = {
 	OptionalBoxedStatement: [OPTION, 'BoxedStatement'],
 	Statements: [VEC, 'Statement'],
 
-	BlockStatement: [NODE, { stmts: 'Statements' }],
-	OptionalBlockStatement: [OPTION, 'BlockStatement'],
+	BlockStatement: [NODE, { stmts: 'Statements' }, { length: 20 }],
+	OptionalBlockStatement: [OPTION, 'BlockStatement', { length: 24 }],
 	EmptyStatement: [NODE, {}],
 	DebuggerStatement: [NODE, {}],
 	WithStatement: [NODE, { object: 'BoxedExpression', body: 'BoxedStatement' }],
@@ -287,7 +354,8 @@ const types = {
 	ThisExpression: [NODE, {}],
 	ArrayExpression: [NODE, { elements: 'OptionalExpressionOrSpreads' }],
 
-	ObjectExpression: [NODE, { properties: 'SpreadElementOrBoxedObjectProperties' }],
+	ObjectExpression: [NODE, { properties: 'SpreadElementOrBoxedObjectProperties' }, { length: 20 }],
+	OptionalObjectExpression: [OPTION, 'ObjectExpression'],
 	SpreadElementOrBoxedObjectProperty: [ENUM, ['SpreadElement', 'BoxedObjectProperty']],
 	SpreadElementOrBoxedObjectProperties: [VEC, 'SpreadElementOrBoxedObjectProperty'],
 	SpreadElement: [
@@ -495,6 +563,7 @@ const types = {
 		'BigIntLiteral', 'RegExpLiteral', 'JSXText'
 	]],
 	StringLiteral: [NODE, { value: 'JsWord', raw: 'OptionalJsWord' }],
+	OptionalStringLiteral: [OPTION, 'StringLiteral'],
 	BooleanLiteral: [NODE, { value: 'Boolean' }],
 	NullLiteral: [NODE, {}],
 	NumericLiteral: {
@@ -558,6 +627,10 @@ const types = {
 	TsTypeAliasDeclaration: [NODE, {}], // TODO
 	TsEnumDeclaration: [NODE, {}], // TODO
 	TsModuleDeclaration: [NODE, {}], // TODO
+
+	TsImportEqualsDeclaration: [NODE, {}], // TODO
+	TsExportAssignment: [NODE, {}], // TODO
+	TsNamespaceExportDeclaration: [NODE, {}], // TODO
 
 	TsTypeParamDeclaration: [NODE, { parameters: 'TsTypeParams' }],
 	OptionalTsTypeParamDeclaration: [OPTION, 'TsTypeParamDeclaration'],

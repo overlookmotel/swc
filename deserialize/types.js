@@ -179,20 +179,16 @@ const types = {
 	// Variable declarations
 	VariableDeclaration: [NODE, {
 		kind: 'VariableDeclarationKind',
-		declare: 'VariableDeclarationDeclare',
+		declare: 'BooleanBitAnd2Empty', // TODO Needs tests
 		declarations: 'VariableDeclarationDeclarators'
 	}],
-	VariableDeclarationKind: [ENUM_VALUE, ['var', 'let', 'const']],
-	VariableDeclarationDeclare: {
-		deserialize() { return false; }, // TODO
-		length: 0
-	},
-	VariableDeclarationDeclarators: [VEC, 'VariableDeclarator'],
+	VariableDeclarationKind: [ENUM_VALUE, ['var', 'let', 'const'], { length: 1 }],
 	VariableDeclarator: [NODE, {
 		id: 'Pattern',
 		init: 'OptionalBoxedExpression',
-		definite: 'Boolean'
+		definite: 'Boolean' // TODO Needs tests
 	}],
+	VariableDeclarationDeclarators: [VEC, 'VariableDeclarator'],
 
 	// Functions
 	FunctionDeclaration: [

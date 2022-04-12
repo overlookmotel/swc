@@ -1053,13 +1053,6 @@ function deserializeFunctionDeclaration(buff, pos) {
 	};
 }
 
-function deserializeBooleanBitAnd2Empty(buff, pos) {
-	const value = buff.readUInt8(pos);
-	if (value === 0) return false;
-	assert(value === 1);
-	return true;
-}
-
 function deserializeBooleanBit(buff, pos) {
 	const value = buff.readUInt8(pos);
 	if (value === 0) return false;
@@ -1172,7 +1165,7 @@ function deserializeVariableDeclaration(buff, pos) {
 		type: 'VariableDeclaration',
 		span: deserializeSpan(buff, pos),
 		kind: deserializeVariableDeclarationKind(buff, pos + 12),
-		declare: deserializeVariableDeclarationDeclare(buff, pos + 16),
+		declare: deserializeBooleanBitAnd2Empty(buff, pos + 13),
 		declarations: deserializeVariableDeclarationDeclarators(buff, pos + 16)
 	};
 }
@@ -1197,12 +1190,17 @@ function deserializeVariableDeclarator(buff, pos) {
 	};
 }
 
-function deserializeVariableDeclarationDeclare() { return false; }
+function deserializeBooleanBitAnd2Empty(buff, pos) {
+	const value = buff.readUInt8(pos);
+	if (value === 0) return false;
+	assert(value === 1);
+	return true;
+}
 
 const enumOptionsVariableDeclarationKind = ['var', 'let', 'const'];
 
 function deserializeVariableDeclarationKind(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
+	const opt = buff.readUInt8(pos);
 	const value = enumOptionsVariableDeclarationKind[opt];
 	assert(value);
 	return value;

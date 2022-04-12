@@ -84,6 +84,13 @@ export class Compiler {
     return bindings.parseSyncToBufferNoReturn(src, toBuffer(options), filename);
   }
 
+  parseSyncRkyvNoReturn(src: string, options?: ParseOptions, filename?: string): String {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncRkyvNoReturn(src, toBuffer(options), filename);
+  }
+
   parseSyncNoSerialization(src: string, options?: ParseOptions, filename?: string): String {
     options = options || { syntax: "ecmascript" };
     options.syntax = options.syntax || "ecmascript";
@@ -274,6 +281,10 @@ export function parseSyncToBuffer(src: string, options?: ParseOptions): Buffer {
 
 export function parseSyncToBufferNoReturn(src: string, options?: ParseOptions): String {
   return compiler.parseSyncToBufferNoReturn(src, options);
+}
+
+export function parseSyncRkyvNoReturn(src: string, options?: ParseOptions): String {
+  return compiler.parseSyncRkyvNoReturn(src, options);
 }
 
 export function parseSyncNoSerialization(src: string, options?: ParseOptions): String {

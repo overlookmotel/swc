@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Context as _;
 use napi::{
-    bindgen_prelude::{AbortSignal, AsyncTask, Buffer},
+    bindgen_prelude::{AbortSignal, AsyncTask, Buffer, Uint8Array},
     Env, Task,
 };
 use swc::{
@@ -266,7 +266,8 @@ pub fn parse_sync_to_buffer(
     .convert_err()?;
 
     let serialized = Serialized::serialize(&program).convert_err()?;
-    let buffer = Buffer::from(serialized.as_ref().as_slice());
+    let slice = serialized.as_ref().as_slice();
+    let buffer = Buffer::from(slice);
 
     Ok(buffer)
 }
@@ -310,7 +311,189 @@ pub fn parse_sync_to_buffer_no_return(
     .convert_err()?;
 
     let serialized = Serialized::serialize(&program).convert_err()?;
-    let _buffer = Buffer::from(serialized.as_ref().as_slice());
+    let slice = serialized.as_ref().as_slice();
+    let _buffer = Buffer::from(slice);
+
+    Ok("".to_string())
+}
+
+#[napi]
+pub fn parse_sync_to_typed_array(
+    src: String,
+    opts: Buffer,
+    filename: Option<String>,
+) -> napi::Result<Uint8Array> {
+    crate::util::init_default_trace_subscriber();
+    let c = get_compiler();
+
+    let options: ParseOptions = get_deserialized(&opts)?;
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with(c.cm.clone(), false, |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+
+            let comments = if options.comments {
+                Some(c.comments() as &dyn Comments)
+            } else {
+                None
+            };
+
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    let serialized = Serialized::serialize(&program).convert_err()?;
+    let slice = serialized.as_ref().as_slice();
+    let vec = slice.to_vec();
+    let buffer = Uint8Array::new(vec);
+
+    Ok(buffer)
+}
+
+#[napi]
+pub fn parse_sync_to_typed_array_no_return(
+    src: String,
+    opts: Buffer,
+    filename: Option<String>,
+) -> napi::Result<String> {
+    crate::util::init_default_trace_subscriber();
+    let c = get_compiler();
+
+    let options: ParseOptions = get_deserialized(&opts)?;
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with(c.cm.clone(), false, |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+
+            let comments = if options.comments {
+                Some(c.comments() as &dyn Comments)
+            } else {
+                None
+            };
+
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    let serialized = Serialized::serialize(&program).convert_err()?;
+    let slice = serialized.as_ref().as_slice();
+    let vec = slice.to_vec();
+    let _buffer = Uint8Array::new(vec);
+
+    Ok("".to_string())
+}
+
+#[napi]
+pub fn parse_sync_rkyv_vec_no_return(
+    src: String,
+    opts: Buffer,
+    filename: Option<String>,
+) -> napi::Result<String> {
+    crate::util::init_default_trace_subscriber();
+    let c = get_compiler();
+
+    let options: ParseOptions = get_deserialized(&opts)?;
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with(c.cm.clone(), false, |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+
+            let comments = if options.comments {
+                Some(c.comments() as &dyn Comments)
+            } else {
+                None
+            };
+
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    let serialized = Serialized::serialize(&program).convert_err()?;
+    let slice = serialized.as_ref().as_slice();
+    let _vec = slice.to_vec();
+
+    Ok("".to_string())
+}
+
+#[napi]
+pub fn parse_sync_rkyv_slice_no_return(
+    src: String,
+    opts: Buffer,
+    filename: Option<String>,
+) -> napi::Result<String> {
+    crate::util::init_default_trace_subscriber();
+    let c = get_compiler();
+
+    let options: ParseOptions = get_deserialized(&opts)?;
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with(c.cm.clone(), false, |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+
+            let comments = if options.comments {
+                Some(c.comments() as &dyn Comments)
+            } else {
+                None
+            };
+
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    let serialized = Serialized::serialize(&program).convert_err()?;
+    let _slice = serialized.as_ref().as_slice();
 
     Ok("".to_string())
 }

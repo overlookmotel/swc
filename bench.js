@@ -8,7 +8,9 @@ const b = require('benny'),
 
 const {
 	parseSync, parseSyncNoReturn,
-	parseSyncToBuffer, parseSyncToBufferNoReturn, parseSyncRkyvNoReturn,
+	parseSyncToBuffer, parseSyncToBufferNoReturn,
+	parseSyncToTypedArray, parseSyncToTypedArrayNoReturn,
+	parseSyncRkyvVecNoReturn, parseSyncRkyvSliceNoReturn, parseSyncRkyvNoReturn,
 	parseSyncNoSerialization
 } = require('./index.js'),
 	parseSyncBinding = require('./binding.js').parseSync,
@@ -59,6 +61,22 @@ async function run() {
 
 		b.add('SWC with buffer serialization but buffer not returned to JS', () => {
 			parseSyncToBufferNoReturn(code);
+		}),
+
+		b.add('SWC with typed array serialization but no deserialization', () => {
+			parseSyncToTypedArray(code);
+		}),
+
+		b.add('SWC with typed array serialization but buffer not returned to JS', () => {
+			parseSyncToTypedArrayNoReturn(code);
+		}),
+
+		b.add('SWC with RKYV serialization and vec but not returned to JS', () => {
+			parseSyncRkyvVecNoReturn(code);
+		}),
+
+		b.add('SWC with RKYV serialization and slice but not returned to JS', () => {
+			parseSyncRkyvSliceNoReturn(code);
 		}),
 
 		b.add('SWC with RKYV serialization but not returned to JS', () => {

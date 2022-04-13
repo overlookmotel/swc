@@ -84,6 +84,34 @@ export class Compiler {
     return bindings.parseSyncToBufferNoReturn(src, toBuffer(options), filename);
   }
 
+  parseSyncToTypedArray(src: string, options?: ParseOptions, filename?: string): Uint8Array {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncToTypedArray(src, toBuffer(options), filename);
+  }
+
+  parseSyncToTypedArrayNoReturn(src: string, options?: ParseOptions, filename?: string): String {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncToTypedArrayNoReturn(src, toBuffer(options), filename);
+  }
+
+  parseSyncRkyvVecNoReturn(src: string, options?: ParseOptions, filename?: string): String {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncRkyvVecNoReturn(src, toBuffer(options), filename);
+  }
+
+  parseSyncRkyvSliceNoReturn(src: string, options?: ParseOptions, filename?: string): String {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncRkyvSliceNoReturn(src, toBuffer(options), filename);
+  }
+
   parseSyncRkyvNoReturn(src: string, options?: ParseOptions, filename?: string): String {
     options = options || { syntax: "ecmascript" };
     options.syntax = options.syntax || "ecmascript";
@@ -281,6 +309,22 @@ export function parseSyncToBuffer(src: string, options?: ParseOptions): Buffer {
 
 export function parseSyncToBufferNoReturn(src: string, options?: ParseOptions): String {
   return compiler.parseSyncToBufferNoReturn(src, options);
+}
+
+export function parseSyncToTypedArray(src: string, options?: ParseOptions): Uint8Array {
+  return compiler.parseSyncToTypedArray(src, options);
+}
+
+export function parseSyncToTypedArrayNoReturn(src: string, options?: ParseOptions): String {
+  return compiler.parseSyncToTypedArrayNoReturn(src, options);
+}
+
+export function parseSyncRkyvVecNoReturn(src: string, options?: ParseOptions): String {
+  return compiler.parseSyncRkyvVecNoReturn(src, options);
+}
+
+export function parseSyncRkyvSliceNoReturn(src: string, options?: ParseOptions): String {
+  return compiler.parseSyncRkyvSliceNoReturn(src, options);
 }
 
 export function parseSyncRkyvNoReturn(src: string, options?: ParseOptions): String {

@@ -59,13 +59,13 @@ describe('Parses correctly', () => {
 			'export var x = 1',
 			'export var x = 1, y = 2, z = 3',
 			'export function f() {}',
-			// 'export class C {}' // TODO
+			'export class C {}',
 			`
 				export const x = 1;
 				export let y = 2;
 				export var y = 3;
 				export function f() {}
-				// export class C {} // TODO
+				export class C {}
 			`
 		]);
 
@@ -111,13 +111,10 @@ describe('Parses correctly', () => {
 		itParses('Export default declarations', [
 			'export default function() {}',
 			'export default function f() {}',
-			'export default function func_name_longer_than_7_chars() {}'
-			/*
-			// TODO
+			'export default function func_name_longer_than_7_chars() {}',
 			'export default class {}',
 			'export default class C {}',
 			'export default class Class_name_longer_than_7_chars {}'
-			*/
 		]);
 
 		itParses('Export default expression', [
@@ -616,7 +613,6 @@ describe('Parses correctly', () => {
 		]);
 
 		itParses('Call expressions', [
-			// TODO Tests for `super()` call
 			'f()',
 			'func_name_longer_than_7_chars()',
 			'f(1)',
@@ -645,7 +641,13 @@ describe('Parses correctly', () => {
 			"import('foo/bar/qux.js')",
 			'import(x, y, z)',
 			'import(...x)',
-			'import(x, y, ...z)'
+			'import(x, y, ...z)',
+
+			'class C extends S { constructor() { super(); } }',
+			'class C extends S { constructor() { super(x); } }',
+			'class C extends S { constructor() { super(param_name_longer_than_7_chars); } }',
+			'class C extends S { constructor() { super(x, y, z); } }',
+			'class C extends S { constructor() { super(x, y, ...z); } }'
 		]);
 
 		itParses('`new` expressions', [
@@ -1015,6 +1017,392 @@ describe('Parses correctly', () => {
 				return;
 			}`
 		]);
+	});
+
+	describe('Classes', () => {
+		describe('Class declarations', () => {
+			itParses('empty', [
+				'class C {}',
+				'class Class_name_longer_than_7_chars {}',
+
+				'class C extends S {}'
+			]);
+
+			itParses('Constructors', [
+				'class C { constructor() {} }',
+				'class C { constructor(x) {} }',
+				'class C { constructor(x, y, z) {} }',
+				'class C { constructor(x, y) { this.x = x; this.y = y;} }'
+			]);
+
+			itParses('Methods', [
+				'class C { m() {} }',
+				'class C { method_name_longer_than_7_chars() {} }',
+				"class C { 'm m'() {} }",
+				'class C { 1() {} }',
+				'class C { 1n() {} }',
+				'class C { [m]() {} }',
+
+				'class C { m(x) {} }',
+				'class C { m(x, y, z) {} }',
+				'class C { m(x, y) { this.x = x; this.y = y;} }',
+
+				'class C { static m() {} }',
+				'class C { *m() {} }',
+				'class C { async m() {} }',
+				'class C { async *m() {} }',
+				'class C { get x() {} }',
+				'class C { set x(v) {} }',
+				'class C { static get x() {} }',
+				'class C { static set x(v) {} }',
+
+				`class C {
+					m() {}
+					static 1() {}
+					*n() {}
+					async o() {}
+					async *p() {}
+					get q() {}
+					set r(v) {}
+				}`
+			]);
+
+			itParses('Private methods', [
+				'class C { #m() {} }',
+				'class C { #method_name_longer_than_7_chars() {} }',
+
+				'class C { #m(x) {} }',
+				'class C { #m(x, y, z) {} }',
+				'class C { #m(x, y) { this.x = x; this.y = y;} }',
+
+				'class C { static #m() {} }',
+				'class C { *#m() {} }',
+				'class C { async #m() {} }',
+				'class C { async *#m() {} }',
+				'class C { get #x() {} }',
+				'class C { set #x(v) {} }',
+				'class C { static get #x() {} }',
+				'class C { static set #x(v) {} }',
+
+				`class C {
+					#m() {}
+					static #n() {}
+					*#o() {}
+					async #p() {}
+					async *#q() {}
+					get #r() {}
+					set #s(v) {}
+				}`
+			]);
+
+			itParses('Properties', [
+				'class C { x; }',
+				'class C { prop_name_longer_than_7_chars; }',
+				"class C { 'm m'; }",
+				'class C { 1; }',
+				'class C { 1n; }',
+				'class C { [m]; }',
+
+				'class C { static x; }',
+				'class C { static prop_name_longer_than_7_chars; }',
+				"class C { static 'm m'; }",
+				'class C { static 1; }',
+				'class C { static 1n; }',
+				'class C { static [m]; }',
+
+				'class C { x = y; }',
+				'class C { x = 1; }',
+				'class C { static x = y; }',
+				'class C { static x = 1; }',
+
+				`class C {
+					a;
+					static b;
+					c = 1;
+					d = x;
+					static e = 1;
+					static f = x;
+					'g g';
+					'h h' = 1;
+					2;
+					3 = 4;
+					5n;
+					6n = 7;
+					[y];
+					[z] = 8;
+				}`
+			]);
+
+			itParses('Private properties', [
+				'class C { #x; }',
+				'class C { #prop_name_longer_than_7_chars; }',
+
+				'class C { static #x; }',
+				'class C { static #prop_name_longer_than_7_chars; }',
+
+				'class C { #x = y; }',
+				'class C { #x = 1; }',
+				'class C { static #x = y; }',
+				'class C { static #x = 1; }',
+
+				`class C {
+					#a;
+					static #b;
+					#c = 1;
+					#d = x;
+					static #e = 1;
+					static #f = x;
+				}`
+			]);
+
+			itParses('Static blocks', { staticBlocks: true }, [
+				'class C { static {} }',
+				'class C { static { this.x = 1; this.y = 2; } }',
+
+				`class C {
+					static {
+						this.x = 1;
+					}
+					static {
+						this.y = 2;
+					}
+					static {
+						this.z = 3;
+					}
+				}`
+			]);
+
+			itParses('multiple', { staticBlocks: true }, [
+				'class C {}; class D {}; class E {}',
+
+				`
+				class C {
+					constructor() {}
+					a;
+					b = 1;
+					static c;
+					static d = 2;
+					#e;
+					#f = 3;
+					static #g;
+					static #h = 4;
+					i() {}
+					*j() {}
+				}
+				class D {
+					constructor() {}
+					static k() {}
+					static async l() {}
+					#m() {}
+					async #n() {}
+					static #o() {}
+					static *#p() {}
+				}
+				class E {
+					constructor() {}
+					get q() {}
+					get #h() {}
+					set i(v) {}
+					set #j(v) {}
+					static {}
+					static {}
+				}
+				`
+			]);
+		});
+
+		describe('Class expressions', () => {
+			itParses('empty', [
+				'(class {})',
+				'(class C {})',
+				'(class Class_name_longer_than_7_chars {})',
+
+				'(class extends S {})'
+			]);
+
+			itParses('Constructors', [
+				'(class { constructor() {} })',
+				'(class { constructor(x) {} })',
+				'(class { constructor(x, y, z) {} })',
+				'(class { constructor(x, y) { this.x = x; this.y = y;} })'
+			]);
+
+			itParses('Methods', [
+				'(class { m() {} })',
+				'(class { method_name_longer_than_7_chars() {} })',
+				"(class { 'm m'() {} })",
+				'(class { 1() {} })',
+				'(class { 1n() {} })',
+				'(class { [m]() {} })',
+
+				'(class { m(x) {} })',
+				'(class { m(x, y, z) {} })',
+				'(class { m(x, y) { this.x = x; this.y = y;} })',
+
+				'(class { static m() {} })',
+				'(class { *m() {} })',
+				'(class { async m() {} })',
+				'(class { async *m() {} })',
+				'(class { get x() {} })',
+				'(class { set x(v) {} })',
+				'(class { static get x() {} })',
+				'(class { static set x(v) {} })',
+
+				`(class {
+					m() {}
+					static 1() {}
+					*n() {}
+					async o() {}
+					async *p() {}
+					get q() {}
+					set r(v) {}
+				})`
+			]);
+
+			itParses('Private methods', [
+				'(class { #m() {} })',
+				'(class { #method_name_longer_than_7_chars() {} })',
+
+				'(class { #m(x) {} })',
+				'(class { #m(x, y, z) {} })',
+				'(class { #m(x, y) { this.x = x; this.y = y;} })',
+
+				'(class { static #m() {} })',
+				'(class { *#m() {} })',
+				'(class { async #m() {} })',
+				'(class { async *#m() {} })',
+				'(class { get #x() {} })',
+				'(class { set #x(v) {} })',
+				'(class { static get #x() {} })',
+				'(class { static set #x(v) {} })',
+
+				`(class {
+					#m() {}
+					static #n() {}
+					*#o() {}
+					async #p() {}
+					async *#q() {}
+					get #r() {}
+					set #s(v) {}
+				})`
+			]);
+
+			itParses('Properties', [
+				'(class { x; })',
+				'(class { prop_name_longer_than_7_chars; })',
+				"(class { 'm m'; })",
+				'(class { 1; })',
+				'(class { 1n; })',
+				'(class { [m]; })',
+
+				'(class { static x; })',
+				'(class { static prop_name_longer_than_7_chars; })',
+				"(class { static 'm m'; })",
+				'(class { static 1; })',
+				'(class { static 1n; })',
+				'(class { static [m]; })',
+
+				'(class { x = y; })',
+				'(class { x = 1; })',
+				'(class { static x = y; })',
+				'(class { static x = 1; })',
+
+				`(class {
+					a;
+					static b;
+					c = 1;
+					d = x;
+					static e = 1;
+					static f = x;
+					'g g';
+					'h h' = 1;
+					2;
+					3 = 4;
+					5n;
+					6n = 7;
+					[y];
+					[z] = 8;
+				})`
+			]);
+
+			itParses('Private properties', [
+				'(class { #x; })',
+				'(class { #prop_name_longer_than_7_chars; })',
+
+				'(class { static #x; })',
+				'(class { static #prop_name_longer_than_7_chars; })',
+
+				'(class { #x = y; })',
+				'(class { #x = 1; })',
+				'(class { static #x = y; })',
+				'(class { static #x = 1; })',
+
+				`(class {
+					#a;
+					static #b;
+					#c = 1;
+					#d = x;
+					static #e = 1;
+					static #f = x;
+				})`
+			]);
+
+			itParses('Static blocks', { staticBlocks: true }, [
+				'(class { static {} })',
+				'(class { static { this.x = 1; this.y = 2; } })',
+
+				`(class {
+					static {
+						this.x = 1;
+					}
+					static {
+						this.y = 2;
+					}
+					static {
+						this.z = 3;
+					}
+				})`
+			]);
+
+			itParses('multiple', { staticBlocks: true }, [
+				'(class {}, class {}, class {})',
+				'(class C {}, class D {}, class E {})',
+
+				`(
+					class C {
+						constructor() {}
+						a;
+						b = 1;
+						static c;
+						static d = 2;
+						#e;
+						#f = 3;
+						static #g;
+						static #h = 4;
+						i() {}
+						*j() {}
+					},
+					class {
+						constructor() {}
+						static k() {}
+						static async l() {}
+						#m() {}
+						async #n() {}
+						static #o() {}
+						static *#p() {}
+					},
+					class {
+						constructor() {}
+						get q() {}
+						get #h() {}
+						set i(v) {}
+						set #j(v) {}
+						static {}
+						static {}
+					}
+				)`
+			]);
+		});
 	});
 
 	describe('Literals', () => {

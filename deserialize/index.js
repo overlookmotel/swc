@@ -538,7 +538,15 @@ function deserializeYieldExpression(buff, pos) {
 function deserializeClassExpression(buff, pos) {
 	return {
 		type: 'ClassExpression',
-		span: deserializeSpan(buff, pos)
+		identifier: deserializeOptionalIdentifier(buff, pos),
+		span: deserializeSpan(buff, pos + 28),
+		decorators: deserializeDecorators(buff, pos + 40),
+		body: deserializeClassMembers(buff, pos + 48),
+		superClass: deserializeOptionalBoxedExpression(buff, pos + 56),
+		isAbstract: deserializeBoolean(buff, pos + 64),
+		typeParams: deserializeOptionalTsTypeParamDeclaration(buff, pos + 68),
+		superTypeParams: deserializeOptionalTsTypeParameterInstantiation(buff, pos + 92),
+		implements: deserializeTsExpressionsWithTypeArgs(buff, pos + 116)
 	};
 }
 
@@ -711,31 +719,6 @@ function deserializeCallExpression(buff, pos) {
 	};
 }
 
-function deserializeOptionalTsTypeParameterInstantiation(buff, pos) {
-	const opt = buff.readUInt32LE(pos);
-	if (opt === 1) return deserializeTsTypeParameterInstantiation(buff, pos + 4);
-	assert(opt === 0);
-	return null;
-}
-
-function deserializeTsTypeParameterInstantiation(buff, pos) {
-	return {
-		type: 'TsTypeParameterInstantiation',
-		span: deserializeSpan(buff, pos),
-		params: deserializeBoxedTsTypes(buff, pos + 12)
-	};
-}
-
-function deserializeBoxedTsTypes(buff, pos) {
-	const vecPos = getPtr(buff, pos),
-		numEntries = buff.readUInt32LE(pos + 4);
-	const entries = [];
-	for (let i = 0; i < numEntries; i++) {
-		entries.push(deserializeBoxedTsType(buff, vecPos + i * 4));
-	}
-	return entries;
-}
-
 function deserializeExpressionOrSpreads(buff, pos) {
 	const vecPos = getPtr(buff, pos),
 		numEntries = buff.readUInt32LE(pos + 4);
@@ -821,14 +804,6 @@ function deserializeMemberExpressionProperty(buff, pos) {
 	const deserialize = enumOptionsMemberExpressionProperty[buff.readUInt32LE(pos)];
 	assert(deserialize);
 	return deserialize(buff, pos + 4);
-}
-
-function deserializePrivateName(buff, pos) {
-	return {
-		type: 'PrivateName',
-		span: deserializeSpan(buff, pos),
-		id: deserializeIdentifier(buff, pos + 12)
-	};
 }
 
 function deserializeAssignmentExpression(buff, pos) {
@@ -1053,13 +1028,6 @@ function deserializeFunctionDeclaration(buff, pos) {
 	};
 }
 
-function deserializeBooleanBit(buff, pos) {
-	const value = buff.readUInt8(pos);
-	if (value === 0) return false;
-	assert(value === 1);
-	return true;
-}
-
 function deserializeOptionalTsTypeParameterDeclaration(buff, pos) {
 	const opt = buff.readUInt32LE(pos);
 	if (opt === 1) return deserializeTsTypeParameterDeclaration(buff, pos + 4);
@@ -1095,6 +1063,297 @@ function deserializeTsTypeParameter(buff, pos) {
 function deserializeClassDeclaration(buff, pos) {
 	return {
 		type: 'ClassDeclaration',
+		identifier: deserializeIdentifier(buff, pos),
+		declare: deserializeBoolean(buff, pos + 24),
+		span: deserializeSpan(buff, pos + 28),
+		decorators: deserializeDecorators(buff, pos + 40),
+		body: deserializeClassMembers(buff, pos + 48),
+		superClass: deserializeOptionalBoxedExpression(buff, pos + 56),
+		isAbstract: deserializeBoolean(buff, pos + 64),
+		typeParams: deserializeOptionalTsTypeParamDeclaration(buff, pos + 68),
+		superTypeParams: deserializeOptionalTsTypeParameterInstantiation(buff, pos + 92),
+		implements: deserializeTsExpressionsWithTypeArgs(buff, pos + 116)
+	};
+}
+
+function deserializeTsExpressionsWithTypeArgs(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeTsExpressionWithTypeArgs(buff, vecPos + i * 12));
+	}
+	return entries;
+}
+
+function deserializeTsExpressionWithTypeArgs(buff, pos) {
+	return {
+		type: 'TsExpressionWithTypeArgs',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeOptionalTsTypeParameterInstantiation(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeTsTypeParameterInstantiation(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
+function deserializeTsTypeParameterInstantiation(buff, pos) {
+	return {
+		type: 'TsTypeParameterInstantiation',
+		span: deserializeSpan(buff, pos),
+		params: deserializeBoxedTsTypes(buff, pos + 12)
+	};
+}
+
+function deserializeBoxedTsTypes(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeBoxedTsType(buff, vecPos + i * 4));
+	}
+	return entries;
+}
+
+function deserializeClassMembers(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeClassMember(buff, vecPos + i * 168));
+	}
+	return entries;
+}
+
+const enumOptionsClassMember = [
+	deserializeConstructor,
+	deserializeClassMethod,
+	deserializePrivateMethod,
+	deserializeClassProperty,
+	deserializePrivateProperty,
+	deserializeTsIndexSignature,
+	deserializeEmptyStatement,
+	deserializeStaticBlock
+];
+
+function deserializeClassMember(buff, pos) {
+	const deserialize = enumOptionsClassMember[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializeStaticBlock(buff, pos) {
+	return {
+		type: 'StaticBlock',
+		span: deserializeSpan(buff, pos),
+		body: deserializeBlockStatement(buff, pos + 12)
+	};
+}
+
+function deserializeTsIndexSignature(buff, pos) {
+	return {
+		type: 'TsIndexSignature',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializePrivateProperty(buff, pos) {
+	return {
+		type: 'PrivateProperty',
+		span: deserializeSpan(buff, pos),
+		key: deserializePrivateName(buff, pos + 12),
+		value: deserializeOptionalBoxedExpression(buff, pos + 48),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 56),
+		isStatic: deserializeBoolean(buff, pos + 84),
+		decorators: deserializeDecorators(buff, pos + 76),
+		accessibility: deserializeOptionalAccessibility(buff, pos + 88),
+		isOptional: deserializeBooleanBit(buff, pos + 90),
+		isOverride: deserializeBooleanBit(buff, pos + 91),
+		readonly: deserializeBooleanBit(buff, pos + 92),
+		definite: deserializeBooleanBitAnd1Empty(buff, pos + 93)
+	};
+}
+
+function deserializeClassProperty(buff, pos) {
+	return {
+		type: 'ClassProperty',
+		span: deserializeSpan(buff, pos + 44),
+		key: deserializePropertyName(buff, pos),
+		value: deserializeOptionalBoxedExpression(buff, pos + 56),
+		typeAnnotation: deserializeOptionalTsTypeAnnotation(buff, pos + 64),
+		isStatic: deserializeBoolean(buff, pos + 92),
+		decorators: deserializeDecorators(buff, pos + 84),
+		accessibility: deserializeOptionalAccessibility(buff, pos + 96),
+		isAbstract: deserializeBooleanBit(buff, pos + 98),
+		isOptional: deserializeBooleanBit(buff, pos + 99),
+		isOverride: deserializeBooleanBit(buff, pos + 100),
+		readonly: deserializeBooleanBit(buff, pos + 101),
+		declare: deserializeBooleanBit(buff, pos + 102),
+		definite: deserializeBooleanBit(buff, pos + 103)
+	};
+}
+
+function deserializePrivateMethod(buff, pos) {
+	return {
+		type: 'PrivateMethod',
+		span: deserializeSpan(buff, pos),
+		key: deserializePrivateName(buff, pos + 12),
+		function: deserializeFunction(buff, pos + 48),
+		kind: deserializeMethodKind(buff, pos + 148),
+		isStatic: deserializeBooleanBit(buff, pos + 149),
+		accessibility: deserializeOptionalAccessibility(buff, pos + 152),
+		isAbstract: deserializeBooleanBit(buff, pos + 150),
+		isOptional: deserializeBooleanBit(buff, pos + 151),
+		isOverride: deserializeBooleanBitAnd1Empty(buff, pos + 154)
+	};
+}
+
+function deserializePrivateName(buff, pos) {
+	return {
+		type: 'PrivateName',
+		span: deserializeSpan(buff, pos),
+		id: deserializeIdentifier(buff, pos + 12)
+	};
+}
+
+function deserializeClassMethod(buff, pos) {
+	return {
+		type: 'ClassMethod',
+		span: deserializeSpan(buff, pos + 44),
+		key: deserializePropertyName(buff, pos),
+		function: deserializeFunction(buff, pos + 56),
+		kind: deserializeMethodKind(buff, pos + 156),
+		isStatic: deserializeBooleanBit(buff, pos + 157),
+		accessibility: deserializeOptionalAccessibility(buff, pos + 160),
+		isAbstract: deserializeBooleanBit(buff, pos + 158),
+		isOptional: deserializeBooleanBit(buff, pos + 159),
+		isOverride: deserializeBooleanBitAnd1Empty(buff, pos + 162)
+	};
+}
+
+function deserializeBooleanBitAnd1Empty(buff, pos) {
+	const value = buff.readUInt8(pos);
+	if (value === 0) return false;
+	assert(value === 1);
+	return true;
+}
+
+const enumOptionsMethodKind = ['method', 'getter', 'setter'];
+
+function deserializeMethodKind(buff, pos) {
+	const opt = buff.readUInt8(pos);
+	const value = enumOptionsMethodKind[opt];
+	assert(value);
+	return value;
+}
+
+function deserializeFunction(buff, pos) {
+	return {
+		params: deserializeParameters(buff, pos),
+		decorators: deserializeDecorators(buff, pos + 8),
+		span: deserializeSpan(buff, pos + 16),
+		body: deserializeOptionalBlockStatement(buff, pos + 28),
+		generator: deserializeBooleanBit(buff, pos + 76),
+		async: deserializeBooleanBitAnd2Empty(buff, pos + 77),
+		typeParameters: deserializeOptionalTsTypeParamDeclaration(buff, pos + 52),
+		returnType: deserializeOptionalTsTypeAnnotation(buff, pos + 80)
+	};
+}
+
+function deserializeBooleanBit(buff, pos) {
+	const value = buff.readUInt8(pos);
+	if (value === 0) return false;
+	assert(value === 1);
+	return true;
+}
+
+function deserializeOptionalTsTypeParamDeclaration(buff, pos) {
+	const opt = buff.readUInt32LE(pos);
+	if (opt === 1) return deserializeTsTypeParamDeclaration(buff, pos + 4);
+	assert(opt === 0);
+	return null;
+}
+
+function deserializeTsTypeParamDeclaration(buff, pos) {
+	return {
+		type: 'TsTypeParamDeclaration',
+		span: deserializeSpan(buff, pos),
+		parameters: deserializeTsTypeParams(buff, pos + 12)
+	};
+}
+
+function deserializeTsTypeParams(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeTsTypeParam(buff, vecPos + i * 12));
+	}
+	return entries;
+}
+
+function deserializeTsTypeParam(buff, pos) {
+	return {
+		type: 'TsTypeParam',
+		span: deserializeSpan(buff, pos)
+	};
+}
+
+function deserializeConstructor(buff, pos) {
+	return {
+		type: 'Constructor',
+		span: deserializeSpan(buff, pos + 44),
+		key: deserializePropertyName(buff, pos),
+		params: deserializeParameterOrTsParamProps(buff, pos + 56),
+		body: deserializeOptionalBlockStatement(buff, pos + 64),
+		accessibility: deserializeOptionalAccessibility(buff, pos + 88),
+		isOptional: deserializeBoolean(buff, pos + 90)
+	};
+}
+
+function deserializeOptionalAccessibility(buff, pos) {
+	const opt = buff.readUInt8(pos);
+	if (opt === 1) return deserializeAccessibility(buff, pos + 1);
+	assert(opt === 0);
+	return null;
+}
+
+const enumOptionsAccessibility = ['public', 'protected', 'private'];
+
+function deserializeAccessibility(buff, pos) {
+	const opt = buff.readUInt8(pos);
+	const value = enumOptionsAccessibility[opt];
+	assert(value);
+	return value;
+}
+
+function deserializeParameterOrTsParamProps(buff, pos) {
+	const vecPos = getPtr(buff, pos),
+		numEntries = buff.readUInt32LE(pos + 4);
+	const entries = [];
+	for (let i = 0; i < numEntries; i++) {
+		entries.push(deserializeParameterOrTsParamProp(buff, vecPos + i * 76));
+	}
+	return entries;
+}
+
+const enumOptionsParameterOrTsParamProp = [
+	deserializeTsParamProp,
+	deserializeParameter
+];
+
+function deserializeParameterOrTsParamProp(buff, pos) {
+	const deserialize = enumOptionsParameterOrTsParamProp[buff.readUInt32LE(pos)];
+	assert(deserialize);
+	return deserialize(buff, pos + 4);
+}
+
+function deserializeTsParamProp(buff, pos) {
+	return {
+		type: 'TsParamProp',
 		span: deserializeSpan(buff, pos)
 	};
 }

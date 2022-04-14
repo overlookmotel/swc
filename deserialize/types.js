@@ -491,8 +491,7 @@ const types = {
 			'JSXFragment', 'TsTypeAssertion', 'TsConstAssertion', 'TsNonNullExpression',
 			'TsAsExpression', 'TsInstantiation', 'PrivateName', 'OptionalChainingExpression',
 			'Invalid'
-		],
-		{ length: 0 } // TODO
+		]
 	],
 	BoxedExpression: [BOX, 'Expression'],
 	OptionalBoxedExpression: [OPTION, 'BoxedExpression'],

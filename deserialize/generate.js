@@ -44,7 +44,7 @@ function generateType(typeName) {
 
 	// Generate type def.
 	// Store in `generatedTypes` before `length` is definitively known to avoid circularity
-	// for e.g. `Statement` and `Expression`.
+	// for e.g. `Statement`.
 	// `NODE`, `ENUM`, `OPTION` and `CUSTOM` types which are referred to in cycle
 	// must define `length` manually.
 	let { length } = options;

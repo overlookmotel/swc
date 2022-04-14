@@ -261,8 +261,159 @@ const types = {
 	BlockStatementOrBoxedExpression: [ENUM, ['BlockStatement', 'BoxedExpression']],
 
 	// Classes
-	ClassDeclaration: [NODE, {}], // TODO
-	ClassExpression: [NODE, {}], // TODO
+	ClassDeclaration: [NODE, {
+		identifier: 'Identifier',
+		declare: 'Boolean', // TODO Needs tests
+		span: 'Span',
+		decorators: 'Decorators',
+		body: 'ClassMembers',
+		superClass: 'OptionalBoxedExpression',
+		isAbstract: 'Boolean', // TODO Needs tests
+		typeParams: 'OptionalTsTypeParamDeclaration',
+		superTypeParams: 'OptionalTsTypeParameterInstantiation',
+		implements: 'TsExpressionsWithTypeArgs'
+	}],
+	ClassExpression: [NODE, {
+		// Same as `ClassDeclaration` but minus `declare` property, and `identifier` is optional
+		identifier: 'OptionalIdentifier',
+		span: 'Span',
+		decorators: 'Decorators',
+		body: 'ClassMembers',
+		superClass: 'OptionalBoxedExpression',
+		isAbstract: 'Boolean', // TODO Needs tests
+		typeParams: 'OptionalTsTypeParamDeclaration',
+		superTypeParams: 'OptionalTsTypeParameterInstantiation',
+		implements: 'TsExpressionsWithTypeArgs'
+	}],
+
+	ClassMember: [ENUM, [
+		'Constructor', 'ClassMethod', 'PrivateMethod', 'ClassProperty',
+		'PrivateProperty', 'TsIndexSignature', 'EmptyStatement', 'StaticBlock'
+	]],
+	ClassMembers: [VEC, 'ClassMember'],
+
+	Constructor: [
+		NODE,
+		{
+			key: 'PropertyName',
+			span: 'Span',
+			params: 'ParameterOrTsParamProps',
+			body: 'OptionalBlockStatement',
+			accessibility: 'OptionalAccessibility', // TODO Needs tests
+			isOptional: 'Boolean' // TODO Needs tests
+		},
+		{ keys: ['span', 'key', 'params', 'body', 'accessibility', 'isOptional'] }
+	],
+	ClassMethod: [
+		NODE,
+		{
+			key: 'PropertyName',
+			span: 'Span',
+			function: 'Function',
+			kind: 'MethodKind',
+			isStatic: 'BooleanBit',
+			isAbstract: 'BooleanBit', // TODO Needs tests
+			isOptional: 'BooleanBit', // TODO Needs tests
+			accessibility: 'OptionalAccessibility', // TODO Needs tests
+			isOverride: 'BooleanBitAnd1Empty' // TODO Needs tests
+		},
+		{
+			keys: [
+				'span', 'key', 'function', 'kind',
+				'isStatic', 'accessibility', 'isAbstract', 'isOptional',
+				'isOverride'
+			]
+		}
+	],
+	PrivateMethod: [
+		NODE,
+		{
+			key: 'PrivateName',
+			function: 'Function',
+			kind: 'MethodKind',
+			isStatic: 'BooleanBit',
+			isAbstract: 'BooleanBit', // TODO Needs tests
+			isOptional: 'BooleanBit', // TODO Needs tests
+			accessibility: 'OptionalAccessibility', // TODO Needs tests
+			isOverride: 'BooleanBitAnd1Empty' // TODO Needs tests
+		},
+		{
+			keys: [
+				'span', 'key', 'function', 'kind',
+				'isStatic', 'accessibility', 'isAbstract', 'isOptional',
+				'isOverride'
+			]
+		}
+	],
+	ClassProperty: [
+		NODE,
+		{
+			key: 'PropertyName',
+			span: 'Span',
+			value: 'OptionalBoxedExpression',
+			typeAnnotation: 'OptionalTsTypeAnnotation',
+			decorators: 'Decorators',
+			isStatic: 'Boolean',
+			accessibility: 'OptionalAccessibility', // TODO Needs tests
+			isAbstract: 'BooleanBit', // TODO Needs tests
+			isOptional: 'BooleanBit', // TODO Needs tests
+			isOverride: 'BooleanBit', // TODO Needs tests
+			readonly: 'BooleanBit', // TODO Needs tests
+			declare: 'BooleanBit', // TODO Needs tests
+			definite: 'BooleanBit' // TODO Needs tests
+		},
+		{
+			keys: [
+				'span', 'key', 'value', 'typeAnnotation',
+				'isStatic', 'decorators', 'accessibility', 'isAbstract',
+				'isOptional', 'isOverride', 'readonly', 'declare',
+				'definite'
+			]
+		}
+	],
+	PrivateProperty: [
+		NODE,
+		{
+			key: 'PrivateName',
+			value: 'OptionalBoxedExpression',
+			typeAnnotation: 'OptionalTsTypeAnnotation',
+			decorators: 'Decorators',
+			isStatic: 'Boolean',
+			accessibility: 'OptionalAccessibility', // TODO Needs tests
+			isOptional: 'BooleanBit', // TODO Needs tests
+			isOverride: 'BooleanBit', // TODO Needs tests
+			readonly: 'BooleanBit', // TODO Needs tests
+			definite: 'BooleanBitAnd1Empty' // TODO Needs tests
+		},
+		{
+			keys: [
+				'span', 'key', 'value', 'typeAnnotation',
+				'isStatic', 'decorators', 'accessibility', 'isOptional',
+				'isOverride', 'readonly', 'definite'
+			]
+		}
+	],
+	StaticBlock: [NODE, { body: 'BlockStatement' }],
+
+	ParameterOrTsParamProp: [ENUM, ['TsParamProp', 'Parameter']],
+	ParameterOrTsParamProps: [VEC, 'ParameterOrTsParamProp'],
+
+	MethodKind: [ENUM_VALUE, ['method', 'getter', 'setter'], { length: 1 }],
+
+	Function: [
+		STRUCT,
+		{
+			params: 'Parameters',
+			decorators: 'Decorators',
+			span: 'Span',
+			body: 'OptionalBlockStatement',
+			typeParameters: 'OptionalTsTypeParamDeclaration',
+			generator: 'BooleanBit',
+			async: 'BooleanBitAnd2Empty',
+			returnType: 'OptionalTsTypeAnnotation'
+		},
+		{ keys: ['params', 'decorators', 'span', 'body', 'generator', 'async', 'typeParameters', 'returnType'] }
+	],
 
 	// Patterns
 	Pattern: [
@@ -534,7 +685,7 @@ const types = {
 
 	Computed: [NODE, { expression: 'BoxedExpression' }],
 
-	Super: [NODE, {}], // TODO Needs tests for `super()` call
+	Super: [NODE, {}],
 	Import: [NODE, {}],
 
 	ExpressionOrSpread: [STRUCT, {
@@ -634,6 +785,23 @@ const types = {
 	TsTypeParameterInstantiation: [NODE, { params: 'BoxedTsTypes' }],
 	OptionalTsTypeParameterInstantiation: [OPTION, 'TsTypeParameterInstantiation'],
 
+	TsExpressionWithTypeArgs: [NODE, {}], // TODO
+	TsExpressionsWithTypeArgs: [VEC, 'TsExpressionWithTypeArgs'],
+	TsIndexSignature: [NODE, {}], // TODO
+	TsParamProp: [NODE, {}], // TODO
+
+	Accessibility: [ENUM_VALUE, ['public', 'protected', 'private'], { length: 1 }], // TODO Needs tests
+	OptionalAccessibility: { // TODO Needs tests
+		deserialize(buff, pos) {
+			const opt = buff.readUInt8(pos);
+			if (opt === 1) return deserializeAccessibility(buff, pos + 1);
+			assert(opt === 0);
+			return null;
+		},
+		dependencies: ['Accessibility'],
+		length: 2
+	},
+
 	TsTypeParam: [NODE, {}], // TODO
 	TsTypeParams: [VEC, 'TsTypeParam'],
 	TsTypeParameterDeclaration: [NODE, { parameters: 'TsTypeParameters' }],
@@ -694,6 +862,15 @@ const types = {
 			return true;
 		},
 		length: 3
+	},
+	BooleanBitAnd1Empty: {
+		deserialize(buff, pos) {
+			const value = buff.readUInt8(pos);
+			if (value === 0) return false;
+			assert(value === 1);
+			return true;
+		},
+		length: 2
 	},
 
 	// Span

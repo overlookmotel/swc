@@ -200,11 +200,7 @@ class Option extends Kind {
 
     generateDeserializer() {
         return `function deserialize${this.name}(buff, pos) {
-            switch (buff.readUInt8(pos)) {
-                case 0: return null;
-                case 1: return deserialize${this.childType.name}(buff, pos + 4);
-                default: throw new Error('Unexpected option value for ${this.name}');
-            }
+            return deserializeOption(buff, pos, deserialize${this.childType.name}, 4);
         }`;
     }
 }
@@ -240,8 +236,7 @@ class Box extends Kind {
 
     generateDeserializer() {
         return `function deserialize${this.name}(buff, pos) {
-            const ptr = getPtr(buff, pos);
-            return deserialize${this.childType.name}(buff, ptr);
+            return deserializeBox(buff, pos, deserialize${this.childType.name});
         }`;
     }
 }
@@ -278,15 +273,7 @@ class Vec extends Kind {
     generateDeserializer() {
         const { childType } = this;
         return `function deserialize${this.name}(buff, pos) {
-            const numEntries = buff.readUInt32LE(pos + 4);
-            if (numEntries === 0) return [];
-            const entries = new Array(numEntries);
-            let vecPos = getPtr(buff, pos);
-            for (let i = 0; i < numEntries; i++) {
-                entries[i] = deserialize${childType.name}(buff, vecPos);
-                vecPos += ${childType.length};
-            }
-            return entries;
+            return deserializeVec(buff, pos, deserialize${childType.name}, ${childType.length});
         }`;
     }
 }
@@ -398,7 +385,10 @@ function generateDeserializer(utils) {
         code += deserializerCode + '\n\n';
     }
 
-    code += utils.getPtr.toString() + '\n\n';
+    for (const utilName of ['deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr']) {
+        code += utils[utilName].toString() + '\n\n';
+    }
+
     if (DEBUG) code += utils.debugBuff.toString() + '\n\n';
 
     return code.slice(0, -1);

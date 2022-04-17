@@ -13,9 +13,9 @@ module.exports = {
             // Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
             // TODO I don't think this can be correct.
             // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
-            let len = buff.readUInt8(pos + 7);
+            let len = buff[pos + 7];
             if (len > 7) {
-                len = buff.readUint32LE(pos);
+                len = readUint32LE(buff, pos);
                 pos = getPtr(buff, pos + 4) - 4;
             }
 
@@ -30,9 +30,9 @@ module.exports = {
     Span: Custom({
         deserialize(buff, pos) {
             return {
-                start: buff.readUInt32LE(pos),
-                end: buff.readUInt32LE(pos + 4),
-                ctxt: buff.readUInt32LE(pos + 8)
+                start: readUint32LE(buff, pos),
+                end: readUint32LE(buff, pos + 4),
+                ctxt: readUint32LE(buff, pos + 8)
             };
         },
         length: 12,

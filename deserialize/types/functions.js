@@ -15,8 +15,8 @@ module.exports = {
             span: 'Span',
             body: 'OptionBlockStatement',
             typeParameters: Option('TsTypeParameterDeclaration'),
-            generator: 'BooleanByte',
-            async: 'BooleanByteAnd2Empty',
+            generator: 'Boolean',
+            async: 'Boolean',
             returnType: Option('TsTypeAnnotation')
         },
         {
@@ -37,8 +37,8 @@ module.exports = {
             span: 'Span',
             body: 'OptionBlockStatement',
             typeParameters: Option('TsTypeParameterDeclaration'),
-            generator: 'BooleanByte',
-            async: 'BooleanByteAnd2Empty',
+            generator: 'Boolean',
+            async: 'Boolean',
             returnType: Option('TsTypeAnnotation')
         },
         {
@@ -55,8 +55,8 @@ module.exports = {
             params: Vec('Pattern'),
             body: Enum(['BlockStatement', Box('Expression')]),
             typeParameters: Option('TsTypeParameterDeclaration'),
-            async: 'BooleanByte',
-            generator: 'BooleanByteAnd2Empty', // TODO Needs test. Do generator arrow functions exist?
+            async: 'Boolean',
+            generator: 'Boolean', // TODO Needs test. Do generator arrow functions exist?
             returnType: Option('TsTypeAnnotation')
         },
         {

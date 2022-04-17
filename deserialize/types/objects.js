@@ -51,8 +51,8 @@ module.exports = {
             span: 'Span',
             body: 'OptionBlockStatement',
             typeParameters: Option('TsTypeParameterDeclaration'),
-            generator: 'BooleanByte',
-            async: 'BooleanByteAnd2Empty',
+            generator: 'Boolean',
+            async: 'Boolean',
             returnType: Option('TsTypeAnnotation')
         },
         {
@@ -72,7 +72,8 @@ module.exports = {
             return deserializePropertyNameWrapped(buff, pos + 4);
         },
         dependencies: ['PropertyNameWrapped'],
-        length: 44
+        length: 44,
+        align: 4 // TODO Remove wrapping with `align = 8`?
     }),
     PropertyNameWrapped: Enum([
         'Identifier', 'StringLiteral', 'NumericLiteral', 'Computed',

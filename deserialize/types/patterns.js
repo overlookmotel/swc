@@ -1,0 +1,58 @@
+'use strict';
+
+// Imports
+const { Node, Enum, Option, Box, Vec } = require('../kinds.js');
+
+// Exports
+
+module.exports = {
+    Pattern: Enum(
+        [
+            'BindingIdentifier', 'ArrayPattern', 'RestElement', 'ObjectPattern',
+            'AssignmentPattern', 'Invalid', Box('Expression')
+        ],
+        { length: 52 } // TODO Is it required to make length explicit?
+    ),
+
+    BindingIdentifier: Node(
+        {
+            value: 'JsWord',
+            optional: 'Boolean', // TODO Needs tests
+            typeAnnotation: Option('TsTypeAnnotation')
+        },
+        { nodeName: 'Identifier' }
+    ),
+
+    ArrayPattern: Node({
+        elements: Vec(Option('Pattern')),
+        optional: 'Boolean', // TODO Needs tests
+        typeAnnotation: Option('TsTypeAnnotation')
+    }),
+
+    RestElement: Node({
+        rest: 'Span',
+        argument: Box('Pattern'),
+        typeAnnotation: Option('TsTypeAnnotation')
+    }),
+
+    ObjectPattern: Node({
+        properties: Vec('ObjectPatternProperty'),
+        optional: 'Boolean', // TODO Needs tests
+        typeAnnotation: Option('TsTypeAnnotation')
+    }),
+    ObjectPatternProperty: Enum(
+        ['KeyValuePatternProperty', 'AssignmentPatternProperty', 'RestElement'],
+        { length: 56 } // TODO Should be able to deduce this
+    ),
+    KeyValuePatternProperty: Node(
+        { key: 'PropertyName', value: Box('Pattern') },
+        { noSpan: true }
+    ),
+    AssignmentPatternProperty: Node({ key: 'Identifier', value: Option(Box('Expression')) }),
+
+    AssignmentPattern: Node({
+        left: Box('Pattern'),
+        right: Box('Expression'),
+        typeAnnotation: Option('TsTypeAnnotation')
+    })
+};

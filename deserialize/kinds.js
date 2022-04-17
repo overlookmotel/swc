@@ -112,15 +112,16 @@ class Enum extends Kind {
     }
 
     generateDeserializer() {
-        return `function deserialize${this.name}(buff, pos) {
-            const deserialize = enumOptions${this.name}[buff.readUInt32LE(pos)];
-            assert(deserialize);
-            return deserialize(buff, pos + 4);
-        }
+        const enumOptionCodes = this.enumOptions.map(
+            ({ name }, index) => `case ${index}: return deserialize${name}(buff, pos + 4);`
+        );
 
-        const enumOptions${this.name} = [
-            ${this.enumOptions.map(({ name }) => `deserialize${name}`).join(`,\n${' '.repeat(12)}`)}
-        ];`;
+        return `function deserialize${this.name}(buff, pos) {
+            switch (buff.readUInt32LE(pos)) {
+                ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
+                default: throw new Error('Unexpected enum value for ${this.name}');
+            }
+        }`;
     }
 }
 
@@ -134,14 +135,15 @@ class EnumValue extends Kind {
     enumOptions = null;
 
     constructor(enumOptions, options) {
-        const enumValue = enumValues.get(JSON.stringify(enumOptions));
+        const cacheKey = JSON.stringify([enumOptions, options?.length ?? 4]);
+        const enumValue = enumValues.get(cacheKey);
         if (enumValue) return enumValue;
 
         super();
         Object.assign(this, options);
         assert(this.length === 1 || this.length === 4);
 
-        enumValues.set(JSON.stringify(enumOptions), this);
+        enumValues.set(cacheKey, this);
 
         this.enumOptions = enumOptions;
     }
@@ -151,18 +153,16 @@ class EnumValue extends Kind {
     }
 
     generateDeserializer() {
-        const enumOptionCodes = this.enumOptions.map(
-            value => typeof value === 'string' ? `'${value}'` : value + ''
-        );
+        const enumOptionCodes = this.enumOptions.map((value, index) => (
+            `case ${index}: return ${typeof value === 'string' ? `'${value}'` : value};`
+        ));
 
         return `function deserialize${this.name}(buff, pos) {
-            const opt = buff.${this.length === 1 ? 'readUInt8' : 'readUInt32LE'}(pos);
-            const value = enumOptions${this.name}[opt];
-            assert(value);
-            return value;
-        }
-        
-        const enumOptions${this.name} = [${enumOptionCodes.join(', ')}];`;
+            switch (buff.${this.length === 1 ? 'readUInt8' : 'readUInt32LE'}(pos)) {
+                ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
+                default: throw new Error('Unexpected enum value for ${this.name}');
+            }
+        }`;
     }
 }
 
@@ -197,10 +197,11 @@ class Option extends Kind {
 
     generateDeserializer() {
         return `function deserialize${this.name}(buff, pos) {
-            const opt = buff.readUInt32LE(pos);
-            if (opt === 1) return deserialize${this.childType.name}(buff, pos + 4);
-            assert(opt === 0);
-            return null;
+            switch (buff.readUInt32LE(pos)) {
+                case 0: return null;
+                case 1: return deserialize${this.childType.name}(buff, pos + 4);
+                default: throw new Error('Unexpected option value for ${this.name}');
+            }
         }`;
     }
 }
@@ -375,7 +376,6 @@ function generateDeserializer(utils) {
     let code = [
         '// Generated code. Do not edit.',
         "'use strict';",
-        "const assert = require('assert');",
         "module.exports = deserialialize;",
         removeIndent(`function deserialialize(buff) {
             return deserializeProgram(buff, buff.length - ${types.Program.length});

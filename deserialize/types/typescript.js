@@ -34,10 +34,11 @@ module.exports = {
     Accessibility: EnumValue(['public', 'protected', 'private'], { length: 1 }), // TODO Needs tests
     OptionAccessibility: Custom({ // TODO Needs tests
         deserialize(buff, pos) {
-            const opt = buff.readUInt8(pos);
-            if (opt === 1) return deserializeAccessibility(buff, pos + 1);
-            assert(opt === 0);
-            return null;
+            switch (buff.readUInt8(pos)) {
+                case 0: return null;
+                case 1: return deserializeAccessibility(buff, pos + 1);
+                default: throw new Error('Unexpected option value for OptionAccessibility');
+            }
         },
         dependencies: ['Accessibility'],
         length: 2

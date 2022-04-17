@@ -1488,11 +1488,7 @@ function deserializeAccessibility(buff, pos) {
 }
 
 function deserializeOptionAccessibility(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeAccessibility(buff, pos + 1);
-        default: throw new Error('Unexpected option value for OptionAccessibility');
-    }
+    return deserializeOption(buff, pos, deserializeAccessibility, 1);
 }
 
 function deserializeJsWord(buff, pos) {

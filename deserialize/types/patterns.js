@@ -11,7 +11,7 @@ module.exports = {
             'BindingIdentifier', 'ArrayPattern', 'RestElement', 'ObjectPattern',
             'AssignmentPattern', 'Invalid', Box('Expression')
         ],
-        { length: 52 } // TODO Is it required to make length explicit?
+        { length: 52 } // Length explicit due to circularity
     ),
 
     BindingIdentifier: Node(
@@ -42,7 +42,7 @@ module.exports = {
     }),
     ObjectPatternProperty: Enum(
         ['KeyValuePatternProperty', 'AssignmentPatternProperty', 'RestElement'],
-        { length: 56 } // TODO Should be able to deduce this
+        { length: 56 } // TODO Should be able to deduce this. 4 longer than expected.
     ),
     KeyValuePatternProperty: Node(
         { key: 'PropertyName', value: Box('Pattern') },

@@ -272,17 +272,14 @@ class Vec extends Kind {
     }
 
     generateDeserializer() {
-        // TODO Initialize `entries` with size `const entries = Array(numEntries);`
-        // TODO Optimize for empty vector - common with e.g. decorators.
-        // Determine `numEntries` first and return `[]` immediately if zero.
-
         const { childType } = this;
         return `function deserialize${this.name}(buff, pos) {
+            const numEntries = buff.readUInt32LE(pos + 4);
+            if (numEntries === 0) return [];
             const vecPos = getPtr(buff, pos),
-                numEntries = buff.readUInt32LE(pos + 4);
-            const entries = [];
+                entries = new Array(numEntries);
             for (let i = 0; i < numEntries; i++) {
-                entries.push(deserialize${childType.name}(buff, vecPos + i * ${childType.length}));
+                entries[i] = deserialize${childType.name}(buff, vecPos + i * ${childType.length});
             }
             return entries;
         }`;

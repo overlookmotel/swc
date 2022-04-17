@@ -1,7 +1,7 @@
 'use strict';
 
 // Imports
-const { Custom } = require('../kinds.js');
+const { EnumValue, Custom } = require('../kinds.js');
 
 // Exports
 
@@ -24,41 +24,27 @@ module.exports = {
         length: 8
     }),
 
-    Boolean: Custom({
+    Boolean: EnumValue([false, true]),
+    BooleanBit: EnumValue([false, true], { length: 1 }),
+    BooleanBitAnd1Empty: Custom({
         deserialize(buff, pos) {
-            const value = buff.readUInt32LE(pos);
-            if (value === 0) return false;
-            assert(value === 1);
-            return true;
+            switch (buff.readUInt8(pos)) {
+                case 0: return false;
+                case 1: return true;
+                default: throw new Error('Unexpected enum value for BooleanBit');
+            }
         },
-        length: 4
-    }),
-    BooleanBit: Custom({
-        deserialize(buff, pos) {
-            const value = buff.readUInt8(pos);
-            if (value === 0) return false;
-            assert(value === 1);
-            return true;
-        },
-        length: 1
+        length: 2
     }),
     BooleanBitAnd2Empty: Custom({
         deserialize(buff, pos) {
-            const value = buff.readUInt8(pos);
-            if (value === 0) return false;
-            assert(value === 1);
-            return true;
+            switch (buff.readUInt8(pos)) {
+                case 0: return false;
+                case 1: return true;
+                default: throw new Error('Unexpected enum value for BooleanBit');
+            }
         },
         length: 3
-    }),
-    BooleanBitAnd1Empty: Custom({
-        deserialize(buff, pos) {
-            const value = buff.readUInt8(pos);
-            if (value === 0) return false;
-            assert(value === 1);
-            return true;
-        },
-        length: 2
     }),
 
     Span: Custom({

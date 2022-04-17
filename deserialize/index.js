@@ -216,11 +216,7 @@ function deserializeBlockStatement(buff, pos) {
 }
 
 function deserializeOptionBlockStatement(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeBlockStatement(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionBlockStatement');
-    }
+    return deserializeOption(buff, pos, deserializeBlockStatement, 4);
 }
 
 function deserializeEmptyStatement(buff, pos) {
@@ -1555,194 +1551,87 @@ function deserializeSpan(buff, pos) {
 }
 
 function deserializeOptionJsWord(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeJsWord(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionJsWord');
-    }
+    return deserializeOption(buff, pos, deserializeJsWord, 4);
 }
 
 function deserializeOptionModuleExportName(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeModuleExportName(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionModuleExportName');
-    }
+    return deserializeOption(buff, pos, deserializeModuleExportName, 4);
 }
 
 function deserializeVecImportSpecifier(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeImportSpecifier(buff, vecPos);
-        vecPos += 84;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeImportSpecifier, 84);
 }
 
 function deserializeOptionSpan(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeSpan(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionSpan');
-    }
+    return deserializeOption(buff, pos, deserializeSpan, 4);
 }
 
 function deserializeOptionExpressionOrSpread(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeExpressionOrSpread(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionExpressionOrSpread');
-    }
+    return deserializeOption(buff, pos, deserializeExpressionOrSpread, 4);
 }
 
 function deserializeVecOptionExpressionOrSpread(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeOptionExpressionOrSpread(buff, vecPos);
-        vecPos += 24;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeOptionExpressionOrSpread, 24);
 }
 
 function deserializeOptionIdentifier(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeIdentifier(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionIdentifier');
-    }
+    return deserializeOption(buff, pos, deserializeIdentifier, 4);
 }
 
 function deserializeVecDecorator(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeDecorator(buff, vecPos);
-        vecPos += 16;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeDecorator, 16);
 }
 
 function deserializeBoxTsType(buff, pos) {
-    const ptr = getPtr(buff, pos);
-    return deserializeTsType(buff, ptr);
+    return deserializeBox(buff, pos, deserializeTsType);
 }
 
 function deserializeOptionTsTypeAnnotation(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeTsTypeAnnotation(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionTsTypeAnnotation');
-    }
+    return deserializeOption(buff, pos, deserializeTsTypeAnnotation, 4);
 }
 
 function deserializeOptionPattern(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializePattern(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionPattern');
-    }
+    return deserializeOption(buff, pos, deserializePattern, 4);
 }
 
 function deserializeVecOptionPattern(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeOptionPattern(buff, vecPos);
-        vecPos += 56;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeOptionPattern, 56);
 }
 
 function deserializeBoxPattern(buff, pos) {
-    const ptr = getPtr(buff, pos);
-    return deserializePattern(buff, ptr);
+    return deserializeBox(buff, pos, deserializePattern);
 }
 
 function deserializeOptionBoxExpression(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeBoxExpression(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionBoxExpression');
-    }
+    return deserializeOption(buff, pos, deserializeBoxExpression, 4);
 }
 
 function deserializeVecObjectPatternProperty(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeObjectPatternProperty(buff, vecPos);
-        vecPos += 56;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeObjectPatternProperty, 56);
 }
 
 function deserializeVecParameter(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeParameter(buff, vecPos);
-        vecPos += 72;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeParameter, 72);
 }
 
 function deserializeBoxStatement(buff, pos) {
-    const ptr = getPtr(buff, pos);
-    return deserializeStatement(buff, ptr);
+    return deserializeBox(buff, pos, deserializeStatement);
 }
 
 function deserializeOptionBoxStatement(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeBoxStatement(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionBoxStatement');
-    }
+    return deserializeOption(buff, pos, deserializeBoxStatement, 4);
 }
 
 function deserializeVecSwitchCase(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeSwitchCase(buff, vecPos);
-        vecPos += 28;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeSwitchCase, 28);
 }
 
 function deserializeOptionCatchClause(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeCatchClause(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionCatchClause');
-    }
+    return deserializeOption(buff, pos, deserializeCatchClause, 4);
 }
 
 function deserializeVecVariableDeclarator(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeVariableDeclarator(buff, vecPos);
-        vecPos += 76;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeVariableDeclarator, 76);
 }
 
 function deserializeVariableDeclarationOrBoxExpression(buff, pos) {
@@ -1754,11 +1643,7 @@ function deserializeVariableDeclarationOrBoxExpression(buff, pos) {
 }
 
 function deserializeOptionVariableDeclarationOrBoxExpression(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeVariableDeclarationOrBoxExpression(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionVariableDeclarationOrBoxExpression');
-    }
+    return deserializeOption(buff, pos, deserializeVariableDeclarationOrBoxExpression, 4);
 }
 
 function deserializeVariableDeclarationOrPattern(buff, pos) {
@@ -1778,99 +1663,39 @@ function deserializeTsParamPropOrParameter(buff, pos) {
 }
 
 function deserializeVecTsParamPropOrParameter(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeTsParamPropOrParameter(buff, vecPos);
-        vecPos += 76;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeTsParamPropOrParameter, 76);
 }
 
 function deserializeVecTsTypeParameter(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeTsTypeParameter(buff, vecPos);
-        vecPos += 12;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeTsTypeParameter, 12);
 }
 
 function deserializeOptionTsTypeParamDeclaration(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeTsTypeParamDeclaration(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionTsTypeParamDeclaration');
-    }
+    return deserializeOption(buff, pos, deserializeTsTypeParamDeclaration, 4);
 }
 
 function deserializeVecClassMember(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeClassMember(buff, vecPos);
-        vecPos += 168;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeClassMember, 168);
 }
 
 function deserializeVecBoxTsType(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeBoxTsType(buff, vecPos);
-        vecPos += 4;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeBoxTsType, 4);
 }
 
 function deserializeOptionTsTypeParameterInstantiation(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeTsTypeParameterInstantiation(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionTsTypeParameterInstantiation');
-    }
+    return deserializeOption(buff, pos, deserializeTsTypeParameterInstantiation, 4);
 }
 
 function deserializeVecTsExpressionWithTypeArg(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeTsExpressionWithTypeArg(buff, vecPos);
-        vecPos += 12;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeTsExpressionWithTypeArg, 12);
 }
 
 function deserializeOptionTsTypeParameterDeclaration(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeTsTypeParameterDeclaration(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionTsTypeParameterDeclaration');
-    }
+    return deserializeOption(buff, pos, deserializeTsTypeParameterDeclaration, 4);
 }
 
 function deserializeVecStatement(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeStatement(buff, vecPos);
-        vecPos += 152;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeStatement, 152);
 }
 
 function deserializeBoxExpressionOrBoxPattern(buff, pos) {
@@ -1908,59 +1733,23 @@ function deserializeSuperOrImportOrBoxExpression(buff, pos) {
 }
 
 function deserializeVecExpressionOrSpread(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeExpressionOrSpread(buff, vecPos);
-        vecPos += 20;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeExpressionOrSpread, 20);
 }
 
 function deserializeOptionVecExpressionOrSpread(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeVecExpressionOrSpread(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionVecExpressionOrSpread');
-    }
+    return deserializeOption(buff, pos, deserializeVecExpressionOrSpread, 4);
 }
 
 function deserializeVecBoxExpression(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeBoxExpression(buff, vecPos);
-        vecPos += 4;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeBoxExpression, 4);
 }
 
 function deserializeVecTemplateElement(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeTemplateElement(buff, vecPos);
-        vecPos += 36;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeTemplateElement, 36);
 }
 
 function deserializeVecPattern(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializePattern(buff, vecPos);
-        vecPos += 52;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializePattern, 52);
 }
 
 function deserializeBlockStatementOrBoxExpression(buff, pos) {
@@ -1980,13 +1769,11 @@ function deserializeMemberExpressionOrOptionalChainingCall(buff, pos) {
 }
 
 function deserializeBoxExpression(buff, pos) {
-    const ptr = getPtr(buff, pos);
-    return deserializeExpression(buff, ptr);
+    return deserializeBox(buff, pos, deserializeExpression);
 }
 
 function deserializeBoxObjectProperty(buff, pos) {
-    const ptr = getPtr(buff, pos);
-    return deserializeObjectProperty(buff, ptr);
+    return deserializeBox(buff, pos, deserializeObjectProperty);
 }
 
 function deserializeSpreadElementOrBoxObjectProperty(buff, pos) {
@@ -1998,43 +1785,19 @@ function deserializeSpreadElementOrBoxObjectProperty(buff, pos) {
 }
 
 function deserializeVecSpreadElementOrBoxObjectProperty(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeSpreadElementOrBoxObjectProperty(buff, vecPos);
-        vecPos += 20;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeSpreadElementOrBoxObjectProperty, 20);
 }
 
 function deserializeOptionObjectExpression(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeObjectExpression(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionObjectExpression');
-    }
+    return deserializeOption(buff, pos, deserializeObjectExpression, 4);
 }
 
 function deserializeVecExportSpecifier(buff, pos) {
-    const numEntries = buff.readUInt32LE(pos + 4);
-    if (numEntries === 0) return [];
-    const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
-    for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeExportSpecifier(buff, vecPos);
-        vecPos += 96;
-    }
-    return entries;
+    return deserializeVec(buff, pos, deserializeExportSpecifier, 96);
 }
 
 function deserializeOptionStringLiteral(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return null;
-        case 1: return deserializeStringLiteral(buff, pos + 4);
-        default: throw new Error('Unexpected option value for OptionStringLiteral');
-    }
+    return deserializeOption(buff, pos, deserializeStringLiteral, 4);
 }
 
 function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(buff, pos) {
@@ -2055,13 +1818,29 @@ function deserializeModuleDeclarationOrStatement(buff, pos) {
 }
 
 function deserializeVecModuleDeclarationOrStatement(buff, pos) {
+    return deserializeVec(buff, pos, deserializeModuleDeclarationOrStatement, 156);
+}
+
+function deserializeOption(buff, pos, deserialize, offset) {
+    switch (buff.readUInt8(pos)) {
+        case 0: return null;
+        case 1: return deserialize(buff, pos + offset);
+        default: throw new Error('Unexpected option value');
+    }
+}
+
+function deserializeBox(buff, pos, deserialize) {
+    return deserialize(buff, getPtr(buff, pos));
+}
+
+function deserializeVec(buff, pos, deserialize, length) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);
     let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeModuleDeclarationOrStatement(buff, vecPos);
-        vecPos += 156;
+        entries[i] = deserialize(buff, vecPos);
+        vecPos += length;
     }
     return entries;
 }

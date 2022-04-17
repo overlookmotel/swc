@@ -17,6 +17,7 @@ class Kind {
     length = null;
     align = null;
     emptyBefore = 0;
+    needsDeserializer = false;
     isInitialized = false;
 
     getName() {
@@ -24,6 +25,20 @@ class Kind {
     }
 
     init() { }
+
+    getDeserializerName() {
+        return `deserialize${this.name}`;
+    }
+
+    getDeserialize(offset) {
+        return `deserialize${this.name}(buff, pos${offset ? ` + ${offset}` : ''})`;
+    }
+
+    generateDeserializer() {
+        return `function deserialize${this.name}(buff, pos) {
+            return ${this.getDeserialize(0)};
+        }`;
+    }
 }
 
 /**
@@ -31,6 +46,7 @@ class Kind {
  */
 class Node extends Kind {
     align = 4;
+    needsDeserializer = true;
     props = null;
     nodeName = null;
     keys = null;
@@ -55,7 +71,7 @@ class Node extends Kind {
         const propsWithPosMap = {};
         let pos = this.emptyBefore;
         for (let [key, prop] of Object.entries(this.props)) {
-            prop = initType(prop);
+            prop = initType(prop, true);
             pos = getAligned(pos, prop.align);
             propsWithPosMap[key] = { key, prop, pos };
             pos += prop.length;
@@ -69,7 +85,7 @@ class Node extends Kind {
 
     generateDeserializer() {
         const propsCodes = this.propsWithPos.map(({ key, prop, pos }) => {
-            return `${key}: deserialize${prop.name}(buff, pos${pos ? ` + ${pos}` : ''})`;
+            return `${key}: ${prop.getDeserialize(pos)}`;
         });
 
         if (!this.noType) propsCodes.unshift(`type: '${this.nodeName}'`);
@@ -87,6 +103,7 @@ class Node extends Kind {
  */
 class Enum extends Kind {
     align = 4;
+    needsDeserializer = true;
     enumOptions = null;
     childOffset = null;
 
@@ -111,7 +128,7 @@ class Enum extends Kind {
     init() {
         let length = 0;
         this.enumOptions = this.enumOptions.map((enumOption) => {
-            enumOption = initType(enumOption);
+            enumOption = initType(enumOption, true);
             if (enumOption.length > length) length = enumOption.length;
             return enumOption;
         });
@@ -120,8 +137,8 @@ class Enum extends Kind {
     }
 
     generateDeserializer() {
-        const enumOptionCodes = this.enumOptions.map(({ name }, index) => (
-            `case ${index}: return deserialize${name}(buff, pos + ${this.childOffset});`
+        const enumOptionCodes = this.enumOptions.map((enumOption, index) => (
+            `case ${index}: return ${enumOption.getDeserialize(this.childOffset)};`
         ));
 
         return `function deserialize${this.name}(buff, pos) {
@@ -140,6 +157,7 @@ const enums = new Map();
  */
 class EnumValue extends Kind {
     align = 1;
+    needsDeserializer = true;
     enumOptions = null;
 
     constructor(enumOptions, options) {
@@ -202,18 +220,16 @@ class Option extends Kind {
     }
 
     init() {
-        this.childType = initType(this.childType);
+        this.childType = initType(this.childType, false);
         if (!this.childOffset) this.childOffset = this.emptyBefore + this.childType.align;
         if (!this.length) this.length = this.childOffset + this.childType.length;
         if (!this.align) this.align = this.childType.align;
     }
 
-    generateDeserializer() {
-        const pos = posStr(this.emptyBefore),
-            childName = this.childType.name;
-        return `function deserialize${this.name}(buff, pos) {
-            return deserializeOption(buff, ${pos}, deserialize${childName}, ${this.childOffset});
-        }`;
+    getDeserialize(offset) {
+        const pos = posStr(offset + this.emptyBefore),
+            deserializerName = this.childType.getDeserializerName();
+        return `deserializeOption(buff, ${pos}, ${deserializerName}, ${this.childOffset})`;
     }
 }
 
@@ -244,13 +260,12 @@ class Box extends Kind {
     }
 
     init() {
-        this.childType = initType(this.childType);
+        this.childType = initType(this.childType, false);
     }
 
-    generateDeserializer() {
-        return `function deserialize${this.name}(buff, pos) {
-            return deserializeBox(buff, ${posStr(this.emptyBefore)}, deserialize${this.childType.name});
-        }`;
+    getDeserialize(offset) {
+        const childDeserializerName = this.childType.getDeserializerName();
+        return `deserializeBox(buff, ${posStr(offset + this.emptyBefore)}, ${childDeserializerName})`;
     }
 }
 
@@ -282,15 +297,14 @@ class Vec extends Kind {
     }
 
     init() {
-        this.childType = initType(this.childType);
+        this.childType = initType(this.childType, false);
         this.childLength = getAligned(this.childType.length, this.childType.align);
     }
 
-    generateDeserializer() {
-        const pos = posStr(this.emptyBefore);
-        return `function deserialize${this.name}(buff, pos) {
-            return deserializeVec(buff, ${pos}, deserialize${this.childType.name}, ${this.childLength});
-        }`;
+    getDeserialize(offset) {
+        const pos = posStr(offset + this.emptyBefore),
+            childDeserializerName = this.childType.getDeserializerName();
+        return `deserializeVec(buff, ${pos}, ${childDeserializerName}, ${this.childLength})`;
     }
 }
 
@@ -300,6 +314,7 @@ const vecs = new Map();
  * Custom type class
  */
 class Custom extends Kind {
+    needsDeserializer = true;
     deserialize = null;
     dependencies = [];
 
@@ -309,7 +324,7 @@ class Custom extends Kind {
     }
 
     init() {
-        this.dependencies = this.dependencies.map(name => initType(name));
+        this.dependencies = this.dependencies.map(name => initType(name, false));
 
         assert(typeof this.deserialize === 'function', `Custom type ${this.name} has no deserializer`);
     }
@@ -336,7 +351,7 @@ function init(allTypes) {
         type.name = name;
     }
 
-    types.Program.init();
+    initType('Program', false);
 }
 
 /**
@@ -354,9 +369,10 @@ function getTypeName(type) {
  * Initialize type.
  * If string provided, looks up type object by name in `types`.
  * @param {string|Object} type - Type name or type object
+ * @param {boolean} canInline - `true` if can inline the deserializer
  * @returns {Object} - Type object
  */
-function initType(type) {
+function initType(type, canInline) {
     if (typeof type === 'string') {
         assert(types[type], `Type not found: ${type}`);
         type = types[type];
@@ -371,6 +387,8 @@ function initType(type) {
         assert(isPositiveInteger(type.align), `${type.name} type has no align`);
         types[type.name] = type;
     }
+
+    if (!canInline) type.needsDeserializer = true;
 
     return type;
 }
@@ -418,6 +436,8 @@ function generateDeserializer(utils) {
     ].join('\n\n');
 
     for (const type of Object.values(types)) {
+        if (!type.needsDeserializer) continue;
+
         let deserializerCode = removeIndent(type.generateDeserializer());
         if (DEBUG) {
             deserializerCode = deserializerCode.replace(

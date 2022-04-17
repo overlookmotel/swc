@@ -26,26 +26,8 @@ module.exports = {
 
     Boolean: EnumValue([false, true]),
     BooleanBit: EnumValue([false, true], { length: 1 }),
-    BooleanBitAnd1Empty: Custom({
-        deserialize(buff, pos) {
-            switch (buff.readUInt8(pos)) {
-                case 0: return false;
-                case 1: return true;
-                default: throw new Error('Unexpected enum value for BooleanBit');
-            }
-        },
-        length: 2
-    }),
-    BooleanBitAnd2Empty: Custom({
-        deserialize(buff, pos) {
-            switch (buff.readUInt8(pos)) {
-                case 0: return false;
-                case 1: return true;
-                default: throw new Error('Unexpected enum value for BooleanBit');
-            }
-        },
-        length: 3
-    }),
+    BooleanBitAnd1Empty: EnumValue([false, true], { length: 2 }),
+    BooleanBitAnd2Empty: EnumValue([false, true], { length: 3 }),
 
     Span: Custom({
         deserialize(buff, pos) {

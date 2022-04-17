@@ -89,6 +89,8 @@ class Enum extends Kind {
         const enumObj = enums.get(JSON.stringify(enumOptions));
         if (enumObj) return enumObj;
 
+        assert(enumOptions.length < 256);
+
         super();
         Object.assign(this, options);
 
@@ -117,7 +119,7 @@ class Enum extends Kind {
         );
 
         return `function deserialize${this.name}(buff, pos) {
-            switch (buff.readUInt32LE(pos)) {
+            switch (buff.readUInt8(pos)) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
@@ -139,9 +141,10 @@ class EnumValue extends Kind {
         const enumValue = enumValues.get(cacheKey);
         if (enumValue) return enumValue;
 
+        assert(enumOptions.length < 256);
+
         super();
         Object.assign(this, options);
-        assert(this.length === 1 || this.length === 4);
 
         enumValues.set(cacheKey, this);
 
@@ -158,7 +161,7 @@ class EnumValue extends Kind {
         ));
 
         return `function deserialize${this.name}(buff, pos) {
-            switch (buff.${this.length === 1 ? 'readUInt8' : 'readUInt32LE'}(pos)) {
+            switch (buff.readUInt8(pos)) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
@@ -197,7 +200,7 @@ class Option extends Kind {
 
     generateDeserializer() {
         return `function deserialize${this.name}(buff, pos) {
-            switch (buff.readUInt32LE(pos)) {
+            switch (buff.readUInt8(pos)) {
                 case 0: return null;
                 case 1: return deserialize${this.childType.name}(buff, pos + 4);
                 default: throw new Error('Unexpected option value for ${this.name}');

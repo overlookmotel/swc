@@ -25,9 +25,9 @@ module.exports = {
     }),
 
     Boolean: EnumValue([false, true]),
-    BooleanBit: EnumValue([false, true], { length: 1 }),
-    BooleanBitAnd1Empty: EnumValue([false, true], { length: 2 }),
-    BooleanBitAnd2Empty: EnumValue([false, true], { length: 3 }),
+    BooleanByte: EnumValue([false, true], { length: 1 }),
+    BooleanByteAnd1Empty: EnumValue([false, true], { length: 2 }),
+    BooleanByteAnd2Empty: EnumValue([false, true], { length: 3 }),
 
     Span: Custom({
         deserialize(buff, pos) {

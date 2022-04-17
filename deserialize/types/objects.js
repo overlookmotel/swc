@@ -51,8 +51,8 @@ module.exports = {
             span: 'Span',
             body: 'OptionBlockStatement',
             typeParameters: Option('TsTypeParameterDeclaration'),
-            generator: 'BooleanBit',
-            async: 'BooleanBitAnd2Empty',
+            generator: 'BooleanByte',
+            async: 'BooleanByteAnd2Empty',
             returnType: Option('TsTypeAnnotation')
         },
         {

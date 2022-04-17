@@ -28,7 +28,7 @@ module.exports = {
 
     UpdateExpression: Node({
         operator: 'UpdateOperator',
-        prefix: 'BooleanBitAnd2Empty',
+        prefix: 'BooleanByteAnd2Empty',
         argument: Box('Expression')
     }),
     UpdateOperator: EnumValue(['++', '--'], { length: 1 }),

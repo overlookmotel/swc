@@ -57,11 +57,11 @@ module.exports = {
             span: 'Span',
             function: 'Function',
             kind: 'MethodKind',
-            isStatic: 'BooleanBit',
-            isAbstract: 'BooleanBit', // TODO Needs tests
-            isOptional: 'BooleanBit', // TODO Needs tests
+            isStatic: 'BooleanByte',
+            isAbstract: 'BooleanByte', // TODO Needs tests
+            isOptional: 'BooleanByte', // TODO Needs tests
             accessibility: 'OptionAccessibility', // TODO Needs tests
-            isOverride: 'BooleanBitAnd1Empty' // TODO Needs tests
+            isOverride: 'BooleanByteAnd1Empty' // TODO Needs tests
         },
         {
             keys: [
@@ -77,11 +77,11 @@ module.exports = {
             key: 'PrivateName',
             function: 'Function',
             kind: 'MethodKind',
-            isStatic: 'BooleanBit',
-            isAbstract: 'BooleanBit', // TODO Needs tests
-            isOptional: 'BooleanBit', // TODO Needs tests
+            isStatic: 'BooleanByte',
+            isAbstract: 'BooleanByte', // TODO Needs tests
+            isOptional: 'BooleanByte', // TODO Needs tests
             accessibility: 'OptionAccessibility', // TODO Needs tests
-            isOverride: 'BooleanBitAnd1Empty' // TODO Needs tests
+            isOverride: 'BooleanByteAnd1Empty' // TODO Needs tests
         },
         {
             keys: [
@@ -101,12 +101,12 @@ module.exports = {
             decorators: Vec('Decorator'),
             isStatic: 'Boolean',
             accessibility: 'OptionAccessibility', // TODO Needs tests
-            isAbstract: 'BooleanBit', // TODO Needs tests
-            isOptional: 'BooleanBit', // TODO Needs tests
-            isOverride: 'BooleanBit', // TODO Needs tests
-            readonly: 'BooleanBit', // TODO Needs tests
-            declare: 'BooleanBit', // TODO Needs tests
-            definite: 'BooleanBit' // TODO Needs tests
+            isAbstract: 'BooleanByte', // TODO Needs tests
+            isOptional: 'BooleanByte', // TODO Needs tests
+            isOverride: 'BooleanByte', // TODO Needs tests
+            readonly: 'BooleanByte', // TODO Needs tests
+            declare: 'BooleanByte', // TODO Needs tests
+            definite: 'BooleanByte' // TODO Needs tests
         },
         {
             keys: [
@@ -126,10 +126,10 @@ module.exports = {
             decorators: Vec('Decorator'),
             isStatic: 'Boolean',
             accessibility: 'OptionAccessibility', // TODO Needs tests
-            isOptional: 'BooleanBit', // TODO Needs tests
-            isOverride: 'BooleanBit', // TODO Needs tests
-            readonly: 'BooleanBit', // TODO Needs tests
-            definite: 'BooleanBitAnd1Empty' // TODO Needs tests
+            isOptional: 'BooleanByte', // TODO Needs tests
+            isOverride: 'BooleanByte', // TODO Needs tests
+            readonly: 'BooleanByte', // TODO Needs tests
+            definite: 'BooleanByteAnd1Empty' // TODO Needs tests
         },
         {
             keys: [
@@ -152,8 +152,8 @@ module.exports = {
             span: 'Span',
             body: 'OptionBlockStatement',
             typeParameters: Option('TsTypeParamDeclaration'),
-            generator: 'BooleanBit',
-            async: 'BooleanBitAnd2Empty',
+            generator: 'BooleanByte',
+            async: 'BooleanByteAnd2Empty',
             returnType: Option('TsTypeAnnotation')
         },
         {

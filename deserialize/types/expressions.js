@@ -28,10 +28,10 @@ module.exports = {
 
     UpdateExpression: Node({
         operator: 'UpdateOperator',
-        prefix: 'BooleanByteAnd2Empty',
+        prefix: 'Boolean',
         argument: Box('Expression')
     }),
-    UpdateOperator: EnumValue(['++', '--'], { length: 1 }),
+    UpdateOperator: EnumValue(['++', '--']),
 
     BinaryExpression: Node(
         {

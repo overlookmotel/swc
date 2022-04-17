@@ -16,6 +16,7 @@ class Kind {
     name = null;
     length = null;
     align = null;
+    emptyBefore = 0;
     isInitialized = false;
 
     getName() {
@@ -52,7 +53,7 @@ class Node extends Kind {
 
     init() {
         const propsWithPosMap = {};
-        let pos = 0;
+        let pos = this.emptyBefore;
         for (let [key, prop] of Object.entries(this.props)) {
             prop = initType(prop);
             pos = getAligned(pos, prop.align);
@@ -87,6 +88,7 @@ class Node extends Kind {
 class Enum extends Kind {
     align = 4;
     enumOptions = null;
+    childOffset = null;
 
     constructor(enumOptions, options) {
         const enumObj = enums.get(JSON.stringify(enumOptions));
@@ -97,9 +99,9 @@ class Enum extends Kind {
         super();
         Object.assign(this, options);
 
-        enums.set(JSON.stringify(enumOptions), this);
-
         this.enumOptions = enumOptions;
+
+        enums.set(JSON.stringify(enumOptions), this);
     }
 
     getName() {
@@ -113,16 +115,17 @@ class Enum extends Kind {
             if (enumOption.length > length) length = enumOption.length;
             return enumOption;
         });
-        if (!this.length) this.length = length + 4;
+        if (!this.childOffset) this.childOffset = this.emptyBefore + 4;
+        if (!this.length) this.length = length + this.childOffset;
     }
 
     generateDeserializer() {
-        const enumOptionCodes = this.enumOptions.map(
-            ({ name }, index) => `case ${index}: return deserialize${name}(buff, pos + 4);`
-        );
+        const enumOptionCodes = this.enumOptions.map(({ name }, index) => (
+            `case ${index}: return deserialize${name}(buff, pos + ${this.childOffset});`
+        ));
 
         return `function deserialize${this.name}(buff, pos) {
-            switch (buff.readUInt8(pos)) {
+            switch (buff.readUInt8(${posStr(this.emptyBefore)})) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
@@ -136,7 +139,6 @@ const enums = new Map();
  * Enum value class
  */
 class EnumValue extends Kind {
-    length = 1;
     align = 1;
     enumOptions = null;
 
@@ -150,9 +152,10 @@ class EnumValue extends Kind {
         super();
         Object.assign(this, options);
 
-        enumValues.set(cacheKey, this);
-
         this.enumOptions = enumOptions;
+        if (!this.length) this.length = 1 + this.emptyBefore;
+
+        enumValues.set(cacheKey, this);
     }
 
     getName() {
@@ -165,7 +168,7 @@ class EnumValue extends Kind {
         ));
 
         return `function deserialize${this.name}(buff, pos) {
-            switch (buff.readUInt8(pos)) {
+            switch (buff.readUInt8(${posStr(this.emptyBefore)})) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
@@ -200,14 +203,16 @@ class Option extends Kind {
 
     init() {
         this.childType = initType(this.childType);
-        if (!this.childOffset) this.childOffset = this.childType.align;
-        if (!this.align) this.align = this.childType.align;
+        if (!this.childOffset) this.childOffset = this.emptyBefore + this.childType.align;
         if (!this.length) this.length = this.childOffset + this.childType.length;
+        if (!this.align) this.align = this.childType.align;
     }
 
     generateDeserializer() {
+        const pos = posStr(this.emptyBefore),
+            childName = this.childType.name;
         return `function deserialize${this.name}(buff, pos) {
-            return deserializeOption(buff, pos, deserialize${this.childType.name}, ${this.childOffset});
+            return deserializeOption(buff, ${pos}, deserialize${childName}, ${this.childOffset});
         }`;
     }
 }
@@ -218,7 +223,6 @@ const optionals = new Map();
  * Box class
  */
 class Box extends Kind {
-    length = 4;
     align = 4;
     childType = null;
 
@@ -230,6 +234,7 @@ class Box extends Kind {
         Object.assign(this, options);
 
         this.childType = childType;
+        if (!this.length) this.length = 4 + this.emptyBefore;
 
         boxes.set(childType, this);
     }
@@ -244,7 +249,7 @@ class Box extends Kind {
 
     generateDeserializer() {
         return `function deserialize${this.name}(buff, pos) {
-            return deserializeBox(buff, pos, deserialize${this.childType.name});
+            return deserializeBox(buff, ${posStr(this.emptyBefore)}, deserialize${this.childType.name});
         }`;
     }
 }
@@ -255,7 +260,6 @@ const boxes = new Map();
  * Vec class
  */
 class Vec extends Kind {
-    length = 8;
     align = 4;
     childType = null;
     childLength = null;
@@ -268,6 +272,7 @@ class Vec extends Kind {
         Object.assign(this, options);
 
         this.childType = childType;
+        if (!this.length) this.length = 8 + this.emptyBefore;
 
         vecs.set(childType, this);
     }
@@ -282,8 +287,9 @@ class Vec extends Kind {
     }
 
     generateDeserializer() {
+        const pos = posStr(this.emptyBefore);
         return `function deserialize${this.name}(buff, pos) {
-            return deserializeVec(buff, pos, deserialize${this.childType.name}, ${this.childLength});
+            return deserializeVec(buff, ${pos}, deserialize${this.childType.name}, ${this.childLength});
         }`;
     }
 }
@@ -389,6 +395,10 @@ function getAligned(pos, align) {
     const modulus = pos % align;
     if (modulus === 0) return pos;
     return pos + align - modulus;
+}
+
+function posStr(offset) {
+    return offset === 0 ? 'pos' : `pos + ${offset}`;
 }
 
 /**

@@ -64,19 +64,11 @@ module.exports = {
         }
     ),
 
-    PropertyName: Custom({
-        // `PropertyNameWrapped` is 36 bytes length.
-        // 4 empty bytes before and after `PropertyNameWrapped`.
-        // TODO Not sure why
-        deserialize(buff, pos) {
-            return deserializePropertyNameWrapped(buff, pos + 4);
-        },
-        dependencies: ['PropertyNameWrapped'],
-        length: 44,
-        align: 4 // TODO Remove wrapping with `align = 8`?
-    }),
-    PropertyNameWrapped: Enum([
-        'Identifier', 'StringLiteral', 'NumericLiteral', 'Computed',
-        'BigIntLiteral'
-    ])
+    PropertyName: Enum(
+        [
+            'Identifier', 'StringLiteral', 'NumericLiteral', 'Computed',
+            'BigIntLiteral'
+        ],
+        { emptyBefore: 4 } // TODO Not sure why
+    )
 };

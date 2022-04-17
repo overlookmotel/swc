@@ -6,18 +6,13 @@ const { Node, Enum, Option, Custom } = require('../kinds.js');
 // Exports
 
 module.exports = {
-    Literal: Custom({
-        deserialize(buff, pos) {
-            return deserializeLiteralWrapped(buff, pos + 4); // TODO Not sure why +4
-        },
-        dependencies: ['LiteralWrapped'],
-        length: 40, // `LiteralWrapped` length = 36
-        align: 4 // TODO Remove wrapping with `align = 8`?
-    }),
-    LiteralWrapped: Enum([
-        'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
-        'BigIntLiteral', 'RegExpLiteral', 'JSXText'
-    ]),
+    Literal: Enum(
+        [
+            'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
+            'BigIntLiteral', 'RegExpLiteral', 'JSXText'
+        ],
+        { emptyBefore: 4 } // TODO Not sure why
+    ),
 
     StringLiteral: Node({ value: 'JsWord', raw: Option('JsWord') }),
 
@@ -26,17 +21,18 @@ module.exports = {
     NullLiteral: Node({}),
 
     NumericLiteral: Custom({
+        // Empty bytes: 4 before span, 4 after span, 8 after value
+        // TODO Not sure why
         deserialize(buff, pos) {
             return {
                 type: 'NumericLiteral',
-                span: deserializeSpan(buff, pos + 4), // TODO Not sure why +4
-                // TODO Not sure why +4 after span
+                span: deserializeSpan(buff, pos + 4),
                 value: new Float64Array(buff.buffer, buff.byteOffset + pos + 20, 1)[0]
             };
         },
         dependencies: ['Span'],
-        length: 28,
-        align: 4 // TODO Remove wrapping with `align = 8`?
+        length: 36,
+        align: 4
     }),
 
     BigIntLiteral: Node({ value: 'BigIntValue' }),

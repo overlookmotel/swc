@@ -1183,34 +1183,26 @@ function deserializeMethodProperty(buff, pos) {
 }
 
 function deserializePropertyName(buff, pos) {
-    return deserializePropertyNameWrapped(buff, pos + 4);
-}
-
-function deserializePropertyNameWrapped(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return deserializeIdentifier(buff, pos + 4);
-        case 1: return deserializeStringLiteral(buff, pos + 4);
-        case 2: return deserializeNumericLiteral(buff, pos + 4);
-        case 3: return deserializeComputed(buff, pos + 4);
-        case 4: return deserializeBigIntLiteral(buff, pos + 4);
-        default: throw new Error('Unexpected enum value for PropertyNameWrapped');
+    switch (buff.readUInt8(pos + 4)) {
+        case 0: return deserializeIdentifier(buff, pos + 8);
+        case 1: return deserializeStringLiteral(buff, pos + 8);
+        case 2: return deserializeNumericLiteral(buff, pos + 8);
+        case 3: return deserializeComputed(buff, pos + 8);
+        case 4: return deserializeBigIntLiteral(buff, pos + 8);
+        default: throw new Error('Unexpected enum value for PropertyName');
     }
 }
 
 function deserializeLiteral(buff, pos) {
-    return deserializeLiteralWrapped(buff, pos + 4); // TODO Not sure why +4
-}
-
-function deserializeLiteralWrapped(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return deserializeStringLiteral(buff, pos + 4);
-        case 1: return deserializeBooleanLiteral(buff, pos + 4);
-        case 2: return deserializeNullLiteral(buff, pos + 4);
-        case 3: return deserializeNumericLiteral(buff, pos + 4);
-        case 4: return deserializeBigIntLiteral(buff, pos + 4);
-        case 5: return deserializeRegExpLiteral(buff, pos + 4);
-        case 6: return deserializeJSXText(buff, pos + 4);
-        default: throw new Error('Unexpected enum value for LiteralWrapped');
+    switch (buff.readUInt8(pos + 4)) {
+        case 0: return deserializeStringLiteral(buff, pos + 8);
+        case 1: return deserializeBooleanLiteral(buff, pos + 8);
+        case 2: return deserializeNullLiteral(buff, pos + 8);
+        case 3: return deserializeNumericLiteral(buff, pos + 8);
+        case 4: return deserializeBigIntLiteral(buff, pos + 8);
+        case 5: return deserializeRegExpLiteral(buff, pos + 8);
+        case 6: return deserializeJSXText(buff, pos + 8);
+        default: throw new Error('Unexpected enum value for Literal');
     }
 }
 
@@ -1241,8 +1233,7 @@ function deserializeNullLiteral(buff, pos) {
 function deserializeNumericLiteral(buff, pos) {
     return {
         type: 'NumericLiteral',
-        span: deserializeSpan(buff, pos + 4), // TODO Not sure why +4
-        // TODO Not sure why +4 after span
+        span: deserializeSpan(buff, pos + 4),
         value: new Float64Array(buff.buffer, buff.byteOffset + pos + 20, 1)[0]
     };
 }

@@ -69,7 +69,7 @@ class Node extends Kind {
 
     generateDeserializer() {
         const propsCodes = this.propsWithPos.map(({ key, prop, pos }) => {
-            return `${key}: deserialize${prop.name}(buff, pos${pos ? ` + ${pos}` : ''})`;
+            return `${key}: deserialize${prop.name}(buff, ${posStr(pos)})`;
         });
 
         if (!this.noType) propsCodes.unshift(`type: '${this.nodeName}'`);
@@ -397,6 +397,11 @@ function getAligned(pos, align) {
     return pos + align - modulus;
 }
 
+/**
+ * Create position string with offset.
+ * @param {number} offset - Offset
+ * @returns {number} - Position string
+ */
 function posStr(offset) {
     return offset === 0 ? 'pos' : `pos + ${offset}`;
 }

@@ -1570,11 +1570,12 @@ function deserializeOptionModuleExportName(buff, pos) {
 }
 
 function deserializeVecImportSpecifier(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeImportSpecifier(buff, vecPos + i * 84));
+        entries[i] = deserializeImportSpecifier(buff, vecPos + i * 84);
     }
     return entries;
 }
@@ -1594,11 +1595,12 @@ function deserializeOptionExpressionOrSpread(buff, pos) {
 }
 
 function deserializeVecOptionExpressionOrSpread(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeOptionExpressionOrSpread(buff, vecPos + i * 24));
+        entries[i] = deserializeOptionExpressionOrSpread(buff, vecPos + i * 24);
     }
     return entries;
 }
@@ -1611,11 +1613,12 @@ function deserializeOptionIdentifier(buff, pos) {
 }
 
 function deserializeVecDecorator(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeDecorator(buff, vecPos + i * 16));
+        entries[i] = deserializeDecorator(buff, vecPos + i * 16);
     }
     return entries;
 }
@@ -1640,11 +1643,12 @@ function deserializeOptionPattern(buff, pos) {
 }
 
 function deserializeVecOptionPattern(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeOptionPattern(buff, vecPos + i * 56));
+        entries[i] = deserializeOptionPattern(buff, vecPos + i * 56);
     }
     return entries;
 }
@@ -1662,21 +1666,23 @@ function deserializeOptionBoxExpression(buff, pos) {
 }
 
 function deserializeVecObjectPatternProperty(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeObjectPatternProperty(buff, vecPos + i * 56));
+        entries[i] = deserializeObjectPatternProperty(buff, vecPos + i * 56);
     }
     return entries;
 }
 
 function deserializeVecParameter(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeParameter(buff, vecPos + i * 72));
+        entries[i] = deserializeParameter(buff, vecPos + i * 72);
     }
     return entries;
 }
@@ -1694,11 +1700,12 @@ function deserializeOptionBoxStatement(buff, pos) {
 }
 
 function deserializeVecSwitchCase(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeSwitchCase(buff, vecPos + i * 28));
+        entries[i] = deserializeSwitchCase(buff, vecPos + i * 28);
     }
     return entries;
 }
@@ -1711,11 +1718,12 @@ function deserializeOptionCatchClause(buff, pos) {
 }
 
 function deserializeVecVariableDeclarator(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeVariableDeclarator(buff, vecPos + i * 76));
+        entries[i] = deserializeVariableDeclarator(buff, vecPos + i * 76);
     }
     return entries;
 }
@@ -1761,21 +1769,23 @@ const enumOptionsTsParamPropOrParameter = [
 ];
 
 function deserializeVecTsParamPropOrParameter(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeTsParamPropOrParameter(buff, vecPos + i * 76));
+        entries[i] = deserializeTsParamPropOrParameter(buff, vecPos + i * 76);
     }
     return entries;
 }
 
 function deserializeVecTsTypeParameter(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeTsTypeParameter(buff, vecPos + i * 12));
+        entries[i] = deserializeTsTypeParameter(buff, vecPos + i * 12);
     }
     return entries;
 }
@@ -1788,21 +1798,23 @@ function deserializeOptionTsTypeParamDeclaration(buff, pos) {
 }
 
 function deserializeVecClassMember(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeClassMember(buff, vecPos + i * 168));
+        entries[i] = deserializeClassMember(buff, vecPos + i * 168);
     }
     return entries;
 }
 
 function deserializeVecBoxTsType(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeBoxTsType(buff, vecPos + i * 4));
+        entries[i] = deserializeBoxTsType(buff, vecPos + i * 4);
     }
     return entries;
 }
@@ -1815,11 +1827,12 @@ function deserializeOptionTsTypeParameterInstantiation(buff, pos) {
 }
 
 function deserializeVecTsExpressionWithTypeArg(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeTsExpressionWithTypeArg(buff, vecPos + i * 12));
+        entries[i] = deserializeTsExpressionWithTypeArg(buff, vecPos + i * 12);
     }
     return entries;
 }
@@ -1832,11 +1845,12 @@ function deserializeOptionTsTypeParameterDeclaration(buff, pos) {
 }
 
 function deserializeVecStatement(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeStatement(buff, vecPos + i * 152));
+        entries[i] = deserializeStatement(buff, vecPos + i * 152);
     }
     return entries;
 }
@@ -1888,11 +1902,12 @@ const enumOptionsSuperOrImportOrBoxExpression = [
 ];
 
 function deserializeVecExpressionOrSpread(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeExpressionOrSpread(buff, vecPos + i * 20));
+        entries[i] = deserializeExpressionOrSpread(buff, vecPos + i * 20);
     }
     return entries;
 }
@@ -1905,31 +1920,34 @@ function deserializeOptionVecExpressionOrSpread(buff, pos) {
 }
 
 function deserializeVecBoxExpression(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeBoxExpression(buff, vecPos + i * 4));
+        entries[i] = deserializeBoxExpression(buff, vecPos + i * 4);
     }
     return entries;
 }
 
 function deserializeVecTemplateElement(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeTemplateElement(buff, vecPos + i * 36));
+        entries[i] = deserializeTemplateElement(buff, vecPos + i * 36);
     }
     return entries;
 }
 
 function deserializeVecPattern(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializePattern(buff, vecPos + i * 52));
+        entries[i] = deserializePattern(buff, vecPos + i * 52);
     }
     return entries;
 }
@@ -1978,11 +1996,12 @@ const enumOptionsSpreadElementOrBoxObjectProperty = [
 ];
 
 function deserializeVecSpreadElementOrBoxObjectProperty(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeSpreadElementOrBoxObjectProperty(buff, vecPos + i * 20));
+        entries[i] = deserializeSpreadElementOrBoxObjectProperty(buff, vecPos + i * 20);
     }
     return entries;
 }
@@ -1995,11 +2014,12 @@ function deserializeOptionObjectExpression(buff, pos) {
 }
 
 function deserializeVecExportSpecifier(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeExportSpecifier(buff, vecPos + i * 96));
+        entries[i] = deserializeExportSpecifier(buff, vecPos + i * 96);
     }
     return entries;
 }
@@ -2035,11 +2055,12 @@ const enumOptionsModuleDeclarationOrStatement = [
 ];
 
 function deserializeVecModuleDeclarationOrStatement(buff, pos) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
     const vecPos = getPtr(buff, pos),
-        numEntries = buff.readUInt32LE(pos + 4);
-    const entries = [];
+        entries = new Array(numEntries);
     for (let i = 0; i < numEntries; i++) {
-        entries.push(deserializeModuleDeclarationOrStatement(buff, vecPos + i * 156));
+        entries[i] = deserializeModuleDeclarationOrStatement(buff, vecPos + i * 156);
     }
     return entries;
 }

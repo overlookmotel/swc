@@ -9,7 +9,7 @@ function deserialialize(buff) {
 }
 
 function deserializeProgram(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeModule(buff, pos + 4);
         case 1: return deserializeScript(buff, pos + 4);
         default: throw new Error('Unexpected enum value for Program');
@@ -35,7 +35,7 @@ function deserializeScript(buff, pos) {
 }
 
 function deserializeModuleDeclaration(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeImportDeclaration(buff, pos + 4);
         case 1: return deserializeExportDeclaration(buff, pos + 4);
         case 2: return deserializeExportNamedDeclaration(buff, pos + 4);
@@ -61,7 +61,7 @@ function deserializeImportDeclaration(buff, pos) {
 }
 
 function deserializeImportSpecifier(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeImportNamedSpecifier(buff, pos + 4);
         case 1: return deserializeImportDefaultSpecifier(buff, pos + 4);
         case 2: return deserializeImportNamespaceSpecifier(buff, pos + 4);
@@ -115,7 +115,7 @@ function deserializeExportNamedDeclaration(buff, pos) {
 }
 
 function deserializeExportSpecifier(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeExportNamespaceSpecifier(buff, pos + 4);
         case 1: return deserializeExportDefaultSpecifier(buff, pos + 4);
         case 2: return deserializeExportNamedSpecifier(buff, pos + 4);
@@ -175,7 +175,7 @@ function deserializeExportAllDeclaration(buff, pos) {
 }
 
 function deserializeModuleExportName(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializeStringLiteral(buff, pos + 4);
         default: throw new Error('Unexpected enum value for ModuleExportName');
@@ -183,7 +183,7 @@ function deserializeModuleExportName(buff, pos) {
 }
 
 function deserializeStatement(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeBlockStatement(buff, pos + 4);
         case 1: return deserializeEmptyStatement(buff, pos + 4);
         case 2: return deserializeDebuggerStatement(buff, pos + 4);
@@ -216,7 +216,7 @@ function deserializeBlockStatement(buff, pos) {
 }
 
 function deserializeOptionBlockStatement(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeBlockStatement(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionBlockStatement');
@@ -393,7 +393,7 @@ function deserializeExpressionStatement(buff, pos) {
 }
 
 function deserializeDeclaration(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeClassDeclaration(buff, pos + 4);
         case 1: return deserializeFunctionDeclaration(buff, pos + 4);
         case 2: return deserializeVariableDeclaration(buff, pos + 4);
@@ -527,7 +527,7 @@ function deserializeClassExpression(buff, pos) {
 }
 
 function deserializeClassMember(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeConstructor(buff, pos + 4);
         case 1: return deserializeClassMethod(buff, pos + 4);
         case 2: return deserializePrivateMethod(buff, pos + 4);
@@ -649,7 +649,7 @@ function deserializeFunction(buff, pos) {
 }
 
 function deserializePattern(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeBindingIdentifier(buff, pos + 4);
         case 1: return deserializeArrayPattern(buff, pos + 4);
         case 2: return deserializeRestElement(buff, pos + 4);
@@ -702,7 +702,7 @@ function deserializeObjectPattern(buff, pos) {
 }
 
 function deserializeObjectPatternProperty(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeKeyValuePatternProperty(buff, pos + 4);
         case 1: return deserializeAssignmentPatternProperty(buff, pos + 4);
         case 2: return deserializeRestElement(buff, pos + 4);
@@ -738,7 +738,7 @@ function deserializeAssignmentPattern(buff, pos) {
 }
 
 function deserializeExpression(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeThisExpression(buff, pos + 4);
         case 1: return deserializeArrayExpression(buff, pos + 4);
         case 2: return deserializeObjectExpression(buff, pos + 4);
@@ -805,7 +805,7 @@ function deserializeUnaryExpression(buff, pos) {
 }
 
 function deserializeUnaryOperator(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return '-';
         case 1: return '+';
         case 2: return '!';
@@ -846,7 +846,7 @@ function deserializeBinaryExpression(buff, pos) {
 }
 
 function deserializeBinaryOperator(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return '==';
         case 1: return '!=';
         case 2: return '===';
@@ -887,7 +887,7 @@ function deserializeAssignmentExpression(buff, pos) {
 }
 
 function deserializeAssignmentOperator(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return '=';
         case 1: return '+=';
         case 2: return '-=';
@@ -1020,7 +1020,7 @@ function deserializeMetaProperty(buff, pos) {
 }
 
 function deserializeMetaPropertyKind(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return 'new.target';
         case 1: return 'import.meta';
         default: throw new Error('Unexpected enum value for MetaPropertyKind');
@@ -1123,7 +1123,7 @@ function deserializeSpreadElement(buff, pos) {
 }
 
 function deserializeObjectProperty(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializeKeyValueProperty(buff, pos + 4);
         case 2: return deserializeAssignmentProperty(buff, pos + 4);
@@ -1191,7 +1191,7 @@ function deserializePropertyName(buff, pos) {
 }
 
 function deserializePropertyNameWrapped(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializeStringLiteral(buff, pos + 4);
         case 2: return deserializeNumericLiteral(buff, pos + 4);
@@ -1206,7 +1206,7 @@ function deserializeLiteral(buff, pos) {
 }
 
 function deserializeLiteralWrapped(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeStringLiteral(buff, pos + 4);
         case 1: return deserializeBooleanLiteral(buff, pos + 4);
         case 2: return deserializeNullLiteral(buff, pos + 4);
@@ -1515,7 +1515,7 @@ function deserializeJsWord(buff, pos) {
 }
 
 function deserializeBoolean(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return false;
         case 1: return true;
         default: throw new Error('Unexpected enum value for Boolean');
@@ -1534,7 +1534,7 @@ function deserializeBooleanBitAnd1Empty(buff, pos) {
     switch (buff.readUInt8(pos)) {
         case 0: return false;
         case 1: return true;
-        default: throw new Error('Unexpected enum value for BooleanBit');
+        default: throw new Error('Unexpected enum value for BooleanBitAnd1Empty');
     }
 }
 
@@ -1542,7 +1542,7 @@ function deserializeBooleanBitAnd2Empty(buff, pos) {
     switch (buff.readUInt8(pos)) {
         case 0: return false;
         case 1: return true;
-        default: throw new Error('Unexpected enum value for BooleanBit');
+        default: throw new Error('Unexpected enum value for BooleanBitAnd2Empty');
     }
 }
 
@@ -1555,7 +1555,7 @@ function deserializeSpan(buff, pos) {
 }
 
 function deserializeOptionJsWord(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeJsWord(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionJsWord');
@@ -1563,7 +1563,7 @@ function deserializeOptionJsWord(buff, pos) {
 }
 
 function deserializeOptionModuleExportName(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeModuleExportName(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionModuleExportName');
@@ -1582,7 +1582,7 @@ function deserializeVecImportSpecifier(buff, pos) {
 }
 
 function deserializeOptionSpan(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeSpan(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionSpan');
@@ -1590,7 +1590,7 @@ function deserializeOptionSpan(buff, pos) {
 }
 
 function deserializeOptionExpressionOrSpread(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeExpressionOrSpread(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionExpressionOrSpread');
@@ -1609,7 +1609,7 @@ function deserializeVecOptionExpressionOrSpread(buff, pos) {
 }
 
 function deserializeOptionIdentifier(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeIdentifier(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionIdentifier');
@@ -1633,7 +1633,7 @@ function deserializeBoxTsType(buff, pos) {
 }
 
 function deserializeOptionTsTypeAnnotation(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeTsTypeAnnotation(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionTsTypeAnnotation');
@@ -1641,7 +1641,7 @@ function deserializeOptionTsTypeAnnotation(buff, pos) {
 }
 
 function deserializeOptionPattern(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializePattern(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionPattern');
@@ -1665,7 +1665,7 @@ function deserializeBoxPattern(buff, pos) {
 }
 
 function deserializeOptionBoxExpression(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeBoxExpression(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionBoxExpression');
@@ -1700,7 +1700,7 @@ function deserializeBoxStatement(buff, pos) {
 }
 
 function deserializeOptionBoxStatement(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeBoxStatement(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionBoxStatement');
@@ -1719,7 +1719,7 @@ function deserializeVecSwitchCase(buff, pos) {
 }
 
 function deserializeOptionCatchClause(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeCatchClause(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionCatchClause');
@@ -1738,7 +1738,7 @@ function deserializeVecVariableDeclarator(buff, pos) {
 }
 
 function deserializeVariableDeclarationOrBoxExpression(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeVariableDeclaration(buff, pos + 4);
         case 1: return deserializeBoxExpression(buff, pos + 4);
         default: throw new Error('Unexpected enum value for VariableDeclarationOrBoxExpression');
@@ -1746,7 +1746,7 @@ function deserializeVariableDeclarationOrBoxExpression(buff, pos) {
 }
 
 function deserializeOptionVariableDeclarationOrBoxExpression(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeVariableDeclarationOrBoxExpression(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionVariableDeclarationOrBoxExpression');
@@ -1754,7 +1754,7 @@ function deserializeOptionVariableDeclarationOrBoxExpression(buff, pos) {
 }
 
 function deserializeVariableDeclarationOrPattern(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeVariableDeclaration(buff, pos + 4);
         case 1: return deserializePattern(buff, pos + 4);
         default: throw new Error('Unexpected enum value for VariableDeclarationOrPattern');
@@ -1762,7 +1762,7 @@ function deserializeVariableDeclarationOrPattern(buff, pos) {
 }
 
 function deserializeTsParamPropOrParameter(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeTsParamProp(buff, pos + 4);
         case 1: return deserializeParameter(buff, pos + 4);
         default: throw new Error('Unexpected enum value for TsParamPropOrParameter');
@@ -1792,7 +1792,7 @@ function deserializeVecTsTypeParameter(buff, pos) {
 }
 
 function deserializeOptionTsTypeParamDeclaration(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeTsTypeParamDeclaration(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionTsTypeParamDeclaration');
@@ -1822,7 +1822,7 @@ function deserializeVecBoxTsType(buff, pos) {
 }
 
 function deserializeOptionTsTypeParameterInstantiation(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeTsTypeParameterInstantiation(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionTsTypeParameterInstantiation');
@@ -1841,7 +1841,7 @@ function deserializeVecTsExpressionWithTypeArg(buff, pos) {
 }
 
 function deserializeOptionTsTypeParameterDeclaration(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeTsTypeParameterDeclaration(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionTsTypeParameterDeclaration');
@@ -1860,7 +1860,7 @@ function deserializeVecStatement(buff, pos) {
 }
 
 function deserializeBoxExpressionOrBoxPattern(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeBoxExpression(buff, pos + 4);
         case 1: return deserializeBoxPattern(buff, pos + 4);
         default: throw new Error('Unexpected enum value for BoxExpressionOrBoxPattern');
@@ -1868,7 +1868,7 @@ function deserializeBoxExpressionOrBoxPattern(buff, pos) {
 }
 
 function deserializeIdentifierOrPrivateNameOrComputed(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializePrivateName(buff, pos + 4);
         case 2: return deserializeComputed(buff, pos + 4);
@@ -1877,7 +1877,7 @@ function deserializeIdentifierOrPrivateNameOrComputed(buff, pos) {
 }
 
 function deserializeIdentifierOrComputed(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializeComputed(buff, pos + 4);
         default: throw new Error('Unexpected enum value for IdentifierOrComputed');
@@ -1885,7 +1885,7 @@ function deserializeIdentifierOrComputed(buff, pos) {
 }
 
 function deserializeSuperOrImportOrBoxExpression(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeSuper(buff, pos + 4);
         case 1: return deserializeImport(buff, pos + 4);
         case 2: return deserializeBoxExpression(buff, pos + 4);
@@ -1905,7 +1905,7 @@ function deserializeVecExpressionOrSpread(buff, pos) {
 }
 
 function deserializeOptionVecExpressionOrSpread(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeVecExpressionOrSpread(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionVecExpressionOrSpread');
@@ -1946,7 +1946,7 @@ function deserializeVecPattern(buff, pos) {
 }
 
 function deserializeBlockStatementOrBoxExpression(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeBlockStatement(buff, pos + 4);
         case 1: return deserializeBoxExpression(buff, pos + 4);
         default: throw new Error('Unexpected enum value for BlockStatementOrBoxExpression');
@@ -1954,7 +1954,7 @@ function deserializeBlockStatementOrBoxExpression(buff, pos) {
 }
 
 function deserializeMemberExpressionOrOptionalChainingCall(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeMemberExpression(buff, pos + 4);
         case 1: return deserializeOptionalChainingCall(buff, pos + 4);
         default: throw new Error('Unexpected enum value for MemberExpressionOrOptionalChainingCall');
@@ -1972,7 +1972,7 @@ function deserializeBoxObjectProperty(buff, pos) {
 }
 
 function deserializeSpreadElementOrBoxObjectProperty(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeSpreadElement(buff, pos + 4);
         case 1: return deserializeBoxObjectProperty(buff, pos + 4);
         default: throw new Error('Unexpected enum value for SpreadElementOrBoxObjectProperty');
@@ -1991,7 +1991,7 @@ function deserializeVecSpreadElementOrBoxObjectProperty(buff, pos) {
 }
 
 function deserializeOptionObjectExpression(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeObjectExpression(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionObjectExpression');
@@ -2010,7 +2010,7 @@ function deserializeVecExportSpecifier(buff, pos) {
 }
 
 function deserializeOptionStringLiteral(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return null;
         case 1: return deserializeStringLiteral(buff, pos + 4);
         default: throw new Error('Unexpected option value for OptionStringLiteral');
@@ -2018,7 +2018,7 @@ function deserializeOptionStringLiteral(buff, pos) {
 }
 
 function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeClassExpression(buff, pos + 4);
         case 1: return deserializeFunctionExpression(buff, pos + 4);
         case 2: return deserializeTsInterfaceDeclaration(buff, pos + 4);
@@ -2027,7 +2027,7 @@ function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
 }
 
 function deserializeModuleDeclarationOrStatement(buff, pos) {
-    switch (buff.readUInt32LE(pos)) {
+    switch (buff.readUInt8(pos)) {
         case 0: return deserializeModuleDeclaration(buff, pos + 4);
         case 1: return deserializeStatement(buff, pos + 4);
         default: throw new Error('Unexpected enum value for ModuleDeclarationOrStatement');

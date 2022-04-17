@@ -21,13 +21,11 @@ module.exports = {
 
             return buff.toString('utf8', pos, pos + len); // TODO What encoding?
         },
-        length: 8
+        length: 8,
+        align: 4
     }),
 
     Boolean: EnumValue([false, true]),
-    BooleanByte: EnumValue([false, true], { length: 1 }),
-    BooleanByteAnd1Empty: EnumValue([false, true], { length: 2 }),
-    BooleanByteAnd2Empty: EnumValue([false, true], { length: 3 }),
 
     Span: Custom({
         deserialize(buff, pos) {
@@ -37,6 +35,7 @@ module.exports = {
                 ctxt: buff.readUInt32LE(pos + 8)
             };
         },
-        length: 12
+        length: 12,
+        align: 4
     })
 };

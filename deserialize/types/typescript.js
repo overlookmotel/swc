@@ -31,12 +31,5 @@ module.exports = {
 
     TsType: Node({}), // TODO
 
-    Accessibility: EnumValue(['public', 'protected', 'private'], { length: 1 }), // TODO Needs tests
-    OptionAccessibility: Custom({ // TODO Needs tests
-        deserialize(buff, pos) {
-            return deserializeOption(buff, pos, deserializeAccessibility, 1);
-        },
-        dependencies: ['Accessibility'],
-        length: 2
-    })
+    Accessibility: EnumValue(['public', 'protected', 'private']) // TODO Needs tests
 };

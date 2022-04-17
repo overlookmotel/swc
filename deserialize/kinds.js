@@ -15,6 +15,7 @@ let types; // Will be injected later by `init()`
 class Kind {
     name = null;
     length = null;
+    align = null;
     isInitialized = false;
 
     getName() {
@@ -28,11 +29,13 @@ class Kind {
  * AST node class
  */
 class Node extends Kind {
+    align = 4;
     props = null;
     nodeName = null;
     keys = null;
     noSpan = false;
     noType = false;
+    propsWithPos = null;
 
     constructor(props, options = {}) {
         super();
@@ -48,27 +51,26 @@ class Node extends Kind {
     }
 
     init() {
-        const { props } = this;
-        let length = 0;
-        for (let [key, prop] of Object.entries(props)) {
+        const propsWithPosMap = {};
+        let pos = 0;
+        for (let [key, prop] of Object.entries(this.props)) {
             prop = initType(prop);
-            props[key] = prop;
-            length += prop.length;
+            pos = getAligned(pos, prop.align);
+            propsWithPosMap[key] = { key, prop, pos };
+            pos += prop.length;
         }
-        if (!this.length) this.length = length;
+
+        this.propsWithPos = this.keys.map(key => propsWithPosMap[key]);
+
+        if (!this.length) this.length = getAligned(pos, this.align);
         if (!this.nodeName) this.nodeName = this.name;
     }
 
     generateDeserializer() {
-        let pos = 0;
-        const propsCodesMap = Object.create(null);
-        for (const [key, prop] of Object.entries(this.props)) {
-            const posStr = 'pos' + (pos ? ` + ${pos}` : '');
-            pos += prop.length;
-            propsCodesMap[key] = `${key}: deserialize${prop.name}(buff, ${posStr})`;
-        }
+        const propsCodes = this.propsWithPos.map(({ key, prop, pos }) => {
+            return `${key}: deserialize${prop.name}(buff, pos${pos ? ` + ${pos}` : ''})`;
+        });
 
-        const propsCodes = this.keys.map(key => propsCodesMap[key]);
         if (!this.noType) propsCodes.unshift(`type: '${this.nodeName}'`);
 
         return `function deserialize${this.name}(buff, pos) {
@@ -83,6 +85,7 @@ class Node extends Kind {
  * Enum class
  */
 class Enum extends Kind {
+    align = 4;
     enumOptions = null;
 
     constructor(enumOptions, options) {
@@ -133,7 +136,8 @@ const enums = new Map();
  * Enum value class
  */
 class EnumValue extends Kind {
-    length = 4;
+    length = 1;
+    align = 1;
     enumOptions = null;
 
     constructor(enumOptions, options) {
@@ -176,6 +180,7 @@ const enumValues = new Map();
  */
 class Option extends Kind {
     childType = null;
+    childOffset = null;
 
     constructor(childType, options) {
         const optional = optionals.get(childType);
@@ -195,12 +200,14 @@ class Option extends Kind {
 
     init() {
         this.childType = initType(this.childType);
-        this.length = this.childType.length + 4;
+        if (!this.childOffset) this.childOffset = this.childType.align;
+        if (!this.align) this.align = this.childType.align;
+        if (!this.length) this.length = this.childOffset + this.childType.length;
     }
 
     generateDeserializer() {
         return `function deserialize${this.name}(buff, pos) {
-            return deserializeOption(buff, pos, deserialize${this.childType.name}, 4);
+            return deserializeOption(buff, pos, deserialize${this.childType.name}, ${this.childOffset});
         }`;
     }
 }
@@ -212,6 +219,7 @@ const optionals = new Map();
  */
 class Box extends Kind {
     length = 4;
+    align = 4;
     childType = null;
 
     constructor(childType, options) {
@@ -248,7 +256,9 @@ const boxes = new Map();
  */
 class Vec extends Kind {
     length = 8;
+    align = 4;
     childType = null;
+    childLength = null;
 
     constructor(childType, options) {
         const vec = vecs.get(childType);
@@ -268,12 +278,12 @@ class Vec extends Kind {
 
     init() {
         this.childType = initType(this.childType);
+        this.childLength = getAligned(this.childType.length, this.childType.align);
     }
 
     generateDeserializer() {
-        const { childType } = this;
         return `function deserialize${this.name}(buff, pos) {
-            return deserializeVec(buff, pos, deserialize${childType.name}, ${childType.length});
+            return deserializeVec(buff, pos, deserialize${this.childType.name}, ${this.childLength});
         }`;
     }
 }
@@ -351,11 +361,34 @@ function initType(type) {
         getTypeName(type);
         type.init();
         assert(typeof type.name === 'string', 'No type name');
-        assert(typeof type.length === 'number', `${type.name} type has no length`);
+        assert(isPositiveInteger(type.length), `${type.name} type has no length`);
+        assert(isPositiveInteger(type.align), `${type.name} type has no align`);
         types[type.name] = type;
     }
 
     return type;
+}
+
+/**
+ * Check if input is a positive integer.
+ * @param {*} num - Input
+ * @returns {boolean} - `true` if input is a positive integer
+ */
+function isPositiveInteger(num) {
+    return typeof num === 'number' && num !== 0 && !isNaN(num) && num % 1 === 0;
+}
+
+/**
+ * Round up position to specified alignment.
+ * e.g. `getAligned(12, 4) === 12`, `getAligned(10, 4) === 12`, `getAligned(11, 2) === 12`
+ * @param {number} pos - Position
+ * @param {number} align - Alignment
+ * @returns {number} - Aligned position
+ */
+function getAligned(pos, align) {
+    const modulus = pos % align;
+    if (modulus === 0) return pos;
+    return pos + align - modulus;
 }
 
 /**

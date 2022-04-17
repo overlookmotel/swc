@@ -125,7 +125,7 @@ class Enum extends Kind {
         ));
 
         return `function deserialize${this.name}(buff, pos) {
-            switch (buff.readUInt8(${posStr(this.emptyBefore)})) {
+            switch (buff[${posStr(this.emptyBefore)}]) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
@@ -168,7 +168,7 @@ class EnumValue extends Kind {
         ));
 
         return `function deserialize${this.name}(buff, pos) {
-            switch (buff.readUInt8(${posStr(this.emptyBefore)})) {
+            switch (buff[${posStr(this.emptyBefore)}]) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
@@ -416,8 +416,9 @@ function generateDeserializer(utils) {
         '// Generated code. Do not edit.',
         "'use strict';",
         "module.exports = deserialize;",
-        removeIndent(`function deserialize(buff) {
-            return deserializeProgram(buff, buff.length - ${types.Program.length});
+        removeIndent(`function deserialize(buffer) {
+            const buff = Buffer.from(buffer.buffer);
+            return deserializeProgram(buff, buffer.byteOffset + buffer.length - ${types.Program.length});
         }`),
         ''
     ].join('\n\n');
@@ -433,7 +434,10 @@ function generateDeserializer(utils) {
         code += deserializerCode + '\n\n';
     }
 
-    for (const utilName of ['deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr']) {
+    for (const utilName of [
+        'deserializeOption', 'deserializeBox', 'deserializeVec',
+        'getPtr', 'readUint32LE', 'readInt32LE'
+    ]) {
         code += utils[utilName].toString() + '\n\n';
     }
 

@@ -11,7 +11,8 @@ module.exports = {
             return deserializeLiteralWrapped(buff, pos + 4); // TODO Not sure why +4
         },
         dependencies: ['LiteralWrapped'],
-        length: 40 // `LiteralWrapped` length = 36
+        length: 40, // `LiteralWrapped` length = 36
+        align: 4 // TODO Remove wrapping with `align = 8`?
     }),
     LiteralWrapped: Enum([
         'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
@@ -34,7 +35,8 @@ module.exports = {
             };
         },
         dependencies: ['Span'],
-        length: 28
+        length: 28,
+        align: 4 // TODO Remove wrapping with `align = 8`?
     }),
 
     BigIntLiteral: Node({ value: 'BigIntValue' }),
@@ -60,7 +62,8 @@ module.exports = {
             return [1, parts]; // TODO What is the initial 1 for?
         },
         dependencies: ['JsWord'],
-        length: 8
+        length: 8,
+        align: 4
     }),
 
     RegExpLiteral: Node({ pattern: 'JsWord', flags: 'JsWord' })

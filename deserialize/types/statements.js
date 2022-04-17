@@ -14,11 +14,13 @@ module.exports = {
             'WhileStatement', 'DoWhileStatement', 'ForStatement', 'ForInStatement',
             'ForOfStatement', 'Declaration', 'ExpressionStatement'
         ],
-        { length: 152 }
+        { length: 152 } // Length explicit due to circularity
     ),
 
+    // Length explicit due to circularity
     BlockStatement: Node({ stmts: Vec('Statement') }, { length: 20 }),
-    OptionBlockStatement: Option('BlockStatement', { length: 24 }), // Length explicit due to circularity
+    // Length + align explicit due to circularity
+    OptionBlockStatement: Option('BlockStatement', { length: 24, align: 4 }),
 
     EmptyStatement: Node({}),
 

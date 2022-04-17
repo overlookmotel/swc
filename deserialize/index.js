@@ -406,7 +406,7 @@ function deserializeVariableDeclaration(buff, pos) {
         type: 'VariableDeclaration',
         span: deserializeSpan(buff, pos),
         kind: deserializeVariableDeclarationKind(buff, pos + 12),
-        declare: deserializeBooleanByteAnd2Empty(buff, pos + 13),
+        declare: deserializeBoolean(buff, pos + 13),
         declarations: deserializeVecVariableDeclarator(buff, pos + 16)
     };
 }
@@ -439,8 +439,8 @@ function deserializeFunctionDeclaration(buff, pos) {
         decorators: deserializeVecDecorator(buff, pos + 36),
         span: deserializeSpan(buff, pos + 44),
         body: deserializeOptionBlockStatement(buff, pos + 56),
-        generator: deserializeBooleanByte(buff, pos + 104),
-        async: deserializeBooleanByteAnd2Empty(buff, pos + 105),
+        generator: deserializeBoolean(buff, pos + 104),
+        async: deserializeBoolean(buff, pos + 105),
         typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, pos + 80),
         returnType: deserializeOptionTsTypeAnnotation(buff, pos + 108)
     };
@@ -454,8 +454,8 @@ function deserializeFunctionExpression(buff, pos) {
         decorators: deserializeVecDecorator(buff, pos + 36),
         span: deserializeSpan(buff, pos + 44),
         body: deserializeOptionBlockStatement(buff, pos + 56),
-        generator: deserializeBooleanByte(buff, pos + 104),
-        async: deserializeBooleanByteAnd2Empty(buff, pos + 105),
+        generator: deserializeBoolean(buff, pos + 104),
+        async: deserializeBoolean(buff, pos + 105),
         typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, pos + 80),
         returnType: deserializeOptionTsTypeAnnotation(buff, pos + 108)
     };
@@ -467,8 +467,8 @@ function deserializeArrowFunctionExpression(buff, pos) {
         span: deserializeSpan(buff, pos),
         params: deserializeVecPattern(buff, pos + 12),
         body: deserializeBlockStatementOrBoxExpression(buff, pos + 20),
-        async: deserializeBooleanByte(buff, pos + 68),
-        generator: deserializeBooleanByteAnd2Empty(buff, pos + 69),
+        async: deserializeBoolean(buff, pos + 68),
+        generator: deserializeBoolean(buff, pos + 69),
         typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, pos + 44),
         returnType: deserializeOptionTsTypeAnnotation(buff, pos + 72)
     };
@@ -555,11 +555,11 @@ function deserializeClassMethod(buff, pos) {
         key: deserializePropertyName(buff, pos),
         function: deserializeFunction(buff, pos + 56),
         kind: deserializeMethodKind(buff, pos + 156),
-        isStatic: deserializeBooleanByte(buff, pos + 157),
+        isStatic: deserializeBoolean(buff, pos + 157),
         accessibility: deserializeOptionAccessibility(buff, pos + 160),
-        isAbstract: deserializeBooleanByte(buff, pos + 158),
-        isOptional: deserializeBooleanByte(buff, pos + 159),
-        isOverride: deserializeBooleanByteAnd1Empty(buff, pos + 162)
+        isAbstract: deserializeBoolean(buff, pos + 158),
+        isOptional: deserializeBoolean(buff, pos + 159),
+        isOverride: deserializeBoolean(buff, pos + 162)
     };
 }
 
@@ -570,11 +570,11 @@ function deserializePrivateMethod(buff, pos) {
         key: deserializePrivateName(buff, pos + 12),
         function: deserializeFunction(buff, pos + 48),
         kind: deserializeMethodKind(buff, pos + 148),
-        isStatic: deserializeBooleanByte(buff, pos + 149),
+        isStatic: deserializeBoolean(buff, pos + 149),
         accessibility: deserializeOptionAccessibility(buff, pos + 152),
-        isAbstract: deserializeBooleanByte(buff, pos + 150),
-        isOptional: deserializeBooleanByte(buff, pos + 151),
-        isOverride: deserializeBooleanByteAnd1Empty(buff, pos + 154)
+        isAbstract: deserializeBoolean(buff, pos + 150),
+        isOptional: deserializeBoolean(buff, pos + 151),
+        isOverride: deserializeBoolean(buff, pos + 154)
     };
 }
 
@@ -587,13 +587,13 @@ function deserializeClassProperty(buff, pos) {
         typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 64),
         isStatic: deserializeBoolean(buff, pos + 92),
         decorators: deserializeVecDecorator(buff, pos + 84),
-        accessibility: deserializeOptionAccessibility(buff, pos + 96),
-        isAbstract: deserializeBooleanByte(buff, pos + 98),
-        isOptional: deserializeBooleanByte(buff, pos + 99),
-        isOverride: deserializeBooleanByte(buff, pos + 100),
-        readonly: deserializeBooleanByte(buff, pos + 101),
-        declare: deserializeBooleanByte(buff, pos + 102),
-        definite: deserializeBooleanByte(buff, pos + 103)
+        accessibility: deserializeOptionAccessibility(buff, pos + 93),
+        isAbstract: deserializeBoolean(buff, pos + 95),
+        isOptional: deserializeBoolean(buff, pos + 96),
+        isOverride: deserializeBoolean(buff, pos + 97),
+        readonly: deserializeBoolean(buff, pos + 98),
+        declare: deserializeBoolean(buff, pos + 99),
+        definite: deserializeBoolean(buff, pos + 100)
     };
 }
 
@@ -606,11 +606,11 @@ function deserializePrivateProperty(buff, pos) {
         typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 56),
         isStatic: deserializeBoolean(buff, pos + 84),
         decorators: deserializeVecDecorator(buff, pos + 76),
-        accessibility: deserializeOptionAccessibility(buff, pos + 88),
-        isOptional: deserializeBooleanByte(buff, pos + 90),
-        isOverride: deserializeBooleanByte(buff, pos + 91),
-        readonly: deserializeBooleanByte(buff, pos + 92),
-        definite: deserializeBooleanByteAnd1Empty(buff, pos + 93)
+        accessibility: deserializeOptionAccessibility(buff, pos + 85),
+        isOptional: deserializeBoolean(buff, pos + 87),
+        isOverride: deserializeBoolean(buff, pos + 88),
+        readonly: deserializeBoolean(buff, pos + 89),
+        definite: deserializeBoolean(buff, pos + 90)
     };
 }
 
@@ -637,8 +637,8 @@ function deserializeFunction(buff, pos) {
         decorators: deserializeVecDecorator(buff, pos + 8),
         span: deserializeSpan(buff, pos + 16),
         body: deserializeOptionBlockStatement(buff, pos + 28),
-        generator: deserializeBooleanByte(buff, pos + 76),
-        async: deserializeBooleanByteAnd2Empty(buff, pos + 77),
+        generator: deserializeBoolean(buff, pos + 76),
+        async: deserializeBoolean(buff, pos + 77),
         typeParameters: deserializeOptionTsTypeParamDeclaration(buff, pos + 52),
         returnType: deserializeOptionTsTypeAnnotation(buff, pos + 80)
     };
@@ -818,7 +818,7 @@ function deserializeUpdateExpression(buff, pos) {
         type: 'UpdateExpression',
         span: deserializeSpan(buff, pos),
         operator: deserializeUpdateOperator(buff, pos + 12),
-        prefix: deserializeBooleanByteAnd2Empty(buff, pos + 13),
+        prefix: deserializeBoolean(buff, pos + 13),
         argument: deserializeBoxExpression(buff, pos + 16)
     };
 }
@@ -1175,8 +1175,8 @@ function deserializeMethodProperty(buff, pos) {
         decorators: deserializeVecDecorator(buff, pos + 52),
         span: deserializeSpan(buff, pos + 60),
         body: deserializeOptionBlockStatement(buff, pos + 72),
-        generator: deserializeBooleanByte(buff, pos + 120),
-        async: deserializeBooleanByteAnd2Empty(buff, pos + 121),
+        generator: deserializeBoolean(buff, pos + 120),
+        async: deserializeBoolean(buff, pos + 121),
         typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, pos + 96),
         returnType: deserializeOptionTsTypeAnnotation(buff, pos + 124)
     };
@@ -1487,10 +1487,6 @@ function deserializeAccessibility(buff, pos) {
     }
 }
 
-function deserializeOptionAccessibility(buff, pos) {
-    return deserializeOption(buff, pos, deserializeAccessibility, 1);
-}
-
 function deserializeJsWord(buff, pos) {
     // 8 bytes. Last byte is length.
     // If length <= 7, bytes 0-6 contain the word.
@@ -1511,30 +1507,6 @@ function deserializeBoolean(buff, pos) {
         case 0: return false;
         case 1: return true;
         default: throw new Error('Unexpected enum value for Boolean');
-    }
-}
-
-function deserializeBooleanByte(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return false;
-        case 1: return true;
-        default: throw new Error('Unexpected enum value for BooleanByte');
-    }
-}
-
-function deserializeBooleanByteAnd1Empty(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return false;
-        case 1: return true;
-        default: throw new Error('Unexpected enum value for BooleanByteAnd1Empty');
-    }
-}
-
-function deserializeBooleanByteAnd2Empty(buff, pos) {
-    switch (buff.readUInt8(pos)) {
-        case 0: return false;
-        case 1: return true;
-        default: throw new Error('Unexpected enum value for BooleanByteAnd2Empty');
     }
 }
 
@@ -1660,6 +1632,10 @@ function deserializeTsParamPropOrParameter(buff, pos) {
 
 function deserializeVecTsParamPropOrParameter(buff, pos) {
     return deserializeVec(buff, pos, deserializeTsParamPropOrParameter, 76);
+}
+
+function deserializeOptionAccessibility(buff, pos) {
+    return deserializeOption(buff, pos, deserializeAccessibility, 1);
 }
 
 function deserializeVecTsTypeParameter(buff, pos) {

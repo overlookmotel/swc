@@ -45,7 +45,7 @@ module.exports = {
             span: 'Span',
             params: Vec(Enum(['TsParamProp', 'Parameter'])),
             body: 'OptionBlockStatement',
-            accessibility: 'OptionAccessibility', // TODO Needs tests
+            accessibility: Option('Accessibility'), // TODO Needs tests
             isOptional: 'Boolean' // TODO Needs tests
         },
         { keys: ['span', 'key', 'params', 'body', 'accessibility', 'isOptional'] }
@@ -57,11 +57,11 @@ module.exports = {
             span: 'Span',
             function: 'Function',
             kind: 'MethodKind',
-            isStatic: 'BooleanByte',
-            isAbstract: 'BooleanByte', // TODO Needs tests
-            isOptional: 'BooleanByte', // TODO Needs tests
-            accessibility: 'OptionAccessibility', // TODO Needs tests
-            isOverride: 'BooleanByteAnd1Empty' // TODO Needs tests
+            isStatic: 'Boolean',
+            isAbstract: 'Boolean', // TODO Needs tests
+            isOptional: 'Boolean', // TODO Needs tests
+            accessibility: Option('Accessibility'), // TODO Needs tests
+            isOverride: 'Boolean' // TODO Needs tests
         },
         {
             keys: [
@@ -77,11 +77,11 @@ module.exports = {
             key: 'PrivateName',
             function: 'Function',
             kind: 'MethodKind',
-            isStatic: 'BooleanByte',
-            isAbstract: 'BooleanByte', // TODO Needs tests
-            isOptional: 'BooleanByte', // TODO Needs tests
-            accessibility: 'OptionAccessibility', // TODO Needs tests
-            isOverride: 'BooleanByteAnd1Empty' // TODO Needs tests
+            isStatic: 'Boolean',
+            isAbstract: 'Boolean', // TODO Needs tests
+            isOptional: 'Boolean', // TODO Needs tests
+            accessibility: Option('Accessibility'), // TODO Needs tests
+            isOverride: 'Boolean' // TODO Needs tests
         },
         {
             keys: [
@@ -100,13 +100,13 @@ module.exports = {
             typeAnnotation: Option('TsTypeAnnotation'),
             decorators: Vec('Decorator'),
             isStatic: 'Boolean',
-            accessibility: 'OptionAccessibility', // TODO Needs tests
-            isAbstract: 'BooleanByte', // TODO Needs tests
-            isOptional: 'BooleanByte', // TODO Needs tests
-            isOverride: 'BooleanByte', // TODO Needs tests
-            readonly: 'BooleanByte', // TODO Needs tests
-            declare: 'BooleanByte', // TODO Needs tests
-            definite: 'BooleanByte' // TODO Needs tests
+            accessibility: Option('Accessibility'), // TODO Needs tests
+            isAbstract: 'Boolean', // TODO Needs tests
+            isOptional: 'Boolean', // TODO Needs tests
+            isOverride: 'Boolean', // TODO Needs tests
+            readonly: 'Boolean', // TODO Needs tests
+            declare: 'Boolean', // TODO Needs tests
+            definite: 'Boolean' // TODO Needs tests
         },
         {
             keys: [
@@ -125,11 +125,11 @@ module.exports = {
             typeAnnotation: Option('TsTypeAnnotation'),
             decorators: Vec('Decorator'),
             isStatic: 'Boolean',
-            accessibility: 'OptionAccessibility', // TODO Needs tests
-            isOptional: 'BooleanByte', // TODO Needs tests
-            isOverride: 'BooleanByte', // TODO Needs tests
-            readonly: 'BooleanByte', // TODO Needs tests
-            definite: 'BooleanByteAnd1Empty' // TODO Needs tests
+            accessibility: Option('Accessibility'), // TODO Needs tests
+            isOptional: 'Boolean', // TODO Needs tests
+            isOverride: 'Boolean', // TODO Needs tests
+            readonly: 'Boolean', // TODO Needs tests
+            definite: 'Boolean' // TODO Needs tests
         },
         {
             keys: [
@@ -143,7 +143,7 @@ module.exports = {
     StaticBlock: Node({ body: 'BlockStatement' }),
 
     // Methods
-    MethodKind: EnumValue(['method', 'getter', 'setter'], { length: 1 }),
+    MethodKind: EnumValue(['method', 'getter', 'setter']),
 
     Function: Node(
         {
@@ -152,8 +152,8 @@ module.exports = {
             span: 'Span',
             body: 'OptionBlockStatement',
             typeParameters: Option('TsTypeParamDeclaration'),
-            generator: 'BooleanByte',
-            async: 'BooleanByteAnd2Empty',
+            generator: 'Boolean',
+            async: 'Boolean',
             returnType: Option('TsTypeAnnotation')
         },
         {

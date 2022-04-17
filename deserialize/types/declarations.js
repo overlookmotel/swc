@@ -13,10 +13,10 @@ module.exports = {
 
     VariableDeclaration: Node({
         kind: 'VariableDeclarationKind',
-        declare: 'BooleanByteAnd2Empty', // TODO Needs tests
+        declare: 'Boolean', // TODO Needs tests
         declarations: Vec('VariableDeclarator')
     }),
-    VariableDeclarationKind: EnumValue(['var', 'let', 'const'], { length: 1 }),
+    VariableDeclarationKind: EnumValue(['var', 'let', 'const']),
     VariableDeclarator: Node({
         id: 'Pattern',
         init: Option(Box('Expression')),

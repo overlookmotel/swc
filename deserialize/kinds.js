@@ -280,10 +280,11 @@ class Vec extends Kind {
         return `function deserialize${this.name}(buff, pos) {
             const numEntries = buff.readUInt32LE(pos + 4);
             if (numEntries === 0) return [];
-            const vecPos = getPtr(buff, pos),
-                entries = new Array(numEntries);
+            const entries = new Array(numEntries);
+            let vecPos = getPtr(buff, pos);
             for (let i = 0; i < numEntries; i++) {
-                entries[i] = deserialize${childType.name}(buff, vecPos + i * ${childType.length});
+                entries[i] = deserialize${childType.name}(buff, vecPos);
+                vecPos += ${childType.length};
             }
             return entries;
         }`;

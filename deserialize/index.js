@@ -4,12 +4,13 @@
 
 module.exports = deserialize;
 
-function deserialize(buff) {
-    return deserializeProgram(buff, buff.length - 36);
+function deserialize(buffer) {
+    const buff = Buffer.from(buffer.buffer);
+    return deserializeProgram(buff, buffer.byteOffset + buffer.length - 36);
 }
 
 function deserializeProgram(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeModule(buff, pos + 4);
         case 1: return deserializeScript(buff, pos + 4);
         default: throw new Error('Unexpected enum value for Program');
@@ -35,7 +36,7 @@ function deserializeScript(buff, pos) {
 }
 
 function deserializeModuleDeclaration(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeImportDeclaration(buff, pos + 4);
         case 1: return deserializeExportDeclaration(buff, pos + 4);
         case 2: return deserializeExportNamedDeclaration(buff, pos + 4);
@@ -61,7 +62,7 @@ function deserializeImportDeclaration(buff, pos) {
 }
 
 function deserializeImportSpecifier(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeImportNamedSpecifier(buff, pos + 4);
         case 1: return deserializeImportDefaultSpecifier(buff, pos + 4);
         case 2: return deserializeImportNamespaceSpecifier(buff, pos + 4);
@@ -115,7 +116,7 @@ function deserializeExportNamedDeclaration(buff, pos) {
 }
 
 function deserializeExportSpecifier(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeExportNamespaceSpecifier(buff, pos + 4);
         case 1: return deserializeExportDefaultSpecifier(buff, pos + 4);
         case 2: return deserializeExportNamedSpecifier(buff, pos + 4);
@@ -175,7 +176,7 @@ function deserializeExportAllDeclaration(buff, pos) {
 }
 
 function deserializeModuleExportName(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializeStringLiteral(buff, pos + 4);
         default: throw new Error('Unexpected enum value for ModuleExportName');
@@ -183,7 +184,7 @@ function deserializeModuleExportName(buff, pos) {
 }
 
 function deserializeStatement(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeBlockStatement(buff, pos + 4);
         case 1: return deserializeEmptyStatement(buff, pos + 4);
         case 2: return deserializeDebuggerStatement(buff, pos + 4);
@@ -389,7 +390,7 @@ function deserializeExpressionStatement(buff, pos) {
 }
 
 function deserializeDeclaration(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeClassDeclaration(buff, pos + 4);
         case 1: return deserializeFunctionDeclaration(buff, pos + 4);
         case 2: return deserializeVariableDeclaration(buff, pos + 4);
@@ -412,7 +413,7 @@ function deserializeVariableDeclaration(buff, pos) {
 }
 
 function deserializeVariableDeclarationKind(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return 'var';
         case 1: return 'let';
         case 2: return 'const';
@@ -523,7 +524,7 @@ function deserializeClassExpression(buff, pos) {
 }
 
 function deserializeClassMember(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeConstructor(buff, pos + 4);
         case 1: return deserializeClassMethod(buff, pos + 4);
         case 2: return deserializePrivateMethod(buff, pos + 4);
@@ -623,7 +624,7 @@ function deserializeStaticBlock(buff, pos) {
 }
 
 function deserializeMethodKind(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return 'method';
         case 1: return 'getter';
         case 2: return 'setter';
@@ -645,7 +646,7 @@ function deserializeFunction(buff, pos) {
 }
 
 function deserializePattern(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeBindingIdentifier(buff, pos + 4);
         case 1: return deserializeArrayPattern(buff, pos + 4);
         case 2: return deserializeRestElement(buff, pos + 4);
@@ -698,7 +699,7 @@ function deserializeObjectPattern(buff, pos) {
 }
 
 function deserializeObjectPatternProperty(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeKeyValuePatternProperty(buff, pos + 4);
         case 1: return deserializeAssignmentPatternProperty(buff, pos + 4);
         case 2: return deserializeRestElement(buff, pos + 4);
@@ -734,7 +735,7 @@ function deserializeAssignmentPattern(buff, pos) {
 }
 
 function deserializeExpression(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeThisExpression(buff, pos + 4);
         case 1: return deserializeArrayExpression(buff, pos + 4);
         case 2: return deserializeObjectExpression(buff, pos + 4);
@@ -801,7 +802,7 @@ function deserializeUnaryExpression(buff, pos) {
 }
 
 function deserializeUnaryOperator(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return '-';
         case 1: return '+';
         case 2: return '!';
@@ -824,7 +825,7 @@ function deserializeUpdateExpression(buff, pos) {
 }
 
 function deserializeUpdateOperator(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return '++';
         case 1: return '--';
         default: throw new Error('Unexpected enum value for UpdateOperator');
@@ -842,7 +843,7 @@ function deserializeBinaryExpression(buff, pos) {
 }
 
 function deserializeBinaryOperator(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return '==';
         case 1: return '!=';
         case 2: return '===';
@@ -883,7 +884,7 @@ function deserializeAssignmentExpression(buff, pos) {
 }
 
 function deserializeAssignmentOperator(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return '=';
         case 1: return '+=';
         case 2: return '-=';
@@ -1016,7 +1017,7 @@ function deserializeMetaProperty(buff, pos) {
 }
 
 function deserializeMetaPropertyKind(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return 'new.target';
         case 1: return 'import.meta';
         default: throw new Error('Unexpected enum value for MetaPropertyKind');
@@ -1119,7 +1120,7 @@ function deserializeSpreadElement(buff, pos) {
 }
 
 function deserializeObjectProperty(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializeKeyValueProperty(buff, pos + 4);
         case 2: return deserializeAssignmentProperty(buff, pos + 4);
@@ -1183,7 +1184,7 @@ function deserializeMethodProperty(buff, pos) {
 }
 
 function deserializePropertyName(buff, pos) {
-    switch (buff.readUInt8(pos + 4)) {
+    switch (buff[pos + 4]) {
         case 0: return deserializeIdentifier(buff, pos + 8);
         case 1: return deserializeStringLiteral(buff, pos + 8);
         case 2: return deserializeNumericLiteral(buff, pos + 8);
@@ -1194,7 +1195,7 @@ function deserializePropertyName(buff, pos) {
 }
 
 function deserializeLiteral(buff, pos) {
-    switch (buff.readUInt8(pos + 4)) {
+    switch (buff[pos + 4]) {
         case 0: return deserializeStringLiteral(buff, pos + 8);
         case 1: return deserializeBooleanLiteral(buff, pos + 8);
         case 2: return deserializeNullLiteral(buff, pos + 8);
@@ -1234,7 +1235,7 @@ function deserializeNumericLiteral(buff, pos) {
     return {
         type: 'NumericLiteral',
         span: deserializeSpan(buff, pos + 4),
-        value: new Float64Array(buff.buffer, buff.byteOffset + pos + 20, 1)[0]
+        value: new Float64Array(buff.buffer, pos + 20, 1)[0]
     };
 }
 
@@ -1470,7 +1471,7 @@ function deserializeTsType(buff, pos) {
 }
 
 function deserializeAccessibility(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return 'public';
         case 1: return 'protected';
         case 2: return 'private';
@@ -1484,9 +1485,9 @@ function deserializeJsWord(buff, pos) {
     // Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
     // TODO I don't think this can be correct.
     // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
-    let len = buff.readUInt8(pos + 7);
+    let len = buff[pos + 7];
     if (len > 7) {
-        len = buff.readUint32LE(pos);
+        len = readUint32LE(buff, pos);
         pos = getPtr(buff, pos + 4) - 4;
     }
 
@@ -1494,7 +1495,7 @@ function deserializeJsWord(buff, pos) {
 }
 
 function deserializeBoolean(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return false;
         case 1: return true;
         default: throw new Error('Unexpected enum value for Boolean');
@@ -1503,9 +1504,9 @@ function deserializeBoolean(buff, pos) {
 
 function deserializeSpan(buff, pos) {
     return {
-        start: buff.readUInt32LE(pos),
-        end: buff.readUInt32LE(pos + 4),
-        ctxt: buff.readUInt32LE(pos + 8)
+        start: readUint32LE(buff, pos),
+        end: readUint32LE(buff, pos + 4),
+        ctxt: readUint32LE(buff, pos + 8)
     };
 }
 
@@ -1594,7 +1595,7 @@ function deserializeVecVariableDeclarator(buff, pos) {
 }
 
 function deserializeVariableDeclarationOrBoxExpression(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeVariableDeclaration(buff, pos + 4);
         case 1: return deserializeBoxExpression(buff, pos + 4);
         default: throw new Error('Unexpected enum value for VariableDeclarationOrBoxExpression');
@@ -1606,7 +1607,7 @@ function deserializeOptionVariableDeclarationOrBoxExpression(buff, pos) {
 }
 
 function deserializeVariableDeclarationOrPattern(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeVariableDeclaration(buff, pos + 4);
         case 1: return deserializePattern(buff, pos + 4);
         default: throw new Error('Unexpected enum value for VariableDeclarationOrPattern');
@@ -1614,7 +1615,7 @@ function deserializeVariableDeclarationOrPattern(buff, pos) {
 }
 
 function deserializeTsParamPropOrParameter(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeTsParamProp(buff, pos + 4);
         case 1: return deserializeParameter(buff, pos + 4);
         default: throw new Error('Unexpected enum value for TsParamPropOrParameter');
@@ -1662,7 +1663,7 @@ function deserializeVecStatement(buff, pos) {
 }
 
 function deserializeBoxExpressionOrBoxPattern(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeBoxExpression(buff, pos + 4);
         case 1: return deserializeBoxPattern(buff, pos + 4);
         default: throw new Error('Unexpected enum value for BoxExpressionOrBoxPattern');
@@ -1670,7 +1671,7 @@ function deserializeBoxExpressionOrBoxPattern(buff, pos) {
 }
 
 function deserializeIdentifierOrPrivateNameOrComputed(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializePrivateName(buff, pos + 4);
         case 2: return deserializeComputed(buff, pos + 4);
@@ -1679,7 +1680,7 @@ function deserializeIdentifierOrPrivateNameOrComputed(buff, pos) {
 }
 
 function deserializeIdentifierOrComputed(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeIdentifier(buff, pos + 4);
         case 1: return deserializeComputed(buff, pos + 4);
         default: throw new Error('Unexpected enum value for IdentifierOrComputed');
@@ -1687,7 +1688,7 @@ function deserializeIdentifierOrComputed(buff, pos) {
 }
 
 function deserializeSuperOrImportOrBoxExpression(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeSuper(buff, pos + 4);
         case 1: return deserializeImport(buff, pos + 4);
         case 2: return deserializeBoxExpression(buff, pos + 4);
@@ -1716,7 +1717,7 @@ function deserializeVecPattern(buff, pos) {
 }
 
 function deserializeBlockStatementOrBoxExpression(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeBlockStatement(buff, pos + 4);
         case 1: return deserializeBoxExpression(buff, pos + 4);
         default: throw new Error('Unexpected enum value for BlockStatementOrBoxExpression');
@@ -1724,7 +1725,7 @@ function deserializeBlockStatementOrBoxExpression(buff, pos) {
 }
 
 function deserializeMemberExpressionOrOptionalChainingCall(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeMemberExpression(buff, pos + 4);
         case 1: return deserializeOptionalChainingCall(buff, pos + 4);
         default: throw new Error('Unexpected enum value for MemberExpressionOrOptionalChainingCall');
@@ -1740,7 +1741,7 @@ function deserializeBoxObjectProperty(buff, pos) {
 }
 
 function deserializeSpreadElementOrBoxObjectProperty(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeSpreadElement(buff, pos + 4);
         case 1: return deserializeBoxObjectProperty(buff, pos + 4);
         default: throw new Error('Unexpected enum value for SpreadElementOrBoxObjectProperty');
@@ -1764,7 +1765,7 @@ function deserializeOptionStringLiteral(buff, pos) {
 }
 
 function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeClassExpression(buff, pos + 4);
         case 1: return deserializeFunctionExpression(buff, pos + 4);
         case 2: return deserializeTsInterfaceDeclaration(buff, pos + 4);
@@ -1773,7 +1774,7 @@ function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
 }
 
 function deserializeModuleDeclarationOrStatement(buff, pos) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return deserializeModuleDeclaration(buff, pos + 4);
         case 1: return deserializeStatement(buff, pos + 4);
         default: throw new Error('Unexpected enum value for ModuleDeclarationOrStatement');
@@ -1785,7 +1786,7 @@ function deserializeVecModuleDeclarationOrStatement(buff, pos) {
 }
 
 function deserializeOption(buff, pos, deserialize, offset) {
-    switch (buff.readUInt8(pos)) {
+    switch (buff[pos]) {
         case 0: return null;
         case 1: return deserialize(buff, pos + offset);
         default: throw new Error('Unexpected option value');
@@ -1797,7 +1798,7 @@ function deserializeBox(buff, pos, deserialize) {
 }
 
 function deserializeVec(buff, pos, deserialize, length) {
-    const numEntries = buff.readUInt32LE(pos + 4);
+    const numEntries = readUint32LE(buff, pos + 4);
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);
     let vecPos = getPtr(buff, pos);
@@ -1809,5 +1810,19 @@ function deserializeVec(buff, pos, deserialize, length) {
 }
 
 function getPtr(buff, pos) {
-    return pos + buff.readInt32LE(pos);
+    return pos + readInt32LE(buff, pos);
+}
+
+function readUint32LE(buff, pos) {
+    return buff[pos]
+        + buff[pos + 1] * 2 ** 8
+        + buff[pos + 2] * 2 ** 16
+        + buff[pos + 3] * 2 ** 24;
+}
+
+function readInt32LE(buff, pos) {
+    return buff[pos]
+        + buff[pos + 1] * 2 ** 8
+        + buff[pos + 2] * 2 ** 16
+        + (buff[pos + 3] << 24);
 }

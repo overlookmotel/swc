@@ -2,7 +2,37 @@
 
 // Exports
 
-module.exports = { getPtr, debugBuff };
+module.exports = {
+    deserializeOption,
+    deserializeBox,
+    deserializeVec,
+    getPtr,
+    debugBuff
+};
+
+function deserializeOption(buff, pos, deserialize, offset) {
+    switch (buff.readUInt8(pos)) {
+        case 0: return null;
+        case 1: return deserialize(buff, pos + offset);
+        default: throw new Error('Unexpected option value');
+    }
+}
+
+function deserializeBox(buff, pos, deserialize) {
+    return deserialize(buff, getPtr(buff, pos));
+}
+
+function deserializeVec(buff, pos, deserialize, length) {
+    const numEntries = buff.readUInt32LE(pos + 4);
+    if (numEntries === 0) return [];
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
+    for (let i = 0; i < numEntries; i++) {
+        entries[i] = deserialize(buff, vecPos);
+        vecPos += length;
+    }
+    return entries;
+}
 
 function getPtr(buff, pos) {
     return pos + buff.readInt32LE(pos);

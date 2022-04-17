@@ -1573,10 +1573,11 @@ function deserializeOptionModuleExportName(buff, pos) {
 function deserializeVecImportSpecifier(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeImportSpecifier(buff, vecPos + i * 84);
+        entries[i] = deserializeImportSpecifier(buff, vecPos);
+        vecPos += 84;
     }
     return entries;
 }
@@ -1600,10 +1601,11 @@ function deserializeOptionExpressionOrSpread(buff, pos) {
 function deserializeVecOptionExpressionOrSpread(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeOptionExpressionOrSpread(buff, vecPos + i * 24);
+        entries[i] = deserializeOptionExpressionOrSpread(buff, vecPos);
+        vecPos += 24;
     }
     return entries;
 }
@@ -1619,10 +1621,11 @@ function deserializeOptionIdentifier(buff, pos) {
 function deserializeVecDecorator(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeDecorator(buff, vecPos + i * 16);
+        entries[i] = deserializeDecorator(buff, vecPos);
+        vecPos += 16;
     }
     return entries;
 }
@@ -1651,10 +1654,11 @@ function deserializeOptionPattern(buff, pos) {
 function deserializeVecOptionPattern(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeOptionPattern(buff, vecPos + i * 56);
+        entries[i] = deserializeOptionPattern(buff, vecPos);
+        vecPos += 56;
     }
     return entries;
 }
@@ -1675,10 +1679,11 @@ function deserializeOptionBoxExpression(buff, pos) {
 function deserializeVecObjectPatternProperty(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeObjectPatternProperty(buff, vecPos + i * 56);
+        entries[i] = deserializeObjectPatternProperty(buff, vecPos);
+        vecPos += 56;
     }
     return entries;
 }
@@ -1686,10 +1691,11 @@ function deserializeVecObjectPatternProperty(buff, pos) {
 function deserializeVecParameter(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeParameter(buff, vecPos + i * 72);
+        entries[i] = deserializeParameter(buff, vecPos);
+        vecPos += 72;
     }
     return entries;
 }
@@ -1710,10 +1716,11 @@ function deserializeOptionBoxStatement(buff, pos) {
 function deserializeVecSwitchCase(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeSwitchCase(buff, vecPos + i * 28);
+        entries[i] = deserializeSwitchCase(buff, vecPos);
+        vecPos += 28;
     }
     return entries;
 }
@@ -1729,10 +1736,11 @@ function deserializeOptionCatchClause(buff, pos) {
 function deserializeVecVariableDeclarator(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeVariableDeclarator(buff, vecPos + i * 76);
+        entries[i] = deserializeVariableDeclarator(buff, vecPos);
+        vecPos += 76;
     }
     return entries;
 }
@@ -1772,10 +1780,11 @@ function deserializeTsParamPropOrParameter(buff, pos) {
 function deserializeVecTsParamPropOrParameter(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeTsParamPropOrParameter(buff, vecPos + i * 76);
+        entries[i] = deserializeTsParamPropOrParameter(buff, vecPos);
+        vecPos += 76;
     }
     return entries;
 }
@@ -1783,10 +1792,11 @@ function deserializeVecTsParamPropOrParameter(buff, pos) {
 function deserializeVecTsTypeParameter(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeTsTypeParameter(buff, vecPos + i * 12);
+        entries[i] = deserializeTsTypeParameter(buff, vecPos);
+        vecPos += 12;
     }
     return entries;
 }
@@ -1802,10 +1812,11 @@ function deserializeOptionTsTypeParamDeclaration(buff, pos) {
 function deserializeVecClassMember(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeClassMember(buff, vecPos + i * 168);
+        entries[i] = deserializeClassMember(buff, vecPos);
+        vecPos += 168;
     }
     return entries;
 }
@@ -1813,10 +1824,11 @@ function deserializeVecClassMember(buff, pos) {
 function deserializeVecBoxTsType(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeBoxTsType(buff, vecPos + i * 4);
+        entries[i] = deserializeBoxTsType(buff, vecPos);
+        vecPos += 4;
     }
     return entries;
 }
@@ -1832,10 +1844,11 @@ function deserializeOptionTsTypeParameterInstantiation(buff, pos) {
 function deserializeVecTsExpressionWithTypeArg(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeTsExpressionWithTypeArg(buff, vecPos + i * 12);
+        entries[i] = deserializeTsExpressionWithTypeArg(buff, vecPos);
+        vecPos += 12;
     }
     return entries;
 }
@@ -1851,10 +1864,11 @@ function deserializeOptionTsTypeParameterDeclaration(buff, pos) {
 function deserializeVecStatement(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeStatement(buff, vecPos + i * 152);
+        entries[i] = deserializeStatement(buff, vecPos);
+        vecPos += 152;
     }
     return entries;
 }
@@ -1896,10 +1910,11 @@ function deserializeSuperOrImportOrBoxExpression(buff, pos) {
 function deserializeVecExpressionOrSpread(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeExpressionOrSpread(buff, vecPos + i * 20);
+        entries[i] = deserializeExpressionOrSpread(buff, vecPos);
+        vecPos += 20;
     }
     return entries;
 }
@@ -1915,10 +1930,11 @@ function deserializeOptionVecExpressionOrSpread(buff, pos) {
 function deserializeVecBoxExpression(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeBoxExpression(buff, vecPos + i * 4);
+        entries[i] = deserializeBoxExpression(buff, vecPos);
+        vecPos += 4;
     }
     return entries;
 }
@@ -1926,10 +1942,11 @@ function deserializeVecBoxExpression(buff, pos) {
 function deserializeVecTemplateElement(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeTemplateElement(buff, vecPos + i * 36);
+        entries[i] = deserializeTemplateElement(buff, vecPos);
+        vecPos += 36;
     }
     return entries;
 }
@@ -1937,10 +1954,11 @@ function deserializeVecTemplateElement(buff, pos) {
 function deserializeVecPattern(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializePattern(buff, vecPos + i * 52);
+        entries[i] = deserializePattern(buff, vecPos);
+        vecPos += 52;
     }
     return entries;
 }
@@ -1982,10 +2000,11 @@ function deserializeSpreadElementOrBoxObjectProperty(buff, pos) {
 function deserializeVecSpreadElementOrBoxObjectProperty(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeSpreadElementOrBoxObjectProperty(buff, vecPos + i * 20);
+        entries[i] = deserializeSpreadElementOrBoxObjectProperty(buff, vecPos);
+        vecPos += 20;
     }
     return entries;
 }
@@ -2001,10 +2020,11 @@ function deserializeOptionObjectExpression(buff, pos) {
 function deserializeVecExportSpecifier(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeExportSpecifier(buff, vecPos + i * 96);
+        entries[i] = deserializeExportSpecifier(buff, vecPos);
+        vecPos += 96;
     }
     return entries;
 }
@@ -2037,10 +2057,11 @@ function deserializeModuleDeclarationOrStatement(buff, pos) {
 function deserializeVecModuleDeclarationOrStatement(buff, pos) {
     const numEntries = buff.readUInt32LE(pos + 4);
     if (numEntries === 0) return [];
-    const vecPos = getPtr(buff, pos),
-        entries = new Array(numEntries);
+    const entries = new Array(numEntries);
+    let vecPos = getPtr(buff, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserializeModuleDeclarationOrStatement(buff, vecPos + i * 156);
+        entries[i] = deserializeModuleDeclarationOrStatement(buff, vecPos);
+        vecPos += 156;
     }
     return entries;
 }

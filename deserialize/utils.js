@@ -10,32 +10,32 @@ module.exports = {
     debugBuff
 };
 
-function deserializeOption(buff, pos, deserialize, offset) {
+function deserializeOption(buff, int32, uint32, pos, deserialize, offset) {
     switch (buff[pos]) {
         case 0: return null;
-        case 1: return deserialize(buff, pos + offset);
+        case 1: return deserialize(buff, int32, uint32, pos + offset);
         default: throw new Error('Unexpected option value');
     }
 }
 
-function deserializeBox(buff, pos, deserialize) {
-    return deserialize(buff, getPtr(buff, pos));
+function deserializeBox(buff, int32, uint32, pos, deserialize) {
+    return deserialize(buff, int32, uint32, getPtr(int32, pos));
 }
 
-function deserializeVec(buff, pos, deserialize, length) {
-    const numEntries = buff.uint32[(pos >> 2) + 1];
+function deserializeVec(buff, int32, uint32, pos, deserialize, length) {
+    const numEntries = uint32[(pos >> 2) + 1];
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
+    let vecPos = getPtr(int32, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserialize(buff, vecPos);
+        entries[i] = deserialize(buff, int32, uint32, vecPos);
         vecPos += length;
     }
     return entries;
 }
 
-function getPtr(buff, pos) {
-    return pos + buff.int32[pos >> 2];
+function getPtr(int32, pos) {
+    return pos + int32[pos >> 2];
 }
 
 function debugBuff(typeName, buff, pos, length) {

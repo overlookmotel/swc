@@ -69,12 +69,12 @@ class Node extends Kind {
 
     generateDeserializer() {
         const propsCodes = this.propsWithPos.map(({ key, prop, pos }) => {
-            return `${key}: deserialize${prop.name}(buff, ${posStr(pos)})`;
+            return `${key}: deserialize${prop.name}(buff, int32, uint32, ${posStr(pos)})`;
         });
 
         if (!this.noType) propsCodes.unshift(`type: '${this.nodeName}'`);
 
-        return `function deserialize${this.name}(buff, pos) {
+        return `function deserialize${this.name}(buff, int32, uint32, pos) {
             return {
                 ${propsCodes.join(`,\n${' '.repeat(16)}`)}
             };
@@ -121,10 +121,10 @@ class Enum extends Kind {
 
     generateDeserializer() {
         const enumOptionCodes = this.enumOptions.map(({ name }, index) => (
-            `case ${index}: return deserialize${name}(buff, pos + ${this.childOffset});`
+            `case ${index}: return deserialize${name}(buff, int32, uint32, pos + ${this.childOffset});`
         ));
 
-        return `function deserialize${this.name}(buff, pos) {
+        return `function deserialize${this.name}(buff, int32, uint32, pos) {
             switch (buff[${posStr(this.emptyBefore)}]) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
@@ -167,7 +167,7 @@ class EnumValue extends Kind {
             `case ${index}: return ${typeof value === 'string' ? `'${value}'` : value};`
         ));
 
-        return `function deserialize${this.name}(buff, pos) {
+        return `function deserialize${this.name}(buff, int32, uint32, pos) {
             switch (buff[${posStr(this.emptyBefore)}]) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
@@ -211,8 +211,8 @@ class Option extends Kind {
     generateDeserializer() {
         const pos = posStr(this.emptyBefore),
             childName = this.childType.name;
-        return `function deserialize${this.name}(buff, pos) {
-            return deserializeOption(buff, ${pos}, deserialize${childName}, ${this.childOffset});
+        return `function deserialize${this.name}(buff, int32, uint32, pos) {
+            return deserializeOption(buff, int32, uint32, ${pos}, deserialize${childName}, ${this.childOffset});
         }`;
     }
 }
@@ -248,8 +248,8 @@ class Box extends Kind {
     }
 
     generateDeserializer() {
-        return `function deserialize${this.name}(buff, pos) {
-            return deserializeBox(buff, ${posStr(this.emptyBefore)}, deserialize${this.childType.name});
+        return `function deserialize${this.name}(buff, int32, uint32, pos) {
+            return deserializeBox(buff, int32, uint32, ${posStr(this.emptyBefore)}, deserialize${this.childType.name});
         }`;
     }
 }
@@ -288,8 +288,8 @@ class Vec extends Kind {
 
     generateDeserializer() {
         const pos = posStr(this.emptyBefore);
-        return `function deserialize${this.name}(buff, pos) {
-            return deserializeVec(buff, ${pos}, deserialize${this.childType.name}, ${this.childLength});
+        return `function deserialize${this.name}(buff, int32, uint32, pos) {
+            return deserializeVec(buff, int32, uint32, ${pos}, deserialize${this.childType.name}, ${this.childLength});
         }`;
     }
 }
@@ -416,12 +416,14 @@ function generateDeserializer(utils) {
         '// Generated code. Do not edit.',
         "'use strict';",
         "module.exports = deserialize;",
-        removeIndent(`function deserialize(buffIn) {
-            const { buffer } = buffIn;
-            const buff = Buffer.from(buffer);
-            buff.int32 = new Int32Array(buffer);
-            buff.uint32 = new Uint32Array(buffer);
-            return deserializeProgram(buff, buffIn.byteOffset + buffIn.length - ${types.Program.length});
+        removeIndent(`function deserialize(buff) {
+            const { buffer } = buff;
+            return deserializeProgram(
+                Buffer.from(buffer),
+                new Int32Array(buffer),
+                new Uint32Array(buffer),
+                buff.byteOffset + buff.length - ${types.Program.length}
+            );
         }`),
         ''
     ].join('\n\n');

@@ -4,418 +4,420 @@
 
 module.exports = deserialize;
 
-function deserialize(buffIn) {
-    const { buffer } = buffIn;
-    const buff = Buffer.from(buffer);
-    buff.int32 = new Int32Array(buffer);
-    buff.uint32 = new Uint32Array(buffer);
-    return deserializeProgram(buff, buffIn.byteOffset + buffIn.length - 36);
+function deserialize(buff) {
+    const { buffer } = buff;
+    return deserializeProgram(
+        Buffer.from(buffer),
+        new Int32Array(buffer),
+        new Uint32Array(buffer),
+        buff.byteOffset + buff.length - 36
+    );
 }
 
-function deserializeProgram(buff, pos) {
+function deserializeProgram(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeModule(buff, pos + 4);
-        case 1: return deserializeScript(buff, pos + 4);
+        case 0: return deserializeModule(buff, int32, uint32, pos + 4);
+        case 1: return deserializeScript(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for Program');
     }
 }
 
-function deserializeModule(buff, pos) {
+function deserializeModule(buff, int32, uint32, pos) {
     return {
         type: 'Module',
-        span: deserializeSpan(buff, pos),
-        body: deserializeVecModuleDeclarationOrStatement(buff, pos + 12),
-        interpreter: deserializeOptionJsWord(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        body: deserializeVecModuleDeclarationOrStatement(buff, int32, uint32, pos + 12),
+        interpreter: deserializeOptionJsWord(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeScript(buff, pos) {
+function deserializeScript(buff, int32, uint32, pos) {
     return {
         type: 'Script',
-        span: deserializeSpan(buff, pos),
-        body: deserializeVecStatement(buff, pos + 12),
-        interpreter: deserializeOptionJsWord(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        body: deserializeVecStatement(buff, int32, uint32, pos + 12),
+        interpreter: deserializeOptionJsWord(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeModuleDeclaration(buff, pos) {
+function deserializeModuleDeclaration(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeImportDeclaration(buff, pos + 4);
-        case 1: return deserializeExportDeclaration(buff, pos + 4);
-        case 2: return deserializeExportNamedDeclaration(buff, pos + 4);
-        case 3: return deserializeExportDefaultDeclaration(buff, pos + 4);
-        case 4: return deserializeExportDefaultExpression(buff, pos + 4);
-        case 5: return deserializeExportAllDeclaration(buff, pos + 4);
-        case 6: return deserializeTsImportEqualsDeclaration(buff, pos + 4);
-        case 7: return deserializeTsExportAssignment(buff, pos + 4);
-        case 8: return deserializeTsNamespaceExportDeclaration(buff, pos + 4);
+        case 0: return deserializeImportDeclaration(buff, int32, uint32, pos + 4);
+        case 1: return deserializeExportDeclaration(buff, int32, uint32, pos + 4);
+        case 2: return deserializeExportNamedDeclaration(buff, int32, uint32, pos + 4);
+        case 3: return deserializeExportDefaultDeclaration(buff, int32, uint32, pos + 4);
+        case 4: return deserializeExportDefaultExpression(buff, int32, uint32, pos + 4);
+        case 5: return deserializeExportAllDeclaration(buff, int32, uint32, pos + 4);
+        case 6: return deserializeTsImportEqualsDeclaration(buff, int32, uint32, pos + 4);
+        case 7: return deserializeTsExportAssignment(buff, int32, uint32, pos + 4);
+        case 8: return deserializeTsNamespaceExportDeclaration(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ModuleDeclaration');
     }
 }
 
-function deserializeImportDeclaration(buff, pos) {
+function deserializeImportDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'ImportDeclaration',
-        span: deserializeSpan(buff, pos),
-        specifiers: deserializeVecImportSpecifier(buff, pos + 12),
-        source: deserializeStringLiteral(buff, pos + 20),
-        typeOnly: deserializeBoolean(buff, pos + 52),
-        asserts: deserializeOptionObjectExpression(buff, pos + 56)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        specifiers: deserializeVecImportSpecifier(buff, int32, uint32, pos + 12),
+        source: deserializeStringLiteral(buff, int32, uint32, pos + 20),
+        typeOnly: deserializeBoolean(buff, int32, uint32, pos + 52),
+        asserts: deserializeOptionObjectExpression(buff, int32, uint32, pos + 56)
     };
 }
 
-function deserializeImportSpecifier(buff, pos) {
+function deserializeImportSpecifier(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeImportNamedSpecifier(buff, pos + 4);
-        case 1: return deserializeImportDefaultSpecifier(buff, pos + 4);
-        case 2: return deserializeImportNamespaceSpecifier(buff, pos + 4);
+        case 0: return deserializeImportNamedSpecifier(buff, int32, uint32, pos + 4);
+        case 1: return deserializeImportDefaultSpecifier(buff, int32, uint32, pos + 4);
+        case 2: return deserializeImportNamespaceSpecifier(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ImportSpecifier');
     }
 }
 
-function deserializeImportNamedSpecifier(buff, pos) {
+function deserializeImportNamedSpecifier(buff, int32, uint32, pos) {
     return {
         type: 'ImportSpecifier',
-        span: deserializeSpan(buff, pos),
-        local: deserializeIdentifier(buff, pos + 12),
-        imported: deserializeOptionModuleExportName(buff, pos + 36),
-        isTypeOnly: deserializeBoolean(buff, pos + 76)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        local: deserializeIdentifier(buff, int32, uint32, pos + 12),
+        imported: deserializeOptionModuleExportName(buff, int32, uint32, pos + 36),
+        isTypeOnly: deserializeBoolean(buff, int32, uint32, pos + 76)
     };
 }
 
-function deserializeImportDefaultSpecifier(buff, pos) {
+function deserializeImportDefaultSpecifier(buff, int32, uint32, pos) {
     return {
         type: 'ImportDefaultSpecifier',
-        span: deserializeSpan(buff, pos),
-        local: deserializeIdentifier(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        local: deserializeIdentifier(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeImportNamespaceSpecifier(buff, pos) {
+function deserializeImportNamespaceSpecifier(buff, int32, uint32, pos) {
     return {
         type: 'ImportNamespaceSpecifier',
-        span: deserializeSpan(buff, pos),
-        local: deserializeIdentifier(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        local: deserializeIdentifier(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeExportDeclaration(buff, pos) {
+function deserializeExportDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'ExportDeclaration',
-        span: deserializeSpan(buff, pos),
-        declaration: deserializeDeclaration(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        declaration: deserializeDeclaration(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeExportNamedDeclaration(buff, pos) {
+function deserializeExportNamedDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'ExportNamedDeclaration',
-        span: deserializeSpan(buff, pos),
-        specifiers: deserializeVecExportSpecifier(buff, pos + 12),
-        source: deserializeOptionStringLiteral(buff, pos + 20),
-        typeOnly: deserializeBoolean(buff, pos + 56),
-        asserts: deserializeOptionObjectExpression(buff, pos + 60)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        specifiers: deserializeVecExportSpecifier(buff, int32, uint32, pos + 12),
+        source: deserializeOptionStringLiteral(buff, int32, uint32, pos + 20),
+        typeOnly: deserializeBoolean(buff, int32, uint32, pos + 56),
+        asserts: deserializeOptionObjectExpression(buff, int32, uint32, pos + 60)
     };
 }
 
-function deserializeExportSpecifier(buff, pos) {
+function deserializeExportSpecifier(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeExportNamespaceSpecifier(buff, pos + 4);
-        case 1: return deserializeExportDefaultSpecifier(buff, pos + 4);
-        case 2: return deserializeExportNamedSpecifier(buff, pos + 4);
+        case 0: return deserializeExportNamespaceSpecifier(buff, int32, uint32, pos + 4);
+        case 1: return deserializeExportDefaultSpecifier(buff, int32, uint32, pos + 4);
+        case 2: return deserializeExportNamedSpecifier(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ExportSpecifier');
     }
 }
 
-function deserializeExportNamespaceSpecifier(buff, pos) {
+function deserializeExportNamespaceSpecifier(buff, int32, uint32, pos) {
     return {
         type: 'ExportNamespaceSpecifier',
-        span: deserializeSpan(buff, pos),
-        name: deserializeModuleExportName(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        name: deserializeModuleExportName(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeExportDefaultSpecifier(buff, pos) {
+function deserializeExportDefaultSpecifier(buff, int32, uint32, pos) {
     return {
         type: 'ExportDefaultSpecifier',
-        span: deserializeSpan(buff, pos),
-        exported: deserializeIdentifier(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        exported: deserializeIdentifier(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeExportNamedSpecifier(buff, pos) {
+function deserializeExportNamedSpecifier(buff, int32, uint32, pos) {
     return {
         type: 'ExportSpecifier',
-        span: deserializeSpan(buff, pos),
-        orig: deserializeModuleExportName(buff, pos + 12),
-        exported: deserializeOptionModuleExportName(buff, pos + 48),
-        isTypeOnly: deserializeBoolean(buff, pos + 88)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        orig: deserializeModuleExportName(buff, int32, uint32, pos + 12),
+        exported: deserializeOptionModuleExportName(buff, int32, uint32, pos + 48),
+        isTypeOnly: deserializeBoolean(buff, int32, uint32, pos + 88)
     };
 }
 
-function deserializeExportDefaultDeclaration(buff, pos) {
+function deserializeExportDefaultDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'ExportDefaultDeclaration',
-        span: deserializeSpan(buff, pos),
-        decl: deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        decl: deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeExportDefaultExpression(buff, pos) {
+function deserializeExportDefaultExpression(buff, int32, uint32, pos) {
     return {
         type: 'ExportDefaultExpression',
-        span: deserializeSpan(buff, pos),
-        expression: deserializeBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        expression: deserializeBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeExportAllDeclaration(buff, pos) {
+function deserializeExportAllDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'ExportAllDeclaration',
-        span: deserializeSpan(buff, pos),
-        source: deserializeStringLiteral(buff, pos + 12),
-        asserts: deserializeOptionObjectExpression(buff, pos + 44)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        source: deserializeStringLiteral(buff, int32, uint32, pos + 12),
+        asserts: deserializeOptionObjectExpression(buff, int32, uint32, pos + 44)
     };
 }
 
-function deserializeModuleExportName(buff, pos) {
+function deserializeModuleExportName(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeIdentifier(buff, pos + 4);
-        case 1: return deserializeStringLiteral(buff, pos + 4);
+        case 0: return deserializeIdentifier(buff, int32, uint32, pos + 4);
+        case 1: return deserializeStringLiteral(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ModuleExportName');
     }
 }
 
-function deserializeStatement(buff, pos) {
+function deserializeStatement(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeBlockStatement(buff, pos + 4);
-        case 1: return deserializeEmptyStatement(buff, pos + 4);
-        case 2: return deserializeDebuggerStatement(buff, pos + 4);
-        case 3: return deserializeWithStatement(buff, pos + 4);
-        case 4: return deserializeReturnStatement(buff, pos + 4);
-        case 5: return deserializeLabeledStatement(buff, pos + 4);
-        case 6: return deserializeBreakStatement(buff, pos + 4);
-        case 7: return deserializeContinueStatement(buff, pos + 4);
-        case 8: return deserializeIfStatement(buff, pos + 4);
-        case 9: return deserializeSwitchStatement(buff, pos + 4);
-        case 10: return deserializeThrowStatement(buff, pos + 4);
-        case 11: return deserializeTryStatement(buff, pos + 4);
-        case 12: return deserializeWhileStatement(buff, pos + 4);
-        case 13: return deserializeDoWhileStatement(buff, pos + 4);
-        case 14: return deserializeForStatement(buff, pos + 4);
-        case 15: return deserializeForInStatement(buff, pos + 4);
-        case 16: return deserializeForOfStatement(buff, pos + 4);
-        case 17: return deserializeDeclaration(buff, pos + 4);
-        case 18: return deserializeExpressionStatement(buff, pos + 4);
+        case 0: return deserializeBlockStatement(buff, int32, uint32, pos + 4);
+        case 1: return deserializeEmptyStatement(buff, int32, uint32, pos + 4);
+        case 2: return deserializeDebuggerStatement(buff, int32, uint32, pos + 4);
+        case 3: return deserializeWithStatement(buff, int32, uint32, pos + 4);
+        case 4: return deserializeReturnStatement(buff, int32, uint32, pos + 4);
+        case 5: return deserializeLabeledStatement(buff, int32, uint32, pos + 4);
+        case 6: return deserializeBreakStatement(buff, int32, uint32, pos + 4);
+        case 7: return deserializeContinueStatement(buff, int32, uint32, pos + 4);
+        case 8: return deserializeIfStatement(buff, int32, uint32, pos + 4);
+        case 9: return deserializeSwitchStatement(buff, int32, uint32, pos + 4);
+        case 10: return deserializeThrowStatement(buff, int32, uint32, pos + 4);
+        case 11: return deserializeTryStatement(buff, int32, uint32, pos + 4);
+        case 12: return deserializeWhileStatement(buff, int32, uint32, pos + 4);
+        case 13: return deserializeDoWhileStatement(buff, int32, uint32, pos + 4);
+        case 14: return deserializeForStatement(buff, int32, uint32, pos + 4);
+        case 15: return deserializeForInStatement(buff, int32, uint32, pos + 4);
+        case 16: return deserializeForOfStatement(buff, int32, uint32, pos + 4);
+        case 17: return deserializeDeclaration(buff, int32, uint32, pos + 4);
+        case 18: return deserializeExpressionStatement(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for Statement');
     }
 }
 
-function deserializeBlockStatement(buff, pos) {
+function deserializeBlockStatement(buff, int32, uint32, pos) {
     return {
         type: 'BlockStatement',
-        span: deserializeSpan(buff, pos),
-        stmts: deserializeVecStatement(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        stmts: deserializeVecStatement(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeOptionBlockStatement(buff, pos) {
-    return deserializeOption(buff, pos, deserializeBlockStatement, 4);
+function deserializeOptionBlockStatement(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeBlockStatement, 4);
 }
 
-function deserializeEmptyStatement(buff, pos) {
+function deserializeEmptyStatement(buff, int32, uint32, pos) {
     return {
         type: 'EmptyStatement',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeDebuggerStatement(buff, pos) {
+function deserializeDebuggerStatement(buff, int32, uint32, pos) {
     return {
         type: 'DebuggerStatement',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeWithStatement(buff, pos) {
+function deserializeWithStatement(buff, int32, uint32, pos) {
     return {
         type: 'WithStatement',
-        span: deserializeSpan(buff, pos),
-        object: deserializeBoxExpression(buff, pos + 12),
-        body: deserializeBoxStatement(buff, pos + 16)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        object: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        body: deserializeBoxStatement(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeReturnStatement(buff, pos) {
+function deserializeReturnStatement(buff, int32, uint32, pos) {
     return {
         type: 'ReturnStatement',
-        span: deserializeSpan(buff, pos),
-        argument: deserializeOptionBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        argument: deserializeOptionBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeLabeledStatement(buff, pos) {
+function deserializeLabeledStatement(buff, int32, uint32, pos) {
     return {
         type: 'LabeledStatement',
-        span: deserializeSpan(buff, pos),
-        label: deserializeIdentifier(buff, pos + 12),
-        body: deserializeBoxStatement(buff, pos + 36)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        label: deserializeIdentifier(buff, int32, uint32, pos + 12),
+        body: deserializeBoxStatement(buff, int32, uint32, pos + 36)
     };
 }
 
-function deserializeBreakStatement(buff, pos) {
+function deserializeBreakStatement(buff, int32, uint32, pos) {
     return {
         type: 'BreakStatement',
-        span: deserializeSpan(buff, pos),
-        label: deserializeOptionIdentifier(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        label: deserializeOptionIdentifier(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeContinueStatement(buff, pos) {
+function deserializeContinueStatement(buff, int32, uint32, pos) {
     return {
         type: 'ContinueStatement',
-        span: deserializeSpan(buff, pos),
-        label: deserializeOptionIdentifier(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        label: deserializeOptionIdentifier(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeIfStatement(buff, pos) {
+function deserializeIfStatement(buff, int32, uint32, pos) {
     return {
         type: 'IfStatement',
-        span: deserializeSpan(buff, pos),
-        test: deserializeBoxExpression(buff, pos + 12),
-        consequent: deserializeBoxStatement(buff, pos + 16),
-        alternate: deserializeOptionBoxStatement(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        test: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        consequent: deserializeBoxStatement(buff, int32, uint32, pos + 16),
+        alternate: deserializeOptionBoxStatement(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeSwitchStatement(buff, pos) {
+function deserializeSwitchStatement(buff, int32, uint32, pos) {
     return {
         type: 'SwitchStatement',
-        span: deserializeSpan(buff, pos),
-        discriminant: deserializeBoxExpression(buff, pos + 12),
-        cases: deserializeVecSwitchCase(buff, pos + 16)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        discriminant: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        cases: deserializeVecSwitchCase(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeSwitchCase(buff, pos) {
+function deserializeSwitchCase(buff, int32, uint32, pos) {
     return {
         type: 'SwitchCase',
-        span: deserializeSpan(buff, pos),
-        test: deserializeOptionBoxExpression(buff, pos + 12),
-        consequent: deserializeVecStatement(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        test: deserializeOptionBoxExpression(buff, int32, uint32, pos + 12),
+        consequent: deserializeVecStatement(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeThrowStatement(buff, pos) {
+function deserializeThrowStatement(buff, int32, uint32, pos) {
     return {
         type: 'ThrowStatement',
-        span: deserializeSpan(buff, pos),
-        argument: deserializeBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        argument: deserializeBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeTryStatement(buff, pos) {
+function deserializeTryStatement(buff, int32, uint32, pos) {
     return {
         type: 'TryStatement',
-        span: deserializeSpan(buff, pos),
-        block: deserializeBlockStatement(buff, pos + 12),
-        handler: deserializeOptionCatchClause(buff, pos + 32),
-        finalizer: deserializeOptionBlockStatement(buff, pos + 124)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        block: deserializeBlockStatement(buff, int32, uint32, pos + 12),
+        handler: deserializeOptionCatchClause(buff, int32, uint32, pos + 32),
+        finalizer: deserializeOptionBlockStatement(buff, int32, uint32, pos + 124)
     };
 }
 
-function deserializeCatchClause(buff, pos) {
+function deserializeCatchClause(buff, int32, uint32, pos) {
     return {
         type: 'CatchClause',
-        span: deserializeSpan(buff, pos),
-        param: deserializeOptionPattern(buff, pos + 12),
-        body: deserializeBlockStatement(buff, pos + 68)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        param: deserializeOptionPattern(buff, int32, uint32, pos + 12),
+        body: deserializeBlockStatement(buff, int32, uint32, pos + 68)
     };
 }
 
-function deserializeWhileStatement(buff, pos) {
+function deserializeWhileStatement(buff, int32, uint32, pos) {
     return {
         type: 'WhileStatement',
-        span: deserializeSpan(buff, pos),
-        test: deserializeBoxExpression(buff, pos + 12),
-        body: deserializeBoxStatement(buff, pos + 16)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        test: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        body: deserializeBoxStatement(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeDoWhileStatement(buff, pos) {
+function deserializeDoWhileStatement(buff, int32, uint32, pos) {
     return {
         type: 'DoWhileStatement',
-        span: deserializeSpan(buff, pos),
-        test: deserializeBoxExpression(buff, pos + 12),
-        body: deserializeBoxStatement(buff, pos + 16)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        test: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        body: deserializeBoxStatement(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeForStatement(buff, pos) {
+function deserializeForStatement(buff, int32, uint32, pos) {
     return {
         type: 'ForStatement',
-        span: deserializeSpan(buff, pos),
-        init: deserializeOptionVariableDeclarationOrBoxExpression(buff, pos + 12),
-        test: deserializeOptionBoxExpression(buff, pos + 44),
-        update: deserializeOptionBoxExpression(buff, pos + 52),
-        body: deserializeBoxStatement(buff, pos + 60)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        init: deserializeOptionVariableDeclarationOrBoxExpression(buff, int32, uint32, pos + 12),
+        test: deserializeOptionBoxExpression(buff, int32, uint32, pos + 44),
+        update: deserializeOptionBoxExpression(buff, int32, uint32, pos + 52),
+        body: deserializeBoxStatement(buff, int32, uint32, pos + 60)
     };
 }
 
-function deserializeForInStatement(buff, pos) {
+function deserializeForInStatement(buff, int32, uint32, pos) {
     return {
         type: 'ForInStatement',
-        span: deserializeSpan(buff, pos),
-        left: deserializeVariableDeclarationOrPattern(buff, pos + 12),
-        right: deserializeBoxExpression(buff, pos + 68),
-        body: deserializeBoxStatement(buff, pos + 72)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        left: deserializeVariableDeclarationOrPattern(buff, int32, uint32, pos + 12),
+        right: deserializeBoxExpression(buff, int32, uint32, pos + 68),
+        body: deserializeBoxStatement(buff, int32, uint32, pos + 72)
     };
 }
 
-function deserializeForOfStatement(buff, pos) {
+function deserializeForOfStatement(buff, int32, uint32, pos) {
     return {
         type: 'ForOfStatement',
-        span: deserializeSpan(buff, pos),
-        await: deserializeOptionSpan(buff, pos + 12),
-        left: deserializeVariableDeclarationOrPattern(buff, pos + 28),
-        right: deserializeBoxExpression(buff, pos + 84),
-        body: deserializeBoxStatement(buff, pos + 88)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        await: deserializeOptionSpan(buff, int32, uint32, pos + 12),
+        left: deserializeVariableDeclarationOrPattern(buff, int32, uint32, pos + 28),
+        right: deserializeBoxExpression(buff, int32, uint32, pos + 84),
+        body: deserializeBoxStatement(buff, int32, uint32, pos + 88)
     };
 }
 
-function deserializeExpressionStatement(buff, pos) {
+function deserializeExpressionStatement(buff, int32, uint32, pos) {
     return {
         type: 'ExpressionStatement',
-        span: deserializeSpan(buff, pos),
-        expression: deserializeBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        expression: deserializeBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeDeclaration(buff, pos) {
+function deserializeDeclaration(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeClassDeclaration(buff, pos + 4);
-        case 1: return deserializeFunctionDeclaration(buff, pos + 4);
-        case 2: return deserializeVariableDeclaration(buff, pos + 4);
-        case 3: return deserializeTsInterfaceDeclaration(buff, pos + 4);
-        case 4: return deserializeTsTypeAliasDeclaration(buff, pos + 4);
-        case 5: return deserializeTsEnumDeclaration(buff, pos + 4);
-        case 6: return deserializeTsModuleDeclaration(buff, pos + 4);
+        case 0: return deserializeClassDeclaration(buff, int32, uint32, pos + 4);
+        case 1: return deserializeFunctionDeclaration(buff, int32, uint32, pos + 4);
+        case 2: return deserializeVariableDeclaration(buff, int32, uint32, pos + 4);
+        case 3: return deserializeTsInterfaceDeclaration(buff, int32, uint32, pos + 4);
+        case 4: return deserializeTsTypeAliasDeclaration(buff, int32, uint32, pos + 4);
+        case 5: return deserializeTsEnumDeclaration(buff, int32, uint32, pos + 4);
+        case 6: return deserializeTsModuleDeclaration(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for Declaration');
     }
 }
 
-function deserializeVariableDeclaration(buff, pos) {
+function deserializeVariableDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'VariableDeclaration',
-        span: deserializeSpan(buff, pos),
-        kind: deserializeVariableDeclarationKind(buff, pos + 12),
-        declare: deserializeBoolean(buff, pos + 13),
-        declarations: deserializeVecVariableDeclarator(buff, pos + 16)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        kind: deserializeVariableDeclarationKind(buff, int32, uint32, pos + 12),
+        declare: deserializeBoolean(buff, int32, uint32, pos + 13),
+        declarations: deserializeVecVariableDeclarator(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeVariableDeclarationKind(buff, pos) {
+function deserializeVariableDeclarationKind(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return 'var';
         case 1: return 'let';
@@ -424,209 +426,209 @@ function deserializeVariableDeclarationKind(buff, pos) {
     }
 }
 
-function deserializeVariableDeclarator(buff, pos) {
+function deserializeVariableDeclarator(buff, int32, uint32, pos) {
     return {
         type: 'VariableDeclarator',
-        span: deserializeSpan(buff, pos),
-        id: deserializePattern(buff, pos + 12),
-        init: deserializeOptionBoxExpression(buff, pos + 64),
-        definite: deserializeBoolean(buff, pos + 72)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        id: deserializePattern(buff, int32, uint32, pos + 12),
+        init: deserializeOptionBoxExpression(buff, int32, uint32, pos + 64),
+        definite: deserializeBoolean(buff, int32, uint32, pos + 72)
     };
 }
 
-function deserializeFunctionDeclaration(buff, pos) {
+function deserializeFunctionDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'FunctionDeclaration',
-        identifier: deserializeIdentifier(buff, pos),
-        declare: deserializeBoolean(buff, pos + 24),
-        params: deserializeVecParameter(buff, pos + 28),
-        decorators: deserializeVecDecorator(buff, pos + 36),
-        span: deserializeSpan(buff, pos + 44),
-        body: deserializeOptionBlockStatement(buff, pos + 56),
-        generator: deserializeBoolean(buff, pos + 104),
-        async: deserializeBoolean(buff, pos + 105),
-        typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, pos + 80),
-        returnType: deserializeOptionTsTypeAnnotation(buff, pos + 108)
+        identifier: deserializeIdentifier(buff, int32, uint32, pos),
+        declare: deserializeBoolean(buff, int32, uint32, pos + 24),
+        params: deserializeVecParameter(buff, int32, uint32, pos + 28),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 36),
+        span: deserializeSpan(buff, int32, uint32, pos + 44),
+        body: deserializeOptionBlockStatement(buff, int32, uint32, pos + 56),
+        generator: deserializeBoolean(buff, int32, uint32, pos + 104),
+        async: deserializeBoolean(buff, int32, uint32, pos + 105),
+        typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, int32, uint32, pos + 80),
+        returnType: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 108)
     };
 }
 
-function deserializeFunctionExpression(buff, pos) {
+function deserializeFunctionExpression(buff, int32, uint32, pos) {
     return {
         type: 'FunctionExpression',
-        identifier: deserializeOptionIdentifier(buff, pos),
-        params: deserializeVecParameter(buff, pos + 28),
-        decorators: deserializeVecDecorator(buff, pos + 36),
-        span: deserializeSpan(buff, pos + 44),
-        body: deserializeOptionBlockStatement(buff, pos + 56),
-        generator: deserializeBoolean(buff, pos + 104),
-        async: deserializeBoolean(buff, pos + 105),
-        typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, pos + 80),
-        returnType: deserializeOptionTsTypeAnnotation(buff, pos + 108)
+        identifier: deserializeOptionIdentifier(buff, int32, uint32, pos),
+        params: deserializeVecParameter(buff, int32, uint32, pos + 28),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 36),
+        span: deserializeSpan(buff, int32, uint32, pos + 44),
+        body: deserializeOptionBlockStatement(buff, int32, uint32, pos + 56),
+        generator: deserializeBoolean(buff, int32, uint32, pos + 104),
+        async: deserializeBoolean(buff, int32, uint32, pos + 105),
+        typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, int32, uint32, pos + 80),
+        returnType: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 108)
     };
 }
 
-function deserializeArrowFunctionExpression(buff, pos) {
+function deserializeArrowFunctionExpression(buff, int32, uint32, pos) {
     return {
         type: 'ArrowFunctionExpression',
-        span: deserializeSpan(buff, pos),
-        params: deserializeVecPattern(buff, pos + 12),
-        body: deserializeBlockStatementOrBoxExpression(buff, pos + 20),
-        async: deserializeBoolean(buff, pos + 68),
-        generator: deserializeBoolean(buff, pos + 69),
-        typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, pos + 44),
-        returnType: deserializeOptionTsTypeAnnotation(buff, pos + 72)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        params: deserializeVecPattern(buff, int32, uint32, pos + 12),
+        body: deserializeBlockStatementOrBoxExpression(buff, int32, uint32, pos + 20),
+        async: deserializeBoolean(buff, int32, uint32, pos + 68),
+        generator: deserializeBoolean(buff, int32, uint32, pos + 69),
+        typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, int32, uint32, pos + 44),
+        returnType: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 72)
     };
 }
 
-function deserializeParameter(buff, pos) {
+function deserializeParameter(buff, int32, uint32, pos) {
     return {
         type: 'Parameter',
-        span: deserializeSpan(buff, pos),
-        decorators: deserializeVecDecorator(buff, pos + 12),
-        pat: deserializePattern(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 12),
+        pat: deserializePattern(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeDecorator(buff, pos) {
+function deserializeDecorator(buff, int32, uint32, pos) {
     return {
         type: 'Decorator',
-        span: deserializeSpan(buff, pos),
-        expression: deserializeBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        expression: deserializeBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeClassDeclaration(buff, pos) {
+function deserializeClassDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'ClassDeclaration',
-        identifier: deserializeIdentifier(buff, pos),
-        declare: deserializeBoolean(buff, pos + 24),
-        span: deserializeSpan(buff, pos + 28),
-        decorators: deserializeVecDecorator(buff, pos + 40),
-        body: deserializeVecClassMember(buff, pos + 48),
-        superClass: deserializeOptionBoxExpression(buff, pos + 56),
-        isAbstract: deserializeBoolean(buff, pos + 64),
-        typeParams: deserializeOptionTsTypeParamDeclaration(buff, pos + 68),
-        superTypeParams: deserializeOptionTsTypeParameterInstantiation(buff, pos + 92),
-        implements: deserializeVecTsExpressionWithTypeArg(buff, pos + 116)
+        identifier: deserializeIdentifier(buff, int32, uint32, pos),
+        declare: deserializeBoolean(buff, int32, uint32, pos + 24),
+        span: deserializeSpan(buff, int32, uint32, pos + 28),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 40),
+        body: deserializeVecClassMember(buff, int32, uint32, pos + 48),
+        superClass: deserializeOptionBoxExpression(buff, int32, uint32, pos + 56),
+        isAbstract: deserializeBoolean(buff, int32, uint32, pos + 64),
+        typeParams: deserializeOptionTsTypeParamDeclaration(buff, int32, uint32, pos + 68),
+        superTypeParams: deserializeOptionTsTypeParameterInstantiation(buff, int32, uint32, pos + 92),
+        implements: deserializeVecTsExpressionWithTypeArg(buff, int32, uint32, pos + 116)
     };
 }
 
-function deserializeClassExpression(buff, pos) {
+function deserializeClassExpression(buff, int32, uint32, pos) {
     return {
         type: 'ClassExpression',
-        identifier: deserializeOptionIdentifier(buff, pos),
-        span: deserializeSpan(buff, pos + 28),
-        decorators: deserializeVecDecorator(buff, pos + 40),
-        body: deserializeVecClassMember(buff, pos + 48),
-        superClass: deserializeOptionBoxExpression(buff, pos + 56),
-        isAbstract: deserializeBoolean(buff, pos + 64),
-        typeParams: deserializeOptionTsTypeParamDeclaration(buff, pos + 68),
-        superTypeParams: deserializeOptionTsTypeParameterInstantiation(buff, pos + 92),
-        implements: deserializeVecTsExpressionWithTypeArg(buff, pos + 116)
+        identifier: deserializeOptionIdentifier(buff, int32, uint32, pos),
+        span: deserializeSpan(buff, int32, uint32, pos + 28),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 40),
+        body: deserializeVecClassMember(buff, int32, uint32, pos + 48),
+        superClass: deserializeOptionBoxExpression(buff, int32, uint32, pos + 56),
+        isAbstract: deserializeBoolean(buff, int32, uint32, pos + 64),
+        typeParams: deserializeOptionTsTypeParamDeclaration(buff, int32, uint32, pos + 68),
+        superTypeParams: deserializeOptionTsTypeParameterInstantiation(buff, int32, uint32, pos + 92),
+        implements: deserializeVecTsExpressionWithTypeArg(buff, int32, uint32, pos + 116)
     };
 }
 
-function deserializeClassMember(buff, pos) {
+function deserializeClassMember(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeConstructor(buff, pos + 4);
-        case 1: return deserializeClassMethod(buff, pos + 4);
-        case 2: return deserializePrivateMethod(buff, pos + 4);
-        case 3: return deserializeClassProperty(buff, pos + 4);
-        case 4: return deserializePrivateProperty(buff, pos + 4);
-        case 5: return deserializeTsIndexSignature(buff, pos + 4);
-        case 6: return deserializeEmptyStatement(buff, pos + 4);
-        case 7: return deserializeStaticBlock(buff, pos + 4);
+        case 0: return deserializeConstructor(buff, int32, uint32, pos + 4);
+        case 1: return deserializeClassMethod(buff, int32, uint32, pos + 4);
+        case 2: return deserializePrivateMethod(buff, int32, uint32, pos + 4);
+        case 3: return deserializeClassProperty(buff, int32, uint32, pos + 4);
+        case 4: return deserializePrivateProperty(buff, int32, uint32, pos + 4);
+        case 5: return deserializeTsIndexSignature(buff, int32, uint32, pos + 4);
+        case 6: return deserializeEmptyStatement(buff, int32, uint32, pos + 4);
+        case 7: return deserializeStaticBlock(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ClassMember');
     }
 }
 
-function deserializeConstructor(buff, pos) {
+function deserializeConstructor(buff, int32, uint32, pos) {
     return {
         type: 'Constructor',
-        span: deserializeSpan(buff, pos + 44),
-        key: deserializePropertyName(buff, pos),
-        params: deserializeVecTsParamPropOrParameter(buff, pos + 56),
-        body: deserializeOptionBlockStatement(buff, pos + 64),
-        accessibility: deserializeOptionAccessibility(buff, pos + 88),
-        isOptional: deserializeBoolean(buff, pos + 90)
+        span: deserializeSpan(buff, int32, uint32, pos + 44),
+        key: deserializePropertyName(buff, int32, uint32, pos),
+        params: deserializeVecTsParamPropOrParameter(buff, int32, uint32, pos + 56),
+        body: deserializeOptionBlockStatement(buff, int32, uint32, pos + 64),
+        accessibility: deserializeOptionAccessibility(buff, int32, uint32, pos + 88),
+        isOptional: deserializeBoolean(buff, int32, uint32, pos + 90)
     };
 }
 
-function deserializeClassMethod(buff, pos) {
+function deserializeClassMethod(buff, int32, uint32, pos) {
     return {
         type: 'ClassMethod',
-        span: deserializeSpan(buff, pos + 44),
-        key: deserializePropertyName(buff, pos),
-        function: deserializeFunction(buff, pos + 56),
-        kind: deserializeMethodKind(buff, pos + 156),
-        isStatic: deserializeBoolean(buff, pos + 157),
-        accessibility: deserializeOptionAccessibility(buff, pos + 160),
-        isAbstract: deserializeBoolean(buff, pos + 158),
-        isOptional: deserializeBoolean(buff, pos + 159),
-        isOverride: deserializeBoolean(buff, pos + 162)
+        span: deserializeSpan(buff, int32, uint32, pos + 44),
+        key: deserializePropertyName(buff, int32, uint32, pos),
+        function: deserializeFunction(buff, int32, uint32, pos + 56),
+        kind: deserializeMethodKind(buff, int32, uint32, pos + 156),
+        isStatic: deserializeBoolean(buff, int32, uint32, pos + 157),
+        accessibility: deserializeOptionAccessibility(buff, int32, uint32, pos + 160),
+        isAbstract: deserializeBoolean(buff, int32, uint32, pos + 158),
+        isOptional: deserializeBoolean(buff, int32, uint32, pos + 159),
+        isOverride: deserializeBoolean(buff, int32, uint32, pos + 162)
     };
 }
 
-function deserializePrivateMethod(buff, pos) {
+function deserializePrivateMethod(buff, int32, uint32, pos) {
     return {
         type: 'PrivateMethod',
-        span: deserializeSpan(buff, pos),
-        key: deserializePrivateName(buff, pos + 12),
-        function: deserializeFunction(buff, pos + 48),
-        kind: deserializeMethodKind(buff, pos + 148),
-        isStatic: deserializeBoolean(buff, pos + 149),
-        accessibility: deserializeOptionAccessibility(buff, pos + 152),
-        isAbstract: deserializeBoolean(buff, pos + 150),
-        isOptional: deserializeBoolean(buff, pos + 151),
-        isOverride: deserializeBoolean(buff, pos + 154)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        key: deserializePrivateName(buff, int32, uint32, pos + 12),
+        function: deserializeFunction(buff, int32, uint32, pos + 48),
+        kind: deserializeMethodKind(buff, int32, uint32, pos + 148),
+        isStatic: deserializeBoolean(buff, int32, uint32, pos + 149),
+        accessibility: deserializeOptionAccessibility(buff, int32, uint32, pos + 152),
+        isAbstract: deserializeBoolean(buff, int32, uint32, pos + 150),
+        isOptional: deserializeBoolean(buff, int32, uint32, pos + 151),
+        isOverride: deserializeBoolean(buff, int32, uint32, pos + 154)
     };
 }
 
-function deserializeClassProperty(buff, pos) {
+function deserializeClassProperty(buff, int32, uint32, pos) {
     return {
         type: 'ClassProperty',
-        span: deserializeSpan(buff, pos + 44),
-        key: deserializePropertyName(buff, pos),
-        value: deserializeOptionBoxExpression(buff, pos + 56),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 64),
-        isStatic: deserializeBoolean(buff, pos + 92),
-        decorators: deserializeVecDecorator(buff, pos + 84),
-        accessibility: deserializeOptionAccessibility(buff, pos + 93),
-        isAbstract: deserializeBoolean(buff, pos + 95),
-        isOptional: deserializeBoolean(buff, pos + 96),
-        isOverride: deserializeBoolean(buff, pos + 97),
-        readonly: deserializeBoolean(buff, pos + 98),
-        declare: deserializeBoolean(buff, pos + 99),
-        definite: deserializeBoolean(buff, pos + 100)
+        span: deserializeSpan(buff, int32, uint32, pos + 44),
+        key: deserializePropertyName(buff, int32, uint32, pos),
+        value: deserializeOptionBoxExpression(buff, int32, uint32, pos + 56),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 64),
+        isStatic: deserializeBoolean(buff, int32, uint32, pos + 92),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 84),
+        accessibility: deserializeOptionAccessibility(buff, int32, uint32, pos + 93),
+        isAbstract: deserializeBoolean(buff, int32, uint32, pos + 95),
+        isOptional: deserializeBoolean(buff, int32, uint32, pos + 96),
+        isOverride: deserializeBoolean(buff, int32, uint32, pos + 97),
+        readonly: deserializeBoolean(buff, int32, uint32, pos + 98),
+        declare: deserializeBoolean(buff, int32, uint32, pos + 99),
+        definite: deserializeBoolean(buff, int32, uint32, pos + 100)
     };
 }
 
-function deserializePrivateProperty(buff, pos) {
+function deserializePrivateProperty(buff, int32, uint32, pos) {
     return {
         type: 'PrivateProperty',
-        span: deserializeSpan(buff, pos),
-        key: deserializePrivateName(buff, pos + 12),
-        value: deserializeOptionBoxExpression(buff, pos + 48),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 56),
-        isStatic: deserializeBoolean(buff, pos + 84),
-        decorators: deserializeVecDecorator(buff, pos + 76),
-        accessibility: deserializeOptionAccessibility(buff, pos + 85),
-        isOptional: deserializeBoolean(buff, pos + 87),
-        isOverride: deserializeBoolean(buff, pos + 88),
-        readonly: deserializeBoolean(buff, pos + 89),
-        definite: deserializeBoolean(buff, pos + 90)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        key: deserializePrivateName(buff, int32, uint32, pos + 12),
+        value: deserializeOptionBoxExpression(buff, int32, uint32, pos + 48),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 56),
+        isStatic: deserializeBoolean(buff, int32, uint32, pos + 84),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 76),
+        accessibility: deserializeOptionAccessibility(buff, int32, uint32, pos + 85),
+        isOptional: deserializeBoolean(buff, int32, uint32, pos + 87),
+        isOverride: deserializeBoolean(buff, int32, uint32, pos + 88),
+        readonly: deserializeBoolean(buff, int32, uint32, pos + 89),
+        definite: deserializeBoolean(buff, int32, uint32, pos + 90)
     };
 }
 
-function deserializeStaticBlock(buff, pos) {
+function deserializeStaticBlock(buff, int32, uint32, pos) {
     return {
         type: 'StaticBlock',
-        span: deserializeSpan(buff, pos),
-        body: deserializeBlockStatement(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        body: deserializeBlockStatement(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeMethodKind(buff, pos) {
+function deserializeMethodKind(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return 'method';
         case 1: return 'getter';
@@ -635,176 +637,176 @@ function deserializeMethodKind(buff, pos) {
     }
 }
 
-function deserializeFunction(buff, pos) {
+function deserializeFunction(buff, int32, uint32, pos) {
     return {
-        params: deserializeVecParameter(buff, pos),
-        decorators: deserializeVecDecorator(buff, pos + 8),
-        span: deserializeSpan(buff, pos + 16),
-        body: deserializeOptionBlockStatement(buff, pos + 28),
-        generator: deserializeBoolean(buff, pos + 76),
-        async: deserializeBoolean(buff, pos + 77),
-        typeParameters: deserializeOptionTsTypeParamDeclaration(buff, pos + 52),
-        returnType: deserializeOptionTsTypeAnnotation(buff, pos + 80)
+        params: deserializeVecParameter(buff, int32, uint32, pos),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 8),
+        span: deserializeSpan(buff, int32, uint32, pos + 16),
+        body: deserializeOptionBlockStatement(buff, int32, uint32, pos + 28),
+        generator: deserializeBoolean(buff, int32, uint32, pos + 76),
+        async: deserializeBoolean(buff, int32, uint32, pos + 77),
+        typeParameters: deserializeOptionTsTypeParamDeclaration(buff, int32, uint32, pos + 52),
+        returnType: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 80)
     };
 }
 
-function deserializePattern(buff, pos) {
+function deserializePattern(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeBindingIdentifier(buff, pos + 4);
-        case 1: return deserializeArrayPattern(buff, pos + 4);
-        case 2: return deserializeRestElement(buff, pos + 4);
-        case 3: return deserializeObjectPattern(buff, pos + 4);
-        case 4: return deserializeAssignmentPattern(buff, pos + 4);
-        case 5: return deserializeInvalid(buff, pos + 4);
-        case 6: return deserializeBoxExpression(buff, pos + 4);
+        case 0: return deserializeBindingIdentifier(buff, int32, uint32, pos + 4);
+        case 1: return deserializeArrayPattern(buff, int32, uint32, pos + 4);
+        case 2: return deserializeRestElement(buff, int32, uint32, pos + 4);
+        case 3: return deserializeObjectPattern(buff, int32, uint32, pos + 4);
+        case 4: return deserializeAssignmentPattern(buff, int32, uint32, pos + 4);
+        case 5: return deserializeInvalid(buff, int32, uint32, pos + 4);
+        case 6: return deserializeBoxExpression(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for Pattern');
     }
 }
 
-function deserializeBindingIdentifier(buff, pos) {
+function deserializeBindingIdentifier(buff, int32, uint32, pos) {
     return {
         type: 'Identifier',
-        span: deserializeSpan(buff, pos),
-        value: deserializeJsWord(buff, pos + 12),
-        optional: deserializeBoolean(buff, pos + 20),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 24)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        value: deserializeJsWord(buff, int32, uint32, pos + 12),
+        optional: deserializeBoolean(buff, int32, uint32, pos + 20),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 24)
     };
 }
 
-function deserializeArrayPattern(buff, pos) {
+function deserializeArrayPattern(buff, int32, uint32, pos) {
     return {
         type: 'ArrayPattern',
-        span: deserializeSpan(buff, pos),
-        elements: deserializeVecOptionPattern(buff, pos + 12),
-        optional: deserializeBoolean(buff, pos + 20),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 24)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        elements: deserializeVecOptionPattern(buff, int32, uint32, pos + 12),
+        optional: deserializeBoolean(buff, int32, uint32, pos + 20),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 24)
     };
 }
 
-function deserializeRestElement(buff, pos) {
+function deserializeRestElement(buff, int32, uint32, pos) {
     return {
         type: 'RestElement',
-        span: deserializeSpan(buff, pos),
-        rest: deserializeSpan(buff, pos + 12),
-        argument: deserializeBoxPattern(buff, pos + 24),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 28)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        rest: deserializeSpan(buff, int32, uint32, pos + 12),
+        argument: deserializeBoxPattern(buff, int32, uint32, pos + 24),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 28)
     };
 }
 
-function deserializeObjectPattern(buff, pos) {
+function deserializeObjectPattern(buff, int32, uint32, pos) {
     return {
         type: 'ObjectPattern',
-        span: deserializeSpan(buff, pos),
-        properties: deserializeVecObjectPatternProperty(buff, pos + 12),
-        optional: deserializeBoolean(buff, pos + 20),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 24)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        properties: deserializeVecObjectPatternProperty(buff, int32, uint32, pos + 12),
+        optional: deserializeBoolean(buff, int32, uint32, pos + 20),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 24)
     };
 }
 
-function deserializeObjectPatternProperty(buff, pos) {
+function deserializeObjectPatternProperty(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeKeyValuePatternProperty(buff, pos + 4);
-        case 1: return deserializeAssignmentPatternProperty(buff, pos + 4);
-        case 2: return deserializeRestElement(buff, pos + 4);
+        case 0: return deserializeKeyValuePatternProperty(buff, int32, uint32, pos + 4);
+        case 1: return deserializeAssignmentPatternProperty(buff, int32, uint32, pos + 4);
+        case 2: return deserializeRestElement(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ObjectPatternProperty');
     }
 }
 
-function deserializeKeyValuePatternProperty(buff, pos) {
+function deserializeKeyValuePatternProperty(buff, int32, uint32, pos) {
     return {
         type: 'KeyValuePatternProperty',
-        key: deserializePropertyName(buff, pos),
-        value: deserializeBoxPattern(buff, pos + 44)
+        key: deserializePropertyName(buff, int32, uint32, pos),
+        value: deserializeBoxPattern(buff, int32, uint32, pos + 44)
     };
 }
 
-function deserializeAssignmentPatternProperty(buff, pos) {
+function deserializeAssignmentPatternProperty(buff, int32, uint32, pos) {
     return {
         type: 'AssignmentPatternProperty',
-        span: deserializeSpan(buff, pos),
-        key: deserializeIdentifier(buff, pos + 12),
-        value: deserializeOptionBoxExpression(buff, pos + 36)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        key: deserializeIdentifier(buff, int32, uint32, pos + 12),
+        value: deserializeOptionBoxExpression(buff, int32, uint32, pos + 36)
     };
 }
 
-function deserializeAssignmentPattern(buff, pos) {
+function deserializeAssignmentPattern(buff, int32, uint32, pos) {
     return {
         type: 'AssignmentPattern',
-        span: deserializeSpan(buff, pos),
-        left: deserializeBoxPattern(buff, pos + 12),
-        right: deserializeBoxExpression(buff, pos + 16),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        left: deserializeBoxPattern(buff, int32, uint32, pos + 12),
+        right: deserializeBoxExpression(buff, int32, uint32, pos + 16),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeExpression(buff, pos) {
+function deserializeExpression(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeThisExpression(buff, pos + 4);
-        case 1: return deserializeArrayExpression(buff, pos + 4);
-        case 2: return deserializeObjectExpression(buff, pos + 4);
-        case 3: return deserializeFunctionExpression(buff, pos + 4);
-        case 4: return deserializeUnaryExpression(buff, pos + 4);
-        case 5: return deserializeUpdateExpression(buff, pos + 4);
-        case 6: return deserializeBinaryExpression(buff, pos + 4);
-        case 7: return deserializeAssignmentExpression(buff, pos + 4);
-        case 8: return deserializeMemberExpression(buff, pos + 4);
-        case 9: return deserializeSuperPropExpression(buff, pos + 4);
-        case 10: return deserializeConditionalExpression(buff, pos + 4);
-        case 11: return deserializeCallExpression(buff, pos + 4);
-        case 12: return deserializeNewExpression(buff, pos + 4);
-        case 13: return deserializeSequenceExpression(buff, pos + 4);
-        case 14: return deserializeIdentifier(buff, pos + 4);
-        case 15: return deserializeLiteral(buff, pos + 4);
-        case 16: return deserializeTemplateLiteral(buff, pos + 4);
-        case 17: return deserializeTaggedTemplateExpression(buff, pos + 4);
-        case 18: return deserializeArrowFunctionExpression(buff, pos + 4);
-        case 19: return deserializeClassExpression(buff, pos + 4);
-        case 20: return deserializeYieldExpression(buff, pos + 4);
-        case 21: return deserializeMetaProperty(buff, pos + 4);
-        case 22: return deserializeAwaitExpression(buff, pos + 4);
-        case 23: return deserializeParenthesisExpression(buff, pos + 4);
-        case 24: return deserializeJSXMemberExpression(buff, pos + 4);
-        case 25: return deserializeJSXNamespacedName(buff, pos + 4);
-        case 26: return deserializeJSXEmptyExpression(buff, pos + 4);
-        case 27: return deserializeJSXElement(buff, pos + 4);
-        case 28: return deserializeJSXFragment(buff, pos + 4);
-        case 29: return deserializeTsTypeAssertion(buff, pos + 4);
-        case 30: return deserializeTsConstAssertion(buff, pos + 4);
-        case 31: return deserializeTsNonNullExpression(buff, pos + 4);
-        case 32: return deserializeTsAsExpression(buff, pos + 4);
-        case 33: return deserializeTsInstantiation(buff, pos + 4);
-        case 34: return deserializePrivateName(buff, pos + 4);
-        case 35: return deserializeOptionalChainingExpression(buff, pos + 4);
-        case 36: return deserializeInvalid(buff, pos + 4);
+        case 0: return deserializeThisExpression(buff, int32, uint32, pos + 4);
+        case 1: return deserializeArrayExpression(buff, int32, uint32, pos + 4);
+        case 2: return deserializeObjectExpression(buff, int32, uint32, pos + 4);
+        case 3: return deserializeFunctionExpression(buff, int32, uint32, pos + 4);
+        case 4: return deserializeUnaryExpression(buff, int32, uint32, pos + 4);
+        case 5: return deserializeUpdateExpression(buff, int32, uint32, pos + 4);
+        case 6: return deserializeBinaryExpression(buff, int32, uint32, pos + 4);
+        case 7: return deserializeAssignmentExpression(buff, int32, uint32, pos + 4);
+        case 8: return deserializeMemberExpression(buff, int32, uint32, pos + 4);
+        case 9: return deserializeSuperPropExpression(buff, int32, uint32, pos + 4);
+        case 10: return deserializeConditionalExpression(buff, int32, uint32, pos + 4);
+        case 11: return deserializeCallExpression(buff, int32, uint32, pos + 4);
+        case 12: return deserializeNewExpression(buff, int32, uint32, pos + 4);
+        case 13: return deserializeSequenceExpression(buff, int32, uint32, pos + 4);
+        case 14: return deserializeIdentifier(buff, int32, uint32, pos + 4);
+        case 15: return deserializeLiteral(buff, int32, uint32, pos + 4);
+        case 16: return deserializeTemplateLiteral(buff, int32, uint32, pos + 4);
+        case 17: return deserializeTaggedTemplateExpression(buff, int32, uint32, pos + 4);
+        case 18: return deserializeArrowFunctionExpression(buff, int32, uint32, pos + 4);
+        case 19: return deserializeClassExpression(buff, int32, uint32, pos + 4);
+        case 20: return deserializeYieldExpression(buff, int32, uint32, pos + 4);
+        case 21: return deserializeMetaProperty(buff, int32, uint32, pos + 4);
+        case 22: return deserializeAwaitExpression(buff, int32, uint32, pos + 4);
+        case 23: return deserializeParenthesisExpression(buff, int32, uint32, pos + 4);
+        case 24: return deserializeJSXMemberExpression(buff, int32, uint32, pos + 4);
+        case 25: return deserializeJSXNamespacedName(buff, int32, uint32, pos + 4);
+        case 26: return deserializeJSXEmptyExpression(buff, int32, uint32, pos + 4);
+        case 27: return deserializeJSXElement(buff, int32, uint32, pos + 4);
+        case 28: return deserializeJSXFragment(buff, int32, uint32, pos + 4);
+        case 29: return deserializeTsTypeAssertion(buff, int32, uint32, pos + 4);
+        case 30: return deserializeTsConstAssertion(buff, int32, uint32, pos + 4);
+        case 31: return deserializeTsNonNullExpression(buff, int32, uint32, pos + 4);
+        case 32: return deserializeTsAsExpression(buff, int32, uint32, pos + 4);
+        case 33: return deserializeTsInstantiation(buff, int32, uint32, pos + 4);
+        case 34: return deserializePrivateName(buff, int32, uint32, pos + 4);
+        case 35: return deserializeOptionalChainingExpression(buff, int32, uint32, pos + 4);
+        case 36: return deserializeInvalid(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for Expression');
     }
 }
 
-function deserializeThisExpression(buff, pos) {
+function deserializeThisExpression(buff, int32, uint32, pos) {
     return {
         type: 'ThisExpression',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeArrayExpression(buff, pos) {
+function deserializeArrayExpression(buff, int32, uint32, pos) {
     return {
         type: 'ArrayExpression',
-        span: deserializeSpan(buff, pos),
-        elements: deserializeVecOptionExpressionOrSpread(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        elements: deserializeVecOptionExpressionOrSpread(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeUnaryExpression(buff, pos) {
+function deserializeUnaryExpression(buff, int32, uint32, pos) {
     return {
         type: 'UnaryExpression',
-        span: deserializeSpan(buff, pos),
-        operator: deserializeUnaryOperator(buff, pos + 12),
-        argument: deserializeBoxExpression(buff, pos + 16)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        operator: deserializeUnaryOperator(buff, int32, uint32, pos + 12),
+        argument: deserializeBoxExpression(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeUnaryOperator(buff, pos) {
+function deserializeUnaryOperator(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return '-';
         case 1: return '+';
@@ -817,17 +819,17 @@ function deserializeUnaryOperator(buff, pos) {
     }
 }
 
-function deserializeUpdateExpression(buff, pos) {
+function deserializeUpdateExpression(buff, int32, uint32, pos) {
     return {
         type: 'UpdateExpression',
-        span: deserializeSpan(buff, pos),
-        operator: deserializeUpdateOperator(buff, pos + 12),
-        prefix: deserializeBoolean(buff, pos + 13),
-        argument: deserializeBoxExpression(buff, pos + 16)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        operator: deserializeUpdateOperator(buff, int32, uint32, pos + 12),
+        prefix: deserializeBoolean(buff, int32, uint32, pos + 13),
+        argument: deserializeBoxExpression(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeUpdateOperator(buff, pos) {
+function deserializeUpdateOperator(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return '++';
         case 1: return '--';
@@ -835,17 +837,17 @@ function deserializeUpdateOperator(buff, pos) {
     }
 }
 
-function deserializeBinaryExpression(buff, pos) {
+function deserializeBinaryExpression(buff, int32, uint32, pos) {
     return {
         type: 'BinaryExpression',
-        span: deserializeSpan(buff, pos),
-        operator: deserializeBinaryOperator(buff, pos + 16),
-        left: deserializeBoxExpression(buff, pos + 12),
-        right: deserializeBoxExpression(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        operator: deserializeBinaryOperator(buff, int32, uint32, pos + 16),
+        left: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        right: deserializeBoxExpression(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeBinaryOperator(buff, pos) {
+function deserializeBinaryOperator(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return '==';
         case 1: return '!=';
@@ -876,17 +878,17 @@ function deserializeBinaryOperator(buff, pos) {
     }
 }
 
-function deserializeAssignmentExpression(buff, pos) {
+function deserializeAssignmentExpression(buff, int32, uint32, pos) {
     return {
         type: 'AssignmentExpression',
-        span: deserializeSpan(buff, pos),
-        operator: deserializeAssignmentOperator(buff, pos + 20),
-        left: deserializeBoxExpressionOrBoxPattern(buff, pos + 12),
-        right: deserializeBoxExpression(buff, pos + 24)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        operator: deserializeAssignmentOperator(buff, int32, uint32, pos + 20),
+        left: deserializeBoxExpressionOrBoxPattern(buff, int32, uint32, pos + 12),
+        right: deserializeBoxExpression(buff, int32, uint32, pos + 24)
     };
 }
 
-function deserializeAssignmentOperator(buff, pos) {
+function deserializeAssignmentOperator(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return '=';
         case 1: return '+=';
@@ -908,118 +910,118 @@ function deserializeAssignmentOperator(buff, pos) {
     }
 }
 
-function deserializeMemberExpression(buff, pos) {
+function deserializeMemberExpression(buff, int32, uint32, pos) {
     return {
         type: 'MemberExpression',
-        span: deserializeSpan(buff, pos),
-        object: deserializeBoxExpression(buff, pos + 12),
-        property: deserializeIdentifierOrPrivateNameOrComputed(buff, pos + 16)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        object: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        property: deserializeIdentifierOrPrivateNameOrComputed(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeSuperPropExpression(buff, pos) {
+function deserializeSuperPropExpression(buff, int32, uint32, pos) {
     return {
         type: 'SuperPropExpression',
-        span: deserializeSpan(buff, pos),
-        obj: deserializeSuper(buff, pos + 12),
-        property: deserializeIdentifierOrComputed(buff, pos + 24)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        obj: deserializeSuper(buff, int32, uint32, pos + 12),
+        property: deserializeIdentifierOrComputed(buff, int32, uint32, pos + 24)
     };
 }
 
-function deserializeConditionalExpression(buff, pos) {
+function deserializeConditionalExpression(buff, int32, uint32, pos) {
     return {
         type: 'ConditionalExpression',
-        span: deserializeSpan(buff, pos),
-        test: deserializeBoxExpression(buff, pos + 12),
-        consequent: deserializeBoxExpression(buff, pos + 16),
-        alternate: deserializeBoxExpression(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        test: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        consequent: deserializeBoxExpression(buff, int32, uint32, pos + 16),
+        alternate: deserializeBoxExpression(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeCallExpression(buff, pos) {
+function deserializeCallExpression(buff, int32, uint32, pos) {
     return {
         type: 'CallExpression',
-        span: deserializeSpan(buff, pos),
-        callee: deserializeSuperOrImportOrBoxExpression(buff, pos + 12),
-        arguments: deserializeVecExpressionOrSpread(buff, pos + 28),
-        typeArguments: deserializeOptionTsTypeParameterInstantiation(buff, pos + 36)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        callee: deserializeSuperOrImportOrBoxExpression(buff, int32, uint32, pos + 12),
+        arguments: deserializeVecExpressionOrSpread(buff, int32, uint32, pos + 28),
+        typeArguments: deserializeOptionTsTypeParameterInstantiation(buff, int32, uint32, pos + 36)
     };
 }
 
-function deserializeNewExpression(buff, pos) {
+function deserializeNewExpression(buff, int32, uint32, pos) {
     return {
         type: 'NewExpression',
-        span: deserializeSpan(buff, pos),
-        callee: deserializeBoxExpression(buff, pos + 12),
-        arguments: deserializeOptionVecExpressionOrSpread(buff, pos + 16),
-        typeArguments: deserializeOptionTsTypeParameterInstantiation(buff, pos + 28)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        callee: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        arguments: deserializeOptionVecExpressionOrSpread(buff, int32, uint32, pos + 16),
+        typeArguments: deserializeOptionTsTypeParameterInstantiation(buff, int32, uint32, pos + 28)
     };
 }
 
-function deserializeSequenceExpression(buff, pos) {
+function deserializeSequenceExpression(buff, int32, uint32, pos) {
     return {
         type: 'SequenceExpression',
-        span: deserializeSpan(buff, pos),
-        expressions: deserializeVecBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        expressions: deserializeVecBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeIdentifier(buff, pos) {
+function deserializeIdentifier(buff, int32, uint32, pos) {
     return {
         type: 'Identifier',
-        span: deserializeSpan(buff, pos),
-        value: deserializeJsWord(buff, pos + 12),
-        optional: deserializeBoolean(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        value: deserializeJsWord(buff, int32, uint32, pos + 12),
+        optional: deserializeBoolean(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeTemplateLiteral(buff, pos) {
+function deserializeTemplateLiteral(buff, int32, uint32, pos) {
     return {
         type: 'TemplateLiteral',
-        span: deserializeSpan(buff, pos),
-        expressions: deserializeVecBoxExpression(buff, pos + 12),
-        quasis: deserializeVecTemplateElement(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        expressions: deserializeVecBoxExpression(buff, int32, uint32, pos + 12),
+        quasis: deserializeVecTemplateElement(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeTemplateElement(buff, pos) {
+function deserializeTemplateElement(buff, int32, uint32, pos) {
     return {
         type: 'TemplateElement',
-        span: deserializeSpan(buff, pos),
-        tail: deserializeBoolean(buff, pos + 24),
-        cooked: deserializeOptionJsWord(buff, pos + 12),
-        raw: deserializeJsWord(buff, pos + 28)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        tail: deserializeBoolean(buff, int32, uint32, pos + 24),
+        cooked: deserializeOptionJsWord(buff, int32, uint32, pos + 12),
+        raw: deserializeJsWord(buff, int32, uint32, pos + 28)
     };
 }
 
-function deserializeTaggedTemplateExpression(buff, pos) {
+function deserializeTaggedTemplateExpression(buff, int32, uint32, pos) {
     return {
         type: 'TaggedTemplateExpression',
-        span: deserializeSpan(buff, pos),
-        tag: deserializeBoxExpression(buff, pos + 12),
-        typeParameters: deserializeOptionTsTypeParameterInstantiation(buff, pos + 16),
-        template: deserializeTemplateLiteral(buff, pos + 40)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        tag: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        typeParameters: deserializeOptionTsTypeParameterInstantiation(buff, int32, uint32, pos + 16),
+        template: deserializeTemplateLiteral(buff, int32, uint32, pos + 40)
     };
 }
 
-function deserializeYieldExpression(buff, pos) {
+function deserializeYieldExpression(buff, int32, uint32, pos) {
     return {
         type: 'YieldExpression',
-        span: deserializeSpan(buff, pos),
-        argument: deserializeOptionBoxExpression(buff, pos + 12),
-        delegate: deserializeBoolean(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        argument: deserializeOptionBoxExpression(buff, int32, uint32, pos + 12),
+        delegate: deserializeBoolean(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeMetaProperty(buff, pos) {
+function deserializeMetaProperty(buff, int32, uint32, pos) {
     return {
         type: 'MetaProperty',
-        span: deserializeSpan(buff, pos),
-        kind: deserializeMetaPropertyKind(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        kind: deserializeMetaPropertyKind(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeMetaPropertyKind(buff, pos) {
+function deserializeMetaPropertyKind(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return 'new.target';
         case 1: return 'import.meta';
@@ -1027,232 +1029,232 @@ function deserializeMetaPropertyKind(buff, pos) {
     }
 }
 
-function deserializeAwaitExpression(buff, pos) {
+function deserializeAwaitExpression(buff, int32, uint32, pos) {
     return {
         type: 'AwaitExpression',
-        span: deserializeSpan(buff, pos),
-        argument: deserializeBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        argument: deserializeBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeParenthesisExpression(buff, pos) {
+function deserializeParenthesisExpression(buff, int32, uint32, pos) {
     return {
         type: 'ParenthesisExpression',
-        span: deserializeSpan(buff, pos),
-        expression: deserializeBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        expression: deserializeBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializePrivateName(buff, pos) {
+function deserializePrivateName(buff, int32, uint32, pos) {
     return {
         type: 'PrivateName',
-        span: deserializeSpan(buff, pos),
-        id: deserializeIdentifier(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        id: deserializeIdentifier(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeOptionalChainingExpression(buff, pos) {
+function deserializeOptionalChainingExpression(buff, int32, uint32, pos) {
     return {
         type: 'OptionalChainingExpression',
-        span: deserializeSpan(buff, pos),
-        questionDotToken: deserializeSpan(buff, pos + 12),
-        base: deserializeMemberExpressionOrOptionalChainingCall(buff, pos + 24)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        questionDotToken: deserializeSpan(buff, int32, uint32, pos + 12),
+        base: deserializeMemberExpressionOrOptionalChainingCall(buff, int32, uint32, pos + 24)
     };
 }
 
-function deserializeOptionalChainingCall(buff, pos) {
+function deserializeOptionalChainingCall(buff, int32, uint32, pos) {
     return {
         type: 'CallExpression',
-        span: deserializeSpan(buff, pos),
-        callee: deserializeBoxExpression(buff, pos + 12),
-        arguments: deserializeVecExpressionOrSpread(buff, pos + 16),
-        typeArguments: deserializeOptionTsTypeParameterInstantiation(buff, pos + 24)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        callee: deserializeBoxExpression(buff, int32, uint32, pos + 12),
+        arguments: deserializeVecExpressionOrSpread(buff, int32, uint32, pos + 16),
+        typeArguments: deserializeOptionTsTypeParameterInstantiation(buff, int32, uint32, pos + 24)
     };
 }
 
-function deserializeSuper(buff, pos) {
+function deserializeSuper(buff, int32, uint32, pos) {
     return {
         type: 'Super',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeImport(buff, pos) {
+function deserializeImport(buff, int32, uint32, pos) {
     return {
         type: 'Import',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeInvalid(buff, pos) {
+function deserializeInvalid(buff, int32, uint32, pos) {
     return {
         type: 'Invalid',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeComputed(buff, pos) {
+function deserializeComputed(buff, int32, uint32, pos) {
     return {
         type: 'Computed',
-        span: deserializeSpan(buff, pos),
-        expression: deserializeBoxExpression(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        expression: deserializeBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeExpressionOrSpread(buff, pos) {
+function deserializeExpressionOrSpread(buff, int32, uint32, pos) {
     return {
-        spread: deserializeOptionSpan(buff, pos),
-        expression: deserializeBoxExpression(buff, pos + 16)
+        spread: deserializeOptionSpan(buff, int32, uint32, pos),
+        expression: deserializeBoxExpression(buff, int32, uint32, pos + 16)
     };
 }
 
-function deserializeObjectExpression(buff, pos) {
+function deserializeObjectExpression(buff, int32, uint32, pos) {
     return {
         type: 'ObjectExpression',
-        span: deserializeSpan(buff, pos),
-        properties: deserializeVecSpreadElementOrBoxObjectProperty(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        properties: deserializeVecSpreadElementOrBoxObjectProperty(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeSpreadElement(buff, pos) {
+function deserializeSpreadElement(buff, int32, uint32, pos) {
     return {
         type: 'SpreadElement',
-        spread: deserializeSpan(buff, pos),
-        arguments: deserializeBoxExpression(buff, pos + 12)
+        spread: deserializeSpan(buff, int32, uint32, pos),
+        arguments: deserializeBoxExpression(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeObjectProperty(buff, pos) {
+function deserializeObjectProperty(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeIdentifier(buff, pos + 4);
-        case 1: return deserializeKeyValueProperty(buff, pos + 4);
-        case 2: return deserializeAssignmentProperty(buff, pos + 4);
-        case 3: return deserializeGetterProperty(buff, pos + 4);
-        case 4: return deserializeSetterProperty(buff, pos + 4);
-        case 5: return deserializeMethodProperty(buff, pos + 4);
+        case 0: return deserializeIdentifier(buff, int32, uint32, pos + 4);
+        case 1: return deserializeKeyValueProperty(buff, int32, uint32, pos + 4);
+        case 2: return deserializeAssignmentProperty(buff, int32, uint32, pos + 4);
+        case 3: return deserializeGetterProperty(buff, int32, uint32, pos + 4);
+        case 4: return deserializeSetterProperty(buff, int32, uint32, pos + 4);
+        case 5: return deserializeMethodProperty(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ObjectProperty');
     }
 }
 
-function deserializeKeyValueProperty(buff, pos) {
+function deserializeKeyValueProperty(buff, int32, uint32, pos) {
     return {
         type: 'KeyValueProperty',
-        key: deserializePropertyName(buff, pos),
-        value: deserializeBoxExpression(buff, pos + 44)
+        key: deserializePropertyName(buff, int32, uint32, pos),
+        value: deserializeBoxExpression(buff, int32, uint32, pos + 44)
     };
 }
 
-function deserializeAssignmentProperty(buff, pos) {
+function deserializeAssignmentProperty(buff, int32, uint32, pos) {
     return {
         type: 'AssignmentProperty',
-        span: deserializeSpan(buff, pos),
-        key: deserializeIdentifier(buff, pos + 12),
-        value: deserializeBoxExpression(buff, pos + 36)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        key: deserializeIdentifier(buff, int32, uint32, pos + 12),
+        value: deserializeBoxExpression(buff, int32, uint32, pos + 36)
     };
 }
 
-function deserializeGetterProperty(buff, pos) {
+function deserializeGetterProperty(buff, int32, uint32, pos) {
     return {
         type: 'GetterProperty',
-        span: deserializeSpan(buff, pos + 44),
-        key: deserializePropertyName(buff, pos),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, pos + 56),
-        body: deserializeOptionBlockStatement(buff, pos + 76)
+        span: deserializeSpan(buff, int32, uint32, pos + 44),
+        key: deserializePropertyName(buff, int32, uint32, pos),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 56),
+        body: deserializeOptionBlockStatement(buff, int32, uint32, pos + 76)
     };
 }
 
-function deserializeSetterProperty(buff, pos) {
+function deserializeSetterProperty(buff, int32, uint32, pos) {
     return {
         type: 'SetterProperty',
-        span: deserializeSpan(buff, pos + 44),
-        key: deserializePropertyName(buff, pos),
-        param: deserializePattern(buff, pos + 56),
-        body: deserializeOptionBlockStatement(buff, pos + 108)
+        span: deserializeSpan(buff, int32, uint32, pos + 44),
+        key: deserializePropertyName(buff, int32, uint32, pos),
+        param: deserializePattern(buff, int32, uint32, pos + 56),
+        body: deserializeOptionBlockStatement(buff, int32, uint32, pos + 108)
     };
 }
 
-function deserializeMethodProperty(buff, pos) {
+function deserializeMethodProperty(buff, int32, uint32, pos) {
     return {
         type: 'MethodProperty',
-        key: deserializePropertyName(buff, pos),
-        params: deserializeVecParameter(buff, pos + 44),
-        decorators: deserializeVecDecorator(buff, pos + 52),
-        span: deserializeSpan(buff, pos + 60),
-        body: deserializeOptionBlockStatement(buff, pos + 72),
-        generator: deserializeBoolean(buff, pos + 120),
-        async: deserializeBoolean(buff, pos + 121),
-        typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, pos + 96),
-        returnType: deserializeOptionTsTypeAnnotation(buff, pos + 124)
+        key: deserializePropertyName(buff, int32, uint32, pos),
+        params: deserializeVecParameter(buff, int32, uint32, pos + 44),
+        decorators: deserializeVecDecorator(buff, int32, uint32, pos + 52),
+        span: deserializeSpan(buff, int32, uint32, pos + 60),
+        body: deserializeOptionBlockStatement(buff, int32, uint32, pos + 72),
+        generator: deserializeBoolean(buff, int32, uint32, pos + 120),
+        async: deserializeBoolean(buff, int32, uint32, pos + 121),
+        typeParameters: deserializeOptionTsTypeParameterDeclaration(buff, int32, uint32, pos + 96),
+        returnType: deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos + 124)
     };
 }
 
-function deserializePropertyName(buff, pos) {
+function deserializePropertyName(buff, int32, uint32, pos) {
     switch (buff[pos + 4]) {
-        case 0: return deserializeIdentifier(buff, pos + 8);
-        case 1: return deserializeStringLiteral(buff, pos + 8);
-        case 2: return deserializeNumericLiteral(buff, pos + 8);
-        case 3: return deserializeComputed(buff, pos + 8);
-        case 4: return deserializeBigIntLiteral(buff, pos + 8);
+        case 0: return deserializeIdentifier(buff, int32, uint32, pos + 8);
+        case 1: return deserializeStringLiteral(buff, int32, uint32, pos + 8);
+        case 2: return deserializeNumericLiteral(buff, int32, uint32, pos + 8);
+        case 3: return deserializeComputed(buff, int32, uint32, pos + 8);
+        case 4: return deserializeBigIntLiteral(buff, int32, uint32, pos + 8);
         default: throw new Error('Unexpected enum value for PropertyName');
     }
 }
 
-function deserializeLiteral(buff, pos) {
+function deserializeLiteral(buff, int32, uint32, pos) {
     switch (buff[pos + 4]) {
-        case 0: return deserializeStringLiteral(buff, pos + 8);
-        case 1: return deserializeBooleanLiteral(buff, pos + 8);
-        case 2: return deserializeNullLiteral(buff, pos + 8);
-        case 3: return deserializeNumericLiteral(buff, pos + 8);
-        case 4: return deserializeBigIntLiteral(buff, pos + 8);
-        case 5: return deserializeRegExpLiteral(buff, pos + 8);
-        case 6: return deserializeJSXText(buff, pos + 8);
+        case 0: return deserializeStringLiteral(buff, int32, uint32, pos + 8);
+        case 1: return deserializeBooleanLiteral(buff, int32, uint32, pos + 8);
+        case 2: return deserializeNullLiteral(buff, int32, uint32, pos + 8);
+        case 3: return deserializeNumericLiteral(buff, int32, uint32, pos + 8);
+        case 4: return deserializeBigIntLiteral(buff, int32, uint32, pos + 8);
+        case 5: return deserializeRegExpLiteral(buff, int32, uint32, pos + 8);
+        case 6: return deserializeJSXText(buff, int32, uint32, pos + 8);
         default: throw new Error('Unexpected enum value for Literal');
     }
 }
 
-function deserializeStringLiteral(buff, pos) {
+function deserializeStringLiteral(buff, int32, uint32, pos) {
     return {
         type: 'StringLiteral',
-        span: deserializeSpan(buff, pos),
-        value: deserializeJsWord(buff, pos + 12),
-        raw: deserializeOptionJsWord(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        value: deserializeJsWord(buff, int32, uint32, pos + 12),
+        raw: deserializeOptionJsWord(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeBooleanLiteral(buff, pos) {
+function deserializeBooleanLiteral(buff, int32, uint32, pos) {
     return {
         type: 'BooleanLiteral',
-        span: deserializeSpan(buff, pos),
-        value: deserializeBoolean(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        value: deserializeBoolean(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeNullLiteral(buff, pos) {
+function deserializeNullLiteral(buff, int32, uint32, pos) {
     return {
         type: 'NullLiteral',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeNumericLiteral(buff, pos) {
+function deserializeNumericLiteral(buff, int32, uint32, pos) {
     return {
         type: 'NumericLiteral',
-        span: deserializeSpan(buff, pos + 4),
+        span: deserializeSpan(buff, int32, uint32, pos + 4),
         value: new Float64Array(buff.buffer, pos + 20, 1)[0]
     };
 }
 
-function deserializeBigIntLiteral(buff, pos) {
+function deserializeBigIntLiteral(buff, int32, uint32, pos) {
     return {
         type: 'BigIntLiteral',
-        span: deserializeSpan(buff, pos),
-        value: deserializeBigIntValue(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        value: deserializeBigIntValue(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeBigIntValue(buff, pos) {
+function deserializeBigIntValue(buff, int32, uint32, pos) {
     // TODO This implementation could be more efficient
-    const str = deserializeJsWord(buff, pos);
+    const str = deserializeJsWord(buff, int32, uint32, pos);
     if (str === '0') return [0, []];
 
     let current = BigInt(str);
@@ -1271,209 +1273,209 @@ function deserializeBigIntValue(buff, pos) {
     return [1, parts]; // TODO What is the initial 1 for?
 }
 
-function deserializeRegExpLiteral(buff, pos) {
+function deserializeRegExpLiteral(buff, int32, uint32, pos) {
     return {
         type: 'RegExpLiteral',
-        span: deserializeSpan(buff, pos),
-        pattern: deserializeJsWord(buff, pos + 12),
-        flags: deserializeJsWord(buff, pos + 20)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        pattern: deserializeJsWord(buff, int32, uint32, pos + 12),
+        flags: deserializeJsWord(buff, int32, uint32, pos + 20)
     };
 }
 
-function deserializeJSXText(buff, pos) {
+function deserializeJSXText(buff, int32, uint32, pos) {
     return {
         type: 'JSXText',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeJSXMemberExpression(buff, pos) {
+function deserializeJSXMemberExpression(buff, int32, uint32, pos) {
     return {
         type: 'JSXMemberExpression',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeJSXNamespacedName(buff, pos) {
+function deserializeJSXNamespacedName(buff, int32, uint32, pos) {
     return {
         type: 'JSXNamespacedName',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeJSXEmptyExpression(buff, pos) {
+function deserializeJSXEmptyExpression(buff, int32, uint32, pos) {
     return {
         type: 'JSXEmptyExpression',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeJSXElement(buff, pos) {
+function deserializeJSXElement(buff, int32, uint32, pos) {
     return {
         type: 'JSXElement',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeJSXFragment(buff, pos) {
+function deserializeJSXFragment(buff, int32, uint32, pos) {
     return {
         type: 'JSXFragment',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsTypeAssertion(buff, pos) {
+function deserializeTsTypeAssertion(buff, int32, uint32, pos) {
     return {
         type: 'TsTypeAssertion',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsConstAssertion(buff, pos) {
+function deserializeTsConstAssertion(buff, int32, uint32, pos) {
     return {
         type: 'TsConstAssertion',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsNonNullExpression(buff, pos) {
+function deserializeTsNonNullExpression(buff, int32, uint32, pos) {
     return {
         type: 'TsNonNullExpression',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsAsExpression(buff, pos) {
+function deserializeTsAsExpression(buff, int32, uint32, pos) {
     return {
         type: 'TsAsExpression',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsInstantiation(buff, pos) {
+function deserializeTsInstantiation(buff, int32, uint32, pos) {
     return {
         type: 'TsInstantiation',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsTypeAnnotation(buff, pos) {
+function deserializeTsTypeAnnotation(buff, int32, uint32, pos) {
     return {
         type: 'TsTypeAnnotation',
-        span: deserializeSpan(buff, pos),
-        typeAnnotation: deserializeBoxTsType(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        typeAnnotation: deserializeBoxTsType(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeTsInterfaceDeclaration(buff, pos) {
+function deserializeTsInterfaceDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'TsInterfaceDeclaration',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsTypeAliasDeclaration(buff, pos) {
+function deserializeTsTypeAliasDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'TsTypeAliasDeclaration',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsEnumDeclaration(buff, pos) {
+function deserializeTsEnumDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'TsEnumDeclaration',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsModuleDeclaration(buff, pos) {
+function deserializeTsModuleDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'TsModuleDeclaration',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsImportEqualsDeclaration(buff, pos) {
+function deserializeTsImportEqualsDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'TsImportEqualsDeclaration',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsExportAssignment(buff, pos) {
+function deserializeTsExportAssignment(buff, int32, uint32, pos) {
     return {
         type: 'TsExportAssignment',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsNamespaceExportDeclaration(buff, pos) {
+function deserializeTsNamespaceExportDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'TsNamespaceExportDeclaration',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsTypeParamDeclaration(buff, pos) {
+function deserializeTsTypeParamDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'TsTypeParamDeclaration',
-        span: deserializeSpan(buff, pos),
-        parameters: deserializeVecTsTypeParameter(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        parameters: deserializeVecTsTypeParameter(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeTsTypeParameterInstantiation(buff, pos) {
+function deserializeTsTypeParameterInstantiation(buff, int32, uint32, pos) {
     return {
         type: 'TsTypeParameterInstantiation',
-        span: deserializeSpan(buff, pos),
-        params: deserializeVecBoxTsType(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        params: deserializeVecBoxTsType(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeTsExpressionWithTypeArg(buff, pos) {
+function deserializeTsExpressionWithTypeArg(buff, int32, uint32, pos) {
     return {
         type: 'TsExpressionWithTypeArg',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsIndexSignature(buff, pos) {
+function deserializeTsIndexSignature(buff, int32, uint32, pos) {
     return {
         type: 'TsIndexSignature',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsParamProp(buff, pos) {
+function deserializeTsParamProp(buff, int32, uint32, pos) {
     return {
         type: 'TsParamProp',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsTypeParameterDeclaration(buff, pos) {
+function deserializeTsTypeParameterDeclaration(buff, int32, uint32, pos) {
     return {
         type: 'TsTypeParameterDeclaration',
-        span: deserializeSpan(buff, pos),
-        parameters: deserializeVecTsTypeParameter(buff, pos + 12)
+        span: deserializeSpan(buff, int32, uint32, pos),
+        parameters: deserializeVecTsTypeParameter(buff, int32, uint32, pos + 12)
     };
 }
 
-function deserializeTsTypeParameter(buff, pos) {
+function deserializeTsTypeParameter(buff, int32, uint32, pos) {
     return {
         type: 'TsTypeParameter',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeTsType(buff, pos) {
+function deserializeTsType(buff, int32, uint32, pos) {
     return {
         type: 'TsType',
-        span: deserializeSpan(buff, pos)
+        span: deserializeSpan(buff, int32, uint32, pos)
     };
 }
 
-function deserializeAccessibility(buff, pos) {
+function deserializeAccessibility(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return 'public';
         case 1: return 'protected';
@@ -1482,7 +1484,7 @@ function deserializeAccessibility(buff, pos) {
     }
 }
 
-function deserializeJsWord(buff, pos) {
+function deserializeJsWord(buff, int32, uint32, pos) {
     // 8 bytes. Last byte is length.
     // If length <= 7, bytes 0-6 contain the word.
     // Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
@@ -1490,14 +1492,14 @@ function deserializeJsWord(buff, pos) {
     // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
     let len = buff[pos + 7];
     if (len > 7) {
-        len = buff.uint32[pos >> 2];
-        pos = getPtr(buff, pos + 4) - 4;
+        len = uint32[pos >> 2];
+        pos = getPtr(int32, pos + 4) - 4;
     }
 
     return buff.toString('utf8', pos, pos + len); // TODO What encoding?
 }
 
-function deserializeBoolean(buff, pos) {
+function deserializeBoolean(buff, int32, uint32, pos) {
     switch (buff[pos]) {
         case 0: return false;
         case 1: return true;
@@ -1505,314 +1507,314 @@ function deserializeBoolean(buff, pos) {
     }
 }
 
-function deserializeSpan(buff, pos) {
+function deserializeSpan(buff, int32, uint32, pos) {
     const pos32 = pos >> 2;
     return {
-        start: buff.uint32[pos32],
-        end: buff.uint32[pos32 + 1],
-        ctxt: buff.uint32[pos32 + 2]
+        start: uint32[pos32],
+        end: uint32[pos32 + 1],
+        ctxt: uint32[pos32 + 2]
     };
 }
 
-function deserializeOptionJsWord(buff, pos) {
-    return deserializeOption(buff, pos, deserializeJsWord, 4);
+function deserializeOptionJsWord(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeJsWord, 4);
 }
 
-function deserializeOptionModuleExportName(buff, pos) {
-    return deserializeOption(buff, pos, deserializeModuleExportName, 4);
+function deserializeOptionModuleExportName(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeModuleExportName, 4);
 }
 
-function deserializeVecImportSpecifier(buff, pos) {
-    return deserializeVec(buff, pos, deserializeImportSpecifier, 84);
+function deserializeVecImportSpecifier(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeImportSpecifier, 84);
 }
 
-function deserializeOptionSpan(buff, pos) {
-    return deserializeOption(buff, pos, deserializeSpan, 4);
+function deserializeOptionSpan(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeSpan, 4);
 }
 
-function deserializeOptionExpressionOrSpread(buff, pos) {
-    return deserializeOption(buff, pos, deserializeExpressionOrSpread, 4);
+function deserializeOptionExpressionOrSpread(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeExpressionOrSpread, 4);
 }
 
-function deserializeVecOptionExpressionOrSpread(buff, pos) {
-    return deserializeVec(buff, pos, deserializeOptionExpressionOrSpread, 24);
+function deserializeVecOptionExpressionOrSpread(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeOptionExpressionOrSpread, 24);
 }
 
-function deserializeOptionIdentifier(buff, pos) {
-    return deserializeOption(buff, pos, deserializeIdentifier, 4);
+function deserializeOptionIdentifier(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeIdentifier, 4);
 }
 
-function deserializeVecDecorator(buff, pos) {
-    return deserializeVec(buff, pos, deserializeDecorator, 16);
+function deserializeVecDecorator(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeDecorator, 16);
 }
 
-function deserializeBoxTsType(buff, pos) {
-    return deserializeBox(buff, pos, deserializeTsType);
+function deserializeBoxTsType(buff, int32, uint32, pos) {
+    return deserializeBox(buff, int32, uint32, pos, deserializeTsType);
 }
 
-function deserializeOptionTsTypeAnnotation(buff, pos) {
-    return deserializeOption(buff, pos, deserializeTsTypeAnnotation, 4);
+function deserializeOptionTsTypeAnnotation(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeTsTypeAnnotation, 4);
 }
 
-function deserializeOptionPattern(buff, pos) {
-    return deserializeOption(buff, pos, deserializePattern, 4);
+function deserializeOptionPattern(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializePattern, 4);
 }
 
-function deserializeVecOptionPattern(buff, pos) {
-    return deserializeVec(buff, pos, deserializeOptionPattern, 56);
+function deserializeVecOptionPattern(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeOptionPattern, 56);
 }
 
-function deserializeBoxPattern(buff, pos) {
-    return deserializeBox(buff, pos, deserializePattern);
+function deserializeBoxPattern(buff, int32, uint32, pos) {
+    return deserializeBox(buff, int32, uint32, pos, deserializePattern);
 }
 
-function deserializeOptionBoxExpression(buff, pos) {
-    return deserializeOption(buff, pos, deserializeBoxExpression, 4);
+function deserializeOptionBoxExpression(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeBoxExpression, 4);
 }
 
-function deserializeVecObjectPatternProperty(buff, pos) {
-    return deserializeVec(buff, pos, deserializeObjectPatternProperty, 56);
+function deserializeVecObjectPatternProperty(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeObjectPatternProperty, 56);
 }
 
-function deserializeVecParameter(buff, pos) {
-    return deserializeVec(buff, pos, deserializeParameter, 72);
+function deserializeVecParameter(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeParameter, 72);
 }
 
-function deserializeBoxStatement(buff, pos) {
-    return deserializeBox(buff, pos, deserializeStatement);
+function deserializeBoxStatement(buff, int32, uint32, pos) {
+    return deserializeBox(buff, int32, uint32, pos, deserializeStatement);
 }
 
-function deserializeOptionBoxStatement(buff, pos) {
-    return deserializeOption(buff, pos, deserializeBoxStatement, 4);
+function deserializeOptionBoxStatement(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeBoxStatement, 4);
 }
 
-function deserializeVecSwitchCase(buff, pos) {
-    return deserializeVec(buff, pos, deserializeSwitchCase, 28);
+function deserializeVecSwitchCase(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeSwitchCase, 28);
 }
 
-function deserializeOptionCatchClause(buff, pos) {
-    return deserializeOption(buff, pos, deserializeCatchClause, 4);
+function deserializeOptionCatchClause(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeCatchClause, 4);
 }
 
-function deserializeVecVariableDeclarator(buff, pos) {
-    return deserializeVec(buff, pos, deserializeVariableDeclarator, 76);
+function deserializeVecVariableDeclarator(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeVariableDeclarator, 76);
 }
 
-function deserializeVariableDeclarationOrBoxExpression(buff, pos) {
+function deserializeVariableDeclarationOrBoxExpression(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeVariableDeclaration(buff, pos + 4);
-        case 1: return deserializeBoxExpression(buff, pos + 4);
+        case 0: return deserializeVariableDeclaration(buff, int32, uint32, pos + 4);
+        case 1: return deserializeBoxExpression(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for VariableDeclarationOrBoxExpression');
     }
 }
 
-function deserializeOptionVariableDeclarationOrBoxExpression(buff, pos) {
-    return deserializeOption(buff, pos, deserializeVariableDeclarationOrBoxExpression, 4);
+function deserializeOptionVariableDeclarationOrBoxExpression(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeVariableDeclarationOrBoxExpression, 4);
 }
 
-function deserializeVariableDeclarationOrPattern(buff, pos) {
+function deserializeVariableDeclarationOrPattern(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeVariableDeclaration(buff, pos + 4);
-        case 1: return deserializePattern(buff, pos + 4);
+        case 0: return deserializeVariableDeclaration(buff, int32, uint32, pos + 4);
+        case 1: return deserializePattern(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for VariableDeclarationOrPattern');
     }
 }
 
-function deserializeTsParamPropOrParameter(buff, pos) {
+function deserializeTsParamPropOrParameter(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeTsParamProp(buff, pos + 4);
-        case 1: return deserializeParameter(buff, pos + 4);
+        case 0: return deserializeTsParamProp(buff, int32, uint32, pos + 4);
+        case 1: return deserializeParameter(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for TsParamPropOrParameter');
     }
 }
 
-function deserializeVecTsParamPropOrParameter(buff, pos) {
-    return deserializeVec(buff, pos, deserializeTsParamPropOrParameter, 76);
+function deserializeVecTsParamPropOrParameter(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeTsParamPropOrParameter, 76);
 }
 
-function deserializeOptionAccessibility(buff, pos) {
-    return deserializeOption(buff, pos, deserializeAccessibility, 1);
+function deserializeOptionAccessibility(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeAccessibility, 1);
 }
 
-function deserializeVecTsTypeParameter(buff, pos) {
-    return deserializeVec(buff, pos, deserializeTsTypeParameter, 12);
+function deserializeVecTsTypeParameter(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeTsTypeParameter, 12);
 }
 
-function deserializeOptionTsTypeParamDeclaration(buff, pos) {
-    return deserializeOption(buff, pos, deserializeTsTypeParamDeclaration, 4);
+function deserializeOptionTsTypeParamDeclaration(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeTsTypeParamDeclaration, 4);
 }
 
-function deserializeVecClassMember(buff, pos) {
-    return deserializeVec(buff, pos, deserializeClassMember, 168);
+function deserializeVecClassMember(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeClassMember, 168);
 }
 
-function deserializeVecBoxTsType(buff, pos) {
-    return deserializeVec(buff, pos, deserializeBoxTsType, 4);
+function deserializeVecBoxTsType(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeBoxTsType, 4);
 }
 
-function deserializeOptionTsTypeParameterInstantiation(buff, pos) {
-    return deserializeOption(buff, pos, deserializeTsTypeParameterInstantiation, 4);
+function deserializeOptionTsTypeParameterInstantiation(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeTsTypeParameterInstantiation, 4);
 }
 
-function deserializeVecTsExpressionWithTypeArg(buff, pos) {
-    return deserializeVec(buff, pos, deserializeTsExpressionWithTypeArg, 12);
+function deserializeVecTsExpressionWithTypeArg(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeTsExpressionWithTypeArg, 12);
 }
 
-function deserializeOptionTsTypeParameterDeclaration(buff, pos) {
-    return deserializeOption(buff, pos, deserializeTsTypeParameterDeclaration, 4);
+function deserializeOptionTsTypeParameterDeclaration(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeTsTypeParameterDeclaration, 4);
 }
 
-function deserializeVecStatement(buff, pos) {
-    return deserializeVec(buff, pos, deserializeStatement, 152);
+function deserializeVecStatement(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeStatement, 152);
 }
 
-function deserializeBoxExpressionOrBoxPattern(buff, pos) {
+function deserializeBoxExpressionOrBoxPattern(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeBoxExpression(buff, pos + 4);
-        case 1: return deserializeBoxPattern(buff, pos + 4);
+        case 0: return deserializeBoxExpression(buff, int32, uint32, pos + 4);
+        case 1: return deserializeBoxPattern(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for BoxExpressionOrBoxPattern');
     }
 }
 
-function deserializeIdentifierOrPrivateNameOrComputed(buff, pos) {
+function deserializeIdentifierOrPrivateNameOrComputed(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeIdentifier(buff, pos + 4);
-        case 1: return deserializePrivateName(buff, pos + 4);
-        case 2: return deserializeComputed(buff, pos + 4);
+        case 0: return deserializeIdentifier(buff, int32, uint32, pos + 4);
+        case 1: return deserializePrivateName(buff, int32, uint32, pos + 4);
+        case 2: return deserializeComputed(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for IdentifierOrPrivateNameOrComputed');
     }
 }
 
-function deserializeIdentifierOrComputed(buff, pos) {
+function deserializeIdentifierOrComputed(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeIdentifier(buff, pos + 4);
-        case 1: return deserializeComputed(buff, pos + 4);
+        case 0: return deserializeIdentifier(buff, int32, uint32, pos + 4);
+        case 1: return deserializeComputed(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for IdentifierOrComputed');
     }
 }
 
-function deserializeSuperOrImportOrBoxExpression(buff, pos) {
+function deserializeSuperOrImportOrBoxExpression(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeSuper(buff, pos + 4);
-        case 1: return deserializeImport(buff, pos + 4);
-        case 2: return deserializeBoxExpression(buff, pos + 4);
+        case 0: return deserializeSuper(buff, int32, uint32, pos + 4);
+        case 1: return deserializeImport(buff, int32, uint32, pos + 4);
+        case 2: return deserializeBoxExpression(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for SuperOrImportOrBoxExpression');
     }
 }
 
-function deserializeVecExpressionOrSpread(buff, pos) {
-    return deserializeVec(buff, pos, deserializeExpressionOrSpread, 20);
+function deserializeVecExpressionOrSpread(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeExpressionOrSpread, 20);
 }
 
-function deserializeOptionVecExpressionOrSpread(buff, pos) {
-    return deserializeOption(buff, pos, deserializeVecExpressionOrSpread, 4);
+function deserializeOptionVecExpressionOrSpread(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeVecExpressionOrSpread, 4);
 }
 
-function deserializeVecBoxExpression(buff, pos) {
-    return deserializeVec(buff, pos, deserializeBoxExpression, 4);
+function deserializeVecBoxExpression(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeBoxExpression, 4);
 }
 
-function deserializeVecTemplateElement(buff, pos) {
-    return deserializeVec(buff, pos, deserializeTemplateElement, 36);
+function deserializeVecTemplateElement(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeTemplateElement, 36);
 }
 
-function deserializeVecPattern(buff, pos) {
-    return deserializeVec(buff, pos, deserializePattern, 52);
+function deserializeVecPattern(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializePattern, 52);
 }
 
-function deserializeBlockStatementOrBoxExpression(buff, pos) {
+function deserializeBlockStatementOrBoxExpression(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeBlockStatement(buff, pos + 4);
-        case 1: return deserializeBoxExpression(buff, pos + 4);
+        case 0: return deserializeBlockStatement(buff, int32, uint32, pos + 4);
+        case 1: return deserializeBoxExpression(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for BlockStatementOrBoxExpression');
     }
 }
 
-function deserializeMemberExpressionOrOptionalChainingCall(buff, pos) {
+function deserializeMemberExpressionOrOptionalChainingCall(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeMemberExpression(buff, pos + 4);
-        case 1: return deserializeOptionalChainingCall(buff, pos + 4);
+        case 0: return deserializeMemberExpression(buff, int32, uint32, pos + 4);
+        case 1: return deserializeOptionalChainingCall(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for MemberExpressionOrOptionalChainingCall');
     }
 }
 
-function deserializeBoxExpression(buff, pos) {
-    return deserializeBox(buff, pos, deserializeExpression);
+function deserializeBoxExpression(buff, int32, uint32, pos) {
+    return deserializeBox(buff, int32, uint32, pos, deserializeExpression);
 }
 
-function deserializeBoxObjectProperty(buff, pos) {
-    return deserializeBox(buff, pos, deserializeObjectProperty);
+function deserializeBoxObjectProperty(buff, int32, uint32, pos) {
+    return deserializeBox(buff, int32, uint32, pos, deserializeObjectProperty);
 }
 
-function deserializeSpreadElementOrBoxObjectProperty(buff, pos) {
+function deserializeSpreadElementOrBoxObjectProperty(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeSpreadElement(buff, pos + 4);
-        case 1: return deserializeBoxObjectProperty(buff, pos + 4);
+        case 0: return deserializeSpreadElement(buff, int32, uint32, pos + 4);
+        case 1: return deserializeBoxObjectProperty(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for SpreadElementOrBoxObjectProperty');
     }
 }
 
-function deserializeVecSpreadElementOrBoxObjectProperty(buff, pos) {
-    return deserializeVec(buff, pos, deserializeSpreadElementOrBoxObjectProperty, 20);
+function deserializeVecSpreadElementOrBoxObjectProperty(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeSpreadElementOrBoxObjectProperty, 20);
 }
 
-function deserializeOptionObjectExpression(buff, pos) {
-    return deserializeOption(buff, pos, deserializeObjectExpression, 4);
+function deserializeOptionObjectExpression(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeObjectExpression, 4);
 }
 
-function deserializeVecExportSpecifier(buff, pos) {
-    return deserializeVec(buff, pos, deserializeExportSpecifier, 96);
+function deserializeVecExportSpecifier(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeExportSpecifier, 96);
 }
 
-function deserializeOptionStringLiteral(buff, pos) {
-    return deserializeOption(buff, pos, deserializeStringLiteral, 4);
+function deserializeOptionStringLiteral(buff, int32, uint32, pos) {
+    return deserializeOption(buff, int32, uint32, pos, deserializeStringLiteral, 4);
 }
 
-function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(buff, pos) {
+function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeClassExpression(buff, pos + 4);
-        case 1: return deserializeFunctionExpression(buff, pos + 4);
-        case 2: return deserializeTsInterfaceDeclaration(buff, pos + 4);
+        case 0: return deserializeClassExpression(buff, int32, uint32, pos + 4);
+        case 1: return deserializeFunctionExpression(buff, int32, uint32, pos + 4);
+        case 2: return deserializeTsInterfaceDeclaration(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
     }
 }
 
-function deserializeModuleDeclarationOrStatement(buff, pos) {
+function deserializeModuleDeclarationOrStatement(buff, int32, uint32, pos) {
     switch (buff[pos]) {
-        case 0: return deserializeModuleDeclaration(buff, pos + 4);
-        case 1: return deserializeStatement(buff, pos + 4);
+        case 0: return deserializeModuleDeclaration(buff, int32, uint32, pos + 4);
+        case 1: return deserializeStatement(buff, int32, uint32, pos + 4);
         default: throw new Error('Unexpected enum value for ModuleDeclarationOrStatement');
     }
 }
 
-function deserializeVecModuleDeclarationOrStatement(buff, pos) {
-    return deserializeVec(buff, pos, deserializeModuleDeclarationOrStatement, 156);
+function deserializeVecModuleDeclarationOrStatement(buff, int32, uint32, pos) {
+    return deserializeVec(buff, int32, uint32, pos, deserializeModuleDeclarationOrStatement, 156);
 }
 
-function deserializeOption(buff, pos, deserialize, offset) {
+function deserializeOption(buff, int32, uint32, pos, deserialize, offset) {
     switch (buff[pos]) {
         case 0: return null;
-        case 1: return deserialize(buff, pos + offset);
+        case 1: return deserialize(buff, int32, uint32, pos + offset);
         default: throw new Error('Unexpected option value');
     }
 }
 
-function deserializeBox(buff, pos, deserialize) {
-    return deserialize(buff, getPtr(buff, pos));
+function deserializeBox(buff, int32, uint32, pos, deserialize) {
+    return deserialize(buff, int32, uint32, getPtr(int32, pos));
 }
 
-function deserializeVec(buff, pos, deserialize, length) {
-    const numEntries = buff.uint32[(pos >> 2) + 1];
+function deserializeVec(buff, int32, uint32, pos, deserialize, length) {
+    const numEntries = uint32[(pos >> 2) + 1];
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);
-    let vecPos = getPtr(buff, pos);
+    let vecPos = getPtr(int32, pos);
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserialize(buff, vecPos);
+        entries[i] = deserialize(buff, int32, uint32, vecPos);
         vecPos += length;
     }
     return entries;
 }
 
-function getPtr(buff, pos) {
-    return pos + buff.int32[pos >> 2];
+function getPtr(int32, pos) {
+    return pos + int32[pos >> 2];
 }

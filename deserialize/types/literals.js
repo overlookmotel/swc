@@ -23,10 +23,10 @@ module.exports = {
     NumericLiteral: Custom({
         // Empty bytes: 4 before span, 4 after span, 8 after value
         // TODO Not sure why
-        deserialize(buff, pos) {
+        deserialize(buff, int32, uint32, pos) {
             return {
                 type: 'NumericLiteral',
-                span: deserializeSpan(buff, pos + 4),
+                span: deserializeSpan(buff, int32, uint32, pos + 4),
                 value: new Float64Array(buff.buffer, pos + 20, 1)[0]
             };
         },
@@ -37,9 +37,9 @@ module.exports = {
 
     BigIntLiteral: Node({ value: 'BigIntValue' }),
     BigIntValue: Custom({
-        deserialize(buff, pos) {
+        deserialize(buff, int32, uint32, pos) {
             // TODO This implementation could be more efficient
-            const str = deserializeJsWord(buff, pos);
+            const str = deserializeJsWord(buff, int32, uint32, pos);
             if (str === '0') return [0, []];
 
             let current = BigInt(str);

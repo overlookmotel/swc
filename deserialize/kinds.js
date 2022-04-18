@@ -415,8 +415,8 @@ function generateDeserializer(utils) {
     let code = [
         '// Generated code. Do not edit.',
         "'use strict';",
-        "module.exports = deserialialize;",
-        removeIndent(`function deserialialize(buff) {
+        "module.exports = deserialize;",
+        removeIndent(`function deserialize(buff) {
             return deserializeProgram(buff, buff.length - ${types.Program.length});
         }`),
         ''

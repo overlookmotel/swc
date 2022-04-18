@@ -2,9 +2,9 @@
 
 'use strict';
 
-module.exports = deserialialize;
+module.exports = deserialize;
 
-function deserialialize(buff) {
+function deserialize(buff) {
     return deserializeProgram(buff, buff.length - 36);
 }
 

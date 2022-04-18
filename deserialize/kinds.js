@@ -416,9 +416,12 @@ function generateDeserializer(utils) {
         '// Generated code. Do not edit.',
         "'use strict';",
         "module.exports = deserialize;",
-        removeIndent(`function deserialize(buffer) {
-            const buff = Buffer.from(buffer.buffer);
-            return deserializeProgram(buff, buffer.byteOffset + buffer.length - ${types.Program.length});
+        removeIndent(`function deserialize(buffIn) {
+            const { buffer } = buffIn;
+            const buff = Buffer.from(buffer);
+            buff.int32 = new Int32Array(buffer);
+            buff.uint32 = new Uint32Array(buffer);
+            return deserializeProgram(buff, buffIn.byteOffset + buffIn.length - ${types.Program.length});
         }`),
         ''
     ].join('\n\n');
@@ -434,10 +437,7 @@ function generateDeserializer(utils) {
         code += deserializerCode + '\n\n';
     }
 
-    for (const utilName of [
-        'deserializeOption', 'deserializeBox', 'deserializeVec',
-        'getPtr', 'readUint32LE', 'readInt32LE'
-    ]) {
+    for (const utilName of ['deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr']) {
         code += utils[utilName].toString() + '\n\n';
     }
 

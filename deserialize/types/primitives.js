@@ -15,7 +15,7 @@ module.exports = {
             // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
             let len = buff[pos + 7];
             if (len > 7) {
-                len = readUint32LE(buff, pos);
+                len = buff.uint32[pos >> 2];
                 pos = getPtr(buff, pos + 4) - 4;
             }
 
@@ -29,10 +29,11 @@ module.exports = {
 
     Span: Custom({
         deserialize(buff, pos) {
+            const pos32 = pos >> 2;
             return {
-                start: readUint32LE(buff, pos),
-                end: readUint32LE(buff, pos + 4),
-                ctxt: readUint32LE(buff, pos + 8)
+                start: buff.uint32[pos32],
+                end: buff.uint32[pos32 + 1],
+                ctxt: buff.uint32[pos32 + 2]
             };
         },
         length: 12,

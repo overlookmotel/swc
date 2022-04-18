@@ -4,9 +4,12 @@
 
 module.exports = deserialize;
 
-function deserialize(buffer) {
-    const buff = Buffer.from(buffer.buffer);
-    return deserializeProgram(buff, buffer.byteOffset + buffer.length - 36);
+function deserialize(buffIn) {
+    const { buffer } = buffIn;
+    const buff = Buffer.from(buffer);
+    buff.int32 = new Int32Array(buffer);
+    buff.uint32 = new Uint32Array(buffer);
+    return deserializeProgram(buff, buffIn.byteOffset + buffIn.length - 36);
 }
 
 function deserializeProgram(buff, pos) {
@@ -1487,7 +1490,7 @@ function deserializeJsWord(buff, pos) {
     // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
     let len = buff[pos + 7];
     if (len > 7) {
-        len = readUint32LE(buff, pos);
+        len = buff.uint32[pos >> 2];
         pos = getPtr(buff, pos + 4) - 4;
     }
 
@@ -1503,10 +1506,11 @@ function deserializeBoolean(buff, pos) {
 }
 
 function deserializeSpan(buff, pos) {
+    const pos32 = pos >> 2;
     return {
-        start: readUint32LE(buff, pos),
-        end: readUint32LE(buff, pos + 4),
-        ctxt: readUint32LE(buff, pos + 8)
+        start: buff.uint32[pos32],
+        end: buff.uint32[pos32 + 1],
+        ctxt: buff.uint32[pos32 + 2]
     };
 }
 
@@ -1798,7 +1802,7 @@ function deserializeBox(buff, pos, deserialize) {
 }
 
 function deserializeVec(buff, pos, deserialize, length) {
-    const numEntries = readUint32LE(buff, pos + 4);
+    const numEntries = buff.uint32[(pos >> 2) + 1];
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);
     let vecPos = getPtr(buff, pos);
@@ -1810,19 +1814,5 @@ function deserializeVec(buff, pos, deserialize, length) {
 }
 
 function getPtr(buff, pos) {
-    return pos + readInt32LE(buff, pos);
-}
-
-function readUint32LE(buff, pos) {
-    return buff[pos]
-        + buff[pos + 1] * 2 ** 8
-        + buff[pos + 2] * 2 ** 16
-        + buff[pos + 3] * 2 ** 24;
-}
-
-function readInt32LE(buff, pos) {
-    return buff[pos]
-        + buff[pos + 1] * 2 ** 8
-        + buff[pos + 2] * 2 ** 16
-        + (buff[pos + 3] << 24);
+    return pos + buff.int32[pos >> 2];
 }

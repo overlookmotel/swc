@@ -20,9 +20,11 @@ writeFileSync(pathJoin(__dirname, 'index.js'), generateDeserializer());
  * @returns {string} - Code for deserializer
  */
 function generateDeserializer() {
-    let code = [
+    return [
         '// Generated code. Do not edit.',
         "'use strict';",
+
+        // Deserializer entry point
         "module.exports = deserialize;",
         'let buff, int32, uint32;',
         removeIndent(`function deserialize(buffIn) {
@@ -32,27 +34,25 @@ function generateDeserializer() {
             uint32 = new Uint32Array(buffer);
             return deserializeProgram(buffIn.byteOffset + buffIn.length - ${types.Program.length});
         }`),
-        ''
-    ].join('\n\n');
 
-    for (const type of Object.values(types)) {
-        let deserializerCode = removeIndent(type.generateDeserializer());
-        if (DEBUG) {
-            deserializerCode = deserializerCode.replace(
-                /function deserialize.+\n/,
-                line => line + `\tdebugBuff('${type.name}', buff, pos, ${type.length});\n`
-            );
-        }
-        code += deserializerCode + '\n\n';
-    }
+        // Type deserializer functions
+        ...Object.values(types).map((type) => {
+            let deserializerCode = removeIndent(type.generateDeserializer());
+            if (DEBUG) {
+                deserializerCode = deserializerCode.replace(
+                    /function deserialize.+\n/,
+                    line => line + `${' '.repeat(4)}debugBuff('${type.name}', pos, ${type.length});\n`
+                );
+            }
+            return deserializerCode;
+        }),
 
-    for (const utilName of ['deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr']) {
-        code += utils[utilName].toString() + '\n\n';
-    }
-
-    if (DEBUG) code += utils.debugBuff.toString() + '\n\n';
-
-    return code.slice(0, -1);
+        // Utility functions
+        ...[
+            'deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr',
+            ...(DEBUG ? ['debugBuff'] : [])
+        ].map(utilName => utils[utilName].toString())
+    ].join('\n\n') + '\n';
 }
 
 /**

@@ -38,7 +38,7 @@ function getPtr(int32, pos) {
     return pos + int32[pos >> 2];
 }
 
-function debugBuff(typeName, buff, pos, length) {
+function debugBuff(typeName, pos, length) {
     console.log(`${typeName}:`, pos, pos % 16);
 
     if (length === undefined) length = 128;

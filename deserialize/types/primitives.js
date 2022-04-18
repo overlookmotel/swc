@@ -7,7 +7,7 @@ const { EnumValue, Custom } = require('../kinds.js');
 
 module.exports = {
     JsWord: Custom({
-        deserialize(buff, int32, uint32, pos) {
+        deserialize(pos) {
             // 8 bytes. Last byte is length.
             // If length <= 7, bytes 0-6 contain the word.
             // Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
@@ -28,7 +28,7 @@ module.exports = {
     Boolean: EnumValue([false, true]),
 
     Span: Custom({
-        deserialize(buff, int32, uint32, pos) {
+        deserialize(pos) {
             const pos32 = pos >> 2;
             return {
                 start: uint32[pos32],

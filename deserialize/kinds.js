@@ -3,11 +3,10 @@
 // Modules
 const assert = require("assert");
 
+// Imports
+const { initType, getTypeName } = require('./types/index.js');
+
 // Exports
-
-const DEBUG = !!process.env.DEBUG;
-
-let types; // Will be injected later by `init()`
 
 /**
  * Base class
@@ -324,65 +323,17 @@ class Custom extends Kind {
     }
 }
 
-/**
- * Initialize types.
- * @param {Object} allTypes - Map of types, keys by type name
- * @returns {undefined}
- */
-function init(allTypes) {
-    types = allTypes;
+// Export classes
 
-    for (const [name, type] of Object.entries(types)) {
-        type.name = name;
-    }
-
-    types.Program.init();
-}
-
-/**
- * Get name of type. Calls `type.getName()` to get name.
- * @param {string|Object} type - Type name or type object
- * @returns {string} - Type name
- */
-function getTypeName(type) {
-    if (typeof type === 'string') return type;
-    if (!type.name) type.name = type.getName();
-    return type.name;
-}
-
-/**
- * Initialize type.
- * If string provided, looks up type object by name in `types`.
- * @param {string|Object} type - Type name or type object
- * @returns {Object} - Type object
- */
-function initType(type) {
-    if (typeof type === 'string') {
-        assert(types[type], `Type not found: ${type}`);
-        type = types[type];
-    }
-
-    if (!type.isInitialized) {
-        type.isInitialized = true;
-        getTypeName(type);
-        type.init();
-        assert(typeof type.name === 'string', 'No type name');
-        assert(isPositiveInteger(type.length), `${type.name} type has no length`);
-        assert(isPositiveInteger(type.align), `${type.name} type has no align`);
-        types[type.name] = type;
-    }
-
-    return type;
-}
-
-/**
- * Check if input is a positive integer.
- * @param {*} num - Input
- * @returns {boolean} - `true` if input is a positive integer
- */
-function isPositiveInteger(num) {
-    return typeof num === 'number' && num !== 0 && !isNaN(num) && num % 1 === 0;
-}
+module.exports = {
+    Node: callableClass(Node),
+    Enum: callableClass(Enum),
+    EnumValue: callableClass(EnumValue),
+    Option: callableClass(Option),
+    Box: callableClass(Box),
+    Vec: callableClass(Vec),
+    Custom: callableClass(Custom)
+};
 
 /**
  * Round up position to specified alignment.
@@ -407,61 +358,6 @@ function posStr(offset) {
 }
 
 /**
- * Generate code for deserializer.
- * @param {Object} utils - Utility functions
- * @returns {string} - Code for deserializer
- */
-function generateDeserializer(utils) {
-    let code = [
-        '// Generated code. Do not edit.',
-        "'use strict';",
-        "module.exports = deserialize;",
-        'let buff, int32, uint32;',
-        removeIndent(`function deserialize(buffIn) {
-            const { buffer } = buffIn;
-            buff = Buffer.from(buffer);
-            int32 = new Int32Array(buffer);
-            uint32 = new Uint32Array(buffer);
-            return deserializeProgram(buffIn.byteOffset + buffIn.length - ${types.Program.length});
-        }`),
-        ''
-    ].join('\n\n');
-
-    for (const type of Object.values(types)) {
-        let deserializerCode = removeIndent(type.generateDeserializer());
-        if (DEBUG) {
-            deserializerCode = deserializerCode.replace(
-                /function deserialize.+\n/,
-                line => line + `\tdebugBuff('${type.name}', buff, pos, ${type.length});\n`
-            );
-        }
-        code += deserializerCode + '\n\n';
-    }
-
-    for (const utilName of ['deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr']) {
-        code += utils[utilName].toString() + '\n\n';
-    }
-
-    if (DEBUG) code += utils.debugBuff.toString() + '\n\n';
-
-    return code.slice(0, -1);
-}
-
-/**
- * Remove indentation from function code.
- * Expects to receive a code for a function with opening on first line.
- * @param {string} code 
- * @returns {string} - Code with indentation removed
- */
-function removeIndent(code) {
-    const lines = code.split('\n');
-    if (lines.length === 1) return code;
-
-    const indentDepth = lines[1].match(/^\s+/)[0].length - 4;
-    return [lines[0], ...lines.slice(1).map(line => line.slice(indentDepth))].join('\n');
-}
-
-/**
  * Wrap class in Proxy to make it callable to instantiate.
  * i.e. can call `Klass()` in place of `new Klass()`.
  * @param {Function} Class - Class
@@ -474,16 +370,3 @@ function callableClass(Class) {
         }
     });
 }
-
-// Export classes, `init()` and `generateDeserializer()`
-module.exports = {
-    Node: callableClass(Node),
-    Enum: callableClass(Enum),
-    EnumValue: callableClass(EnumValue),
-    Option: callableClass(Option),
-    Box: callableClass(Box),
-    Vec: callableClass(Vec),
-    Custom: callableClass(Custom),
-    init,
-    generateDeserializer
-};

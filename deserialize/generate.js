@@ -43,6 +43,10 @@ function generateDeserializer() {
                     /function deserialize.+\n/,
                     line => line + `${' '.repeat(4)}debugBuff('${type.name}', pos, ${type.length});\n`
                 );
+            } else {
+                deserializerCode = deserializerCode.replace(
+                    /\s*\/\* DEBUG_ONLY_START \*\/[\s\S]+?\/\* DEBUG_ONLY_END \*\/\n?/g, '\n'
+                );
             }
             return deserializerCode;
         }),

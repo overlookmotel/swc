@@ -6,6 +6,8 @@ const { parseSync, parseSyncToBuffer } = require('../index.js'),
 
 // Tests
 
+const itParses = getItParses();
+
 describe('Parses correctly', () => {
     describe('Program', () => {
         itParses('Module', { isModule: true }, [
@@ -1478,7 +1480,14 @@ function parseSyncViaBuffer(code, options) {
     return deserializeBuffer(buff);
 }
 
-function itParses(name, options, codes) {
+function getItParses() {
+    const itParses = (name, options, codes) => itParsesImpl(describe, name, options, codes);
+    itParses.only = (name, options, codes) => itParsesImpl(describe.only, name, options, codes);
+    itParses.skip = (name, options, codes) => itParsesImpl(describe.skip, name, options, codes);
+    return itParses;
+}
+
+function itParsesImpl(describe, name, options, codes) {
     if (Array.isArray(options)) {
         codes = options;
         options = undefined;

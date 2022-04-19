@@ -19,6 +19,10 @@ module.exports = {
                 pos = getPtr(int32, pos + 4) - 4;
             }
 
+            /* DEBUG_ONLY_START */
+            debugBuff('JsWord content', pos, len);
+            /* DEBUG_ONLY_END */
+
             return buff.toString('utf8', pos, pos + len); // TODO What encoding?
         },
         length: 8,

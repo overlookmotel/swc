@@ -39,19 +39,19 @@ function getPtr(int32, pos) {
 }
 
 function debugBuff(typeName, pos, length) {
-    console.log(`${typeName}:`, pos, pos % 16);
+    console.log(`\x1b[36m${typeName}\x1b[0m:`, pos, pos % 16);
 
     if (length === undefined) length = 128;
     const str = buff.toString('hex', pos, pos + length);
     const mod = (pos % 16) * 2;
-    let out = ' '.repeat(mod + Math.floor(mod / 8));
+    let out = `\x1b[31m[${`${pos - mod / 2}`.padStart(5, '0')}]\x1b[0m`
+        + ' '.repeat(mod + Math.ceil(mod / 8));
     for (let offset = 0; offset < str.length; offset += 2) {
-        out += str.slice(offset, offset + 2);
-        if ((offset + mod) % 32 === 30) {
-            out += '\n';
-        } else if ((offset + mod) % 8 === 6) {
-            out += ' ';
+        if ((offset + mod) % 32 === 0 && offset !== 0) {
+            out += `\n\x1b[31m[${`${pos + offset / 2}`.padStart(5, '0')}]\x1b[0m`;
         }
+        if ((offset + mod) % 8 === 0) out += ' ';
+        out += str.slice(offset, offset + 2);
     }
     console.log(out);
 }

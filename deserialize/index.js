@@ -4,13 +4,13 @@
 
 module.exports = deserialize;
 
-let buff, int32, uint32;
+let arrayBuffer, buff, int32, uint32;
 
 function deserialize(buffIn) {
-    const { buffer } = buffIn;
-    buff = Buffer.from(buffer);
-    int32 = new Int32Array(buffer);
-    uint32 = new Uint32Array(buffer);
+    arrayBuffer = buffIn.buffer;
+    buff = Buffer.from(arrayBuffer);
+    int32 = new Int32Array(arrayBuffer);
+    uint32 = new Uint32Array(arrayBuffer);
     return deserializeProgram(buffIn.byteOffset + buffIn.length - 36);
 }
 
@@ -1240,7 +1240,7 @@ function deserializeNumericLiteral(pos) {
     return {
         type: 'NumericLiteral',
         span: deserializeSpan(pos + 4),
-        value: new Float64Array(buff.buffer, pos + 20, 1)[0]
+        value: new Float64Array(arrayBuffer, pos + 20, 1)[0]
     };
 }
 

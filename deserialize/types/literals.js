@@ -27,7 +27,7 @@ module.exports = {
             return {
                 type: 'NumericLiteral',
                 span: deserializeSpan(pos + 4),
-                value: new Float64Array(buff.buffer, pos + 20, 1)[0]
+                value: new Float64Array(arrayBuffer, pos + 20, 1)[0]
             };
         },
         dependencies: ['Span'],

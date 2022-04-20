@@ -39,24 +39,34 @@ function generateDeserializer() {
         ...Object.values(types).map((type) => {
             let deserializerCode = removeIndent(type.generateDeserializer());
             if (DEBUG) {
-                deserializerCode = deserializerCode.replace(
+                return deserializerCode.replace(
                     /function deserialize.+\n/,
                     line => line + `${' '.repeat(4)}debugBuff('${type.name}', pos, ${type.length});\n`
                 );
-            } else {
-                deserializerCode = deserializerCode.replace(
-                    /\s*\/\* DEBUG_ONLY_START \*\/[\s\S]+?\/\* DEBUG_ONLY_END \*\/\n?/g, '\n'
-                );
             }
-            return deserializerCode;
+            return removeDebugOnlyCode(deserializerCode);
         }),
 
         // Utility functions
-        ...[
-            'deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr',
-            ...(DEBUG ? ['debugBuff'] : [])
-        ].map(utilName => utils[utilName].toString())
+        ...getUtilitiesCode(
+            ['deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr'],
+            'debugBuff'
+        )
     ].join('\n\n') + '\n';
+}
+
+/**
+ * Get code for utility functions.
+ * @param {Array<string>} utilNames - Utility function names
+ * @param {string} debugUtilName - Debug utility function name
+ * @returns {Array<string>} - Array of functions' code
+ */
+function getUtilitiesCode(utilNames, debugUtilName) {
+    if (DEBUG) utilNames = [...utilNames, debugUtilName];
+    return utilNames.map(utilName => {
+        const code = utils[utilName].toString();
+        return DEBUG ? code : removeDebugOnlyCode(code);
+    });
 }
 
 /**
@@ -71,4 +81,13 @@ function removeIndent(code) {
 
     const indentDepth = lines[1].match(/^\s+/)[0].length - 4;
     return [lines[0], ...lines.slice(1).map(line => line.slice(indentDepth))].join('\n');
+}
+
+/**
+ * Remove debug only code blocks from code.
+ * @param {string} code - Code
+ * @returns {string} - Code with debug code removed
+ */
+function removeDebugOnlyCode(code) {
+    return code.replace(/\s*\/\* DEBUG_ONLY_START \*\/[\s\S]+?\/\* DEBUG_ONLY_END \*\/\n?/g, '');
 }

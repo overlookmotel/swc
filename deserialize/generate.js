@@ -26,12 +26,12 @@ function generateDeserializer() {
 
         // Deserializer entry point
         "module.exports = deserialize;",
-        'let buff, int32, uint32;',
+        'let arrayBuffer, buff, int32, uint32;',
         removeIndent(`function deserialize(buffIn) {
-            const { buffer } = buffIn;
-            buff = Buffer.from(buffer);
-            int32 = new Int32Array(buffer);
-            uint32 = new Uint32Array(buffer);
+            arrayBuffer = buffIn.buffer;
+            buff = Buffer.from(arrayBuffer);
+            int32 = new Int32Array(arrayBuffer);
+            uint32 = new Uint32Array(arrayBuffer);
             return deserializeProgram(buffIn.byteOffset + buffIn.length - ${types.Program.length});
         }`),
 

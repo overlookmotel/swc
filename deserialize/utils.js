@@ -23,6 +23,10 @@ function deserializeBox(pos, deserialize) {
 }
 
 function deserializeVec(pos, deserialize, length) {
+    /* DEBUG_ONLY_START */
+    console.log('Vec pointer target:', getPtr(int32, pos));
+    /* DEBUG_ONLY_END */
+
     const numEntries = uint32[(pos >> 2) + 1];
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);

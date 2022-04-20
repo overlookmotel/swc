@@ -1495,7 +1495,6 @@ function deserializeJsWord(pos) {
         len = uint32[pos >> 2];
         pos = getPtr(int32, pos + 4) - 4;
     }
-
     return buff.toString('utf8', pos, pos + len); // TODO What encoding?
 }
 

@@ -1493,8 +1493,10 @@ function deserializeJsWord(pos) {
     // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
     let len = buff[pos + 7];
     if (len > 7) {
-        len = uint32[pos >> 2];
-        pos = getPtr(int32, pos + 4) - 4; // TODO Don't know why -4
+        const pos32 = pos >> 2;
+        len = uint32[pos32];
+        // Pointer is relative to byte containing length, not byte containing pointer
+        pos += int32[pos32 + 1];
     }
     return buff.toString('utf8', pos, pos + len); // TODO What encoding?
 }
@@ -1804,21 +1806,18 @@ function deserializeOption(pos, deserialize, offset) {
 }
 
 function deserializeBox(pos, deserialize) {
-    return deserialize(getPtr(int32, pos));
+    return deserialize(pos + int32[pos >> 2]);
 }
 
 function deserializeVec(pos, deserialize, length) {
-    const numEntries = uint32[(pos >> 2) + 1];
+    const pos32 = pos >> 2;
+    const numEntries = uint32[pos32 + 1];
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);
-    let vecPos = getPtr(int32, pos);
+    pos += int32[pos32];
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserialize(vecPos);
-        vecPos += length;
+        entries[i] = deserialize(pos);
+        pos += length;
     }
     return entries;
-}
-
-function getPtr(int32, pos) {
-    return pos + int32[pos >> 2];
 }

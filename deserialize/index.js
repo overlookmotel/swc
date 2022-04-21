@@ -4,13 +4,14 @@
 
 module.exports = deserialize;
 
-let arrayBuffer, buff, int32, uint32;
+let buff, int32, uint32, float64;
 
 function deserialize(buffIn) {
-    arrayBuffer = buffIn.buffer;
+    const arrayBuffer = buffIn.buffer;
     buff = Buffer.from(arrayBuffer);
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
+    float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
     return deserializeProgram(buffIn.byteOffset + buffIn.length - 36);
 }
 
@@ -1507,7 +1508,7 @@ function deserializeBoolean(pos) {
 }
 
 function deserializeNumber(pos) {
-    return new Float64Array(arrayBuffer, pos, 1)[0];
+    return float64[pos >> 3];
 }
 
 function deserializeSpan(pos) {

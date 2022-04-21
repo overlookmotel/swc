@@ -33,7 +33,7 @@ module.exports = {
 
     Number: Custom({
         deserialize(pos) {
-            return new Float64Array(arrayBuffer, pos, 1)[0];
+            return float64[pos >> 3];
         },
         length: 16, // 8 longer than expected. TODO Not sure why.
         align: 8

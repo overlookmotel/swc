@@ -6,7 +6,6 @@ module.exports = {
     deserializeOption,
     deserializeBox,
     deserializeVec,
-    getPtr,
     debugBuff
 };
 
@@ -19,27 +18,25 @@ function deserializeOption(pos, deserialize, offset) {
 }
 
 function deserializeBox(pos, deserialize) {
-    return deserialize(getPtr(int32, pos));
+    return deserialize(pos + int32[pos >> 2]);
 }
 
 function deserializeVec(pos, deserialize, length) {
+    const pos32 = pos >> 2;
+
     /* DEBUG_ONLY_START */
-    console.log('Vec pointer target:', getPtr(int32, pos));
+    console.log('Vec pointer target:', pos + int32[pos32]);
     /* DEBUG_ONLY_END */
 
-    const numEntries = uint32[(pos >> 2) + 1];
+    const numEntries = uint32[pos32 + 1];
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);
-    let vecPos = getPtr(int32, pos);
+    pos += int32[pos32];
     for (let i = 0; i < numEntries; i++) {
-        entries[i] = deserialize(vecPos);
-        vecPos += length;
+        entries[i] = deserialize(pos);
+        pos += length;
     }
     return entries;
-}
-
-function getPtr(int32, pos) {
-    return pos + int32[pos >> 2];
 }
 
 function debugBuff(typeName, pos, length) {

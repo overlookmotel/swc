@@ -50,7 +50,7 @@ function generateDeserializer() {
 
         // Utility functions
         ...getUtilitiesCode(
-            ['deserializeOption', 'deserializeBox', 'deserializeVec', 'getPtr'],
+            ['deserializeOption', 'deserializeBox', 'deserializeVec'],
             'debugBuff'
         )
     ].join('\n\n') + '\n';

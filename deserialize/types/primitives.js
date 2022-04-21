@@ -16,7 +16,7 @@ module.exports = {
             let len = buff[pos + 7];
             if (len > 7) {
                 len = uint32[pos >> 2];
-                pos = getPtr(int32, pos + 4) - 4;
+                pos = getPtr(int32, pos + 4) - 4; // TODO Don't know why -4
             }
 
             /* DEBUG_ONLY_START */
@@ -30,6 +30,14 @@ module.exports = {
     }),
 
     Boolean: EnumValue([false, true]),
+
+    Number: Custom({
+        deserialize(pos) {
+            return new Float64Array(arrayBuffer, pos, 1)[0];
+        },
+        length: 16, // 8 longer than expected. TODO Not sure why.
+        align: 8
+    }),
 
     Span: Custom({
         deserialize(pos) {

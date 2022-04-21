@@ -56,7 +56,7 @@ module.exports = {
             body: Enum(['BlockStatement', Box('Expression')]),
             typeParameters: Option('TsTypeParameterDeclaration'),
             async: 'Boolean',
-            generator: 'Boolean', // TODO Needs test. Do generator arrow functions exist?
+            generator: 'Boolean', // TODO Needs tests. Do generator arrow functions exist?
             returnType: Option('TsTypeAnnotation')
         },
         {

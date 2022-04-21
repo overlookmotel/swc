@@ -15,8 +15,10 @@ module.exports = {
             // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
             let len = buff[pos + 7];
             if (len > 7) {
-                len = uint32[pos >> 2];
-                pos = getPtr(int32, pos + 4) - 4; // TODO Don't know why -4
+                const pos32 = pos >> 2;
+                len = uint32[pos32];
+                // Pointer is relative to byte containing length, not byte containing pointer
+                pos += int32[pos32 + 1];
             }
 
             /* DEBUG_ONLY_START */

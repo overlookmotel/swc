@@ -61,8 +61,6 @@ function initType(type) {
         getTypeName(type);
         type.init();
         assert(typeof type.name === 'string', 'No type name');
-        assert(isPositiveInteger(type.length), `${type.name} type has no length`);
-        assert(isPositiveInteger(type.align), `${type.name} type has no align`);
         types[type.name] = type;
     }
 
@@ -78,13 +76,4 @@ function getTypeName(type) {
     if (typeof type === 'string') return type;
     if (!type.name) type.name = type.getName();
     return type.name;
-}
-
-/**
- * Check if input is a positive integer.
- * @param {*} num - Input
- * @returns {boolean} - `true` if input is a positive integer
- */
-function isPositiveInteger(num) {
-    return typeof num === 'number' && num !== 0 && !isNaN(num) && num % 1 === 0;
 }

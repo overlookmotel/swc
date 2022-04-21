@@ -15,7 +15,6 @@ class Kind {
     name = null;
     length = null;
     align = null;
-    emptyBefore = 0;
     isInitialized = false;
 
     getName() {
@@ -23,13 +22,36 @@ class Kind {
     }
 
     init() { }
+
+    setLength(length) {
+        assert(isPositiveInteger(length), `Type ${this.name} has invalid length`);
+        if (this.length) {
+            assert(
+                length === this.length,
+                `Type ${this.name} specified length does not match calculated length`
+            );
+        } else {
+            this.length = length;
+        }
+    }
+
+    setAlign(align) {
+        assert(isPositiveInteger(align), `Type ${this.name} has invalid align`);
+        if (this.align) {
+            assert(
+                align === this.align,
+                `Type ${this.name} specified align does not match calculated align`
+            );
+        } else {
+            this.align = align;
+        }
+    }
 }
 
 /**
  * AST node class
  */
 class Node extends Kind {
-    align = 4;
     props = null;
     nodeName = null;
     keys = null;
@@ -52,17 +74,20 @@ class Node extends Kind {
 
     init() {
         const propsWithPosMap = {};
-        let pos = this.emptyBefore;
+        let pos = 0,
+            align = 0;
         for (let [key, prop] of Object.entries(this.props)) {
             prop = initType(prop);
             pos = getAligned(pos, prop.align);
+            if (prop.align > align) align = prop.align;
             propsWithPosMap[key] = { key, prop, pos };
             pos += prop.length;
         }
 
         this.propsWithPos = this.keys.map(key => propsWithPosMap[key]);
 
-        if (!this.length) this.length = getAligned(pos, this.align);
+        this.setLength(getAligned(pos, align));
+        this.setAlign(align);
         if (!this.nodeName) this.nodeName = this.name;
     }
 
@@ -85,9 +110,7 @@ class Node extends Kind {
  * Enum class
  */
 class Enum extends Kind {
-    align = 4;
     enumOptions = null;
-    childOffset = null;
 
     constructor(enumOptions, options) {
         const enumObj = enums.get(JSON.stringify(enumOptions));
@@ -108,23 +131,27 @@ class Enum extends Kind {
     }
 
     init() {
-        let length = 0;
+        let length = 0,
+            align = 0;
         this.enumOptions = this.enumOptions.map((enumOption) => {
             enumOption = initType(enumOption);
-            if (enumOption.length > length) length = enumOption.length;
+            const optionLength = enumOption.length + enumOption.align;
+            if (optionLength > length) length = optionLength;
+            if (enumOption.align > align) align = enumOption.align;
             return enumOption;
         });
-        if (!this.childOffset) this.childOffset = this.emptyBefore + 4;
-        if (!this.length) this.length = length + this.childOffset;
+
+        this.setLength(length);
+        this.setAlign(align);
     }
 
     generateDeserializer() {
-        const enumOptionCodes = this.enumOptions.map(({ name }, index) => (
-            `case ${index}: return deserialize${name}(pos + ${this.childOffset});`
+        const enumOptionCodes = this.enumOptions.map(({ name, align }, index) => (
+            `case ${index}: return deserialize${name}(pos + ${align});`
         ));
 
         return `function deserialize${this.name}(pos) {
-            switch (buff[${posStr(this.emptyBefore)}]) {
+            switch (buff[pos]) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
@@ -138,12 +165,12 @@ const enums = new Map();
  * Enum value class
  */
 class EnumValue extends Kind {
+    length = 1;
     align = 1;
     enumOptions = null;
 
     constructor(enumOptions, options) {
-        const cacheKey = JSON.stringify([enumOptions, options?.length ?? 4]);
-        const enumValue = enumValues.get(cacheKey);
+        const enumValue = enumValues.get(JSON.stringify(enumOptions));
         if (enumValue) return enumValue;
 
         assert(enumOptions.length < 256);
@@ -152,13 +179,17 @@ class EnumValue extends Kind {
         Object.assign(this, options);
 
         this.enumOptions = enumOptions;
-        if (!this.length) this.length = 1 + this.emptyBefore;
 
-        enumValues.set(cacheKey, this);
+        enumValues.set(JSON.stringify(enumOptions), this);
     }
 
     getName() {
         return this.enumOptions.join('Or');
+    }
+
+    init() {
+        this.setLength(1);
+        this.setAlign(1);
     }
 
     generateDeserializer() {
@@ -167,7 +198,7 @@ class EnumValue extends Kind {
         ));
 
         return `function deserialize${this.name}(pos) {
-            switch (buff[${posStr(this.emptyBefore)}]) {
+            switch (buff[pos]) {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
@@ -202,16 +233,13 @@ class Option extends Kind {
 
     init() {
         this.childType = initType(this.childType);
-        if (!this.childOffset) this.childOffset = this.emptyBefore + this.childType.align;
-        if (!this.length) this.length = this.childOffset + this.childType.length;
-        if (!this.align) this.align = this.childType.align;
+        this.setLength(this.childType.align + this.childType.length);
+        this.setAlign(this.childType.align);
     }
 
     generateDeserializer() {
-        const pos = posStr(this.emptyBefore),
-            childName = this.childType.name;
         return `function deserialize${this.name}(pos) {
-            return deserializeOption(${pos}, deserialize${childName}, ${this.childOffset});
+            return deserializeOption(pos, deserialize${this.childType.name}, ${this.childType.align});
         }`;
     }
 }
@@ -222,6 +250,7 @@ const optionals = new Map();
  * Box class
  */
 class Box extends Kind {
+    length = 4;
     align = 4;
     childType = null;
 
@@ -233,7 +262,6 @@ class Box extends Kind {
         Object.assign(this, options);
 
         this.childType = childType;
-        if (!this.length) this.length = 4 + this.emptyBefore;
 
         boxes.set(childType, this);
     }
@@ -244,11 +272,13 @@ class Box extends Kind {
 
     init() {
         this.childType = initType(this.childType);
+        this.setLength(4);
+        this.setAlign(4);
     }
 
     generateDeserializer() {
         return `function deserialize${this.name}(pos) {
-            return deserializeBox(${posStr(this.emptyBefore)}, deserialize${this.childType.name});
+            return deserializeBox(pos, deserialize${this.childType.name});
         }`;
     }
 }
@@ -259,6 +289,7 @@ const boxes = new Map();
  * Vec class
  */
 class Vec extends Kind {
+    length = 8;
     align = 4;
     childType = null;
     childLength = null;
@@ -271,7 +302,6 @@ class Vec extends Kind {
         Object.assign(this, options);
 
         this.childType = childType;
-        if (!this.length) this.length = 8 + this.emptyBefore;
 
         vecs.set(childType, this);
     }
@@ -283,12 +313,13 @@ class Vec extends Kind {
     init() {
         this.childType = initType(this.childType);
         this.childLength = getAligned(this.childType.length, this.childType.align);
+        this.setLength(8);
+        this.setAlign(4);
     }
 
     generateDeserializer() {
-        const pos = posStr(this.emptyBefore);
         return `function deserialize${this.name}(pos) {
-            return deserializeVec(${pos}, deserialize${this.childType.name}, ${this.childLength});
+            return deserializeVec(pos, deserialize${this.childType.name}, ${this.childLength});
         }`;
     }
 }
@@ -310,6 +341,8 @@ class Custom extends Kind {
     init() {
         this.dependencies = this.dependencies.map(name => initType(name));
 
+        assert(isPositiveInteger(this.length), `Custom type ${this.name} has invalid length`);
+        assert(isPositiveInteger(this.align), `Custom type ${this.name} has invalid align`);
         assert(typeof this.deserialize === 'function', `Custom type ${this.name} has no deserializer`);
     }
 
@@ -355,6 +388,15 @@ function getAligned(pos, align) {
  */
 function posStr(offset) {
     return offset === 0 ? 'pos' : `pos + ${offset}`;
+}
+
+/**
+ * Check if input is a positive integer.
+ * @param {*} num - Input
+ * @returns {boolean} - `true` if input is a positive integer
+ */
+function isPositiveInteger(num) {
+    return typeof num === 'number' && num !== 0 && !isNaN(num) && num % 1 === 0;
 }
 
 /**

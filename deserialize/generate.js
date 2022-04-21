@@ -38,7 +38,7 @@ function generateDeserializer() {
 
         // Type deserializer functions
         ...Object.values(types).map((type) => {
-            let deserializerCode = removeIndent(type.generateDeserializer());
+            const deserializerCode = removeIndent(type.generateDeserializer());
             if (DEBUG) {
                 return deserializerCode.replace(
                     /function deserialize.+\n/,

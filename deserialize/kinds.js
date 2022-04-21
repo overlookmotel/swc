@@ -141,7 +141,7 @@ class Enum extends Kind {
             return enumOption;
         });
 
-        this.setLength(length);
+        this.setLength(getAligned(length, align));
         this.setAlign(align);
     }
 
@@ -292,7 +292,6 @@ class Vec extends Kind {
     length = 8;
     align = 4;
     childType = null;
-    childLength = null;
 
     constructor(childType, options) {
         const vec = vecs.get(childType);
@@ -312,14 +311,13 @@ class Vec extends Kind {
 
     init() {
         this.childType = initType(this.childType);
-        this.childLength = getAligned(this.childType.length, this.childType.align);
         this.setLength(8);
         this.setAlign(4);
     }
 
     generateDeserializer() {
         return `function deserialize${this.name}(pos) {
-            return deserializeVec(pos, deserialize${this.childType.name}, ${this.childLength});
+            return deserializeVec(pos, deserialize${this.childType.name}, ${this.childType.length});
         }`;
     }
 }

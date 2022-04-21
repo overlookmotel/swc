@@ -6,10 +6,9 @@ const { Node, Enum, Option, Box, Vec } = require('../kinds.js');
 // Exports
 
 module.exports = {
-    ObjectExpression: Node(
-        { properties: Vec(Enum(['SpreadElement', Box('ObjectProperty')])) },
-        { length: 20 } // Length explicit due to circularity
-    ),
+    ObjectExpression: Node({
+        properties: Vec(Enum(['SpreadElement', Box('ObjectProperty')]))
+    }),
 
     SpreadElement: Node(
         { spread: 'Span', arguments: Box('Expression') },
@@ -64,11 +63,8 @@ module.exports = {
         }
     ),
 
-    PropertyName: Enum(
-        [
-            'Identifier', 'StringLiteral', 'NumericLiteral', 'Computed',
-            'BigIntLiteral'
-        ],
-        { emptyBefore: 4 } // TODO Not sure why
-    )
+    PropertyName: Enum([
+        'Identifier', 'StringLiteral', 'NumericLiteral', 'Computed',
+        'BigIntLiteral'
+    ])
 };

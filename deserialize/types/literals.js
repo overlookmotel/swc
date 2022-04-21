@@ -6,13 +6,10 @@ const { Node, Enum, Option, Custom } = require('../kinds.js');
 // Exports
 
 module.exports = {
-    Literal: Enum(
-        [
-            'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
-            'BigIntLiteral', 'RegExpLiteral', 'JSXText'
-        ],
-        { emptyBefore: 4 } // TODO Not sure why
-    ),
+    Literal: Enum([
+        'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
+        'BigIntLiteral', 'RegExpLiteral', 'JSXText'
+    ]),
 
     StringLiteral: Node({ value: 'JsWord', raw: Option('JsWord') }),
 
@@ -20,20 +17,7 @@ module.exports = {
 
     NullLiteral: Node({}),
 
-    NumericLiteral: Custom({
-        // Empty bytes: 4 before span, 4 after span, 8 after value
-        // TODO Not sure why
-        deserialize(pos) {
-            return {
-                type: 'NumericLiteral',
-                span: deserializeSpan(pos + 4),
-                value: new Float64Array(arrayBuffer, pos + 20, 1)[0]
-            };
-        },
-        dependencies: ['Span'],
-        length: 36,
-        align: 4
-    }),
+    NumericLiteral: Node({ value: 'Number' }),
 
     BigIntLiteral: Node({ value: 'BigIntValue' }),
     BigIntValue: Custom({

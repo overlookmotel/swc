@@ -530,10 +530,10 @@ function deserializeClassExpression(pos) {
 
 function deserializeClassMember(pos) {
     switch (buff[pos]) {
-        case 0: return deserializeConstructor(pos + 4);
-        case 1: return deserializeClassMethod(pos + 4);
+        case 0: return deserializeConstructor(pos + 8);
+        case 1: return deserializeClassMethod(pos + 8);
         case 2: return deserializePrivateMethod(pos + 4);
-        case 3: return deserializeClassProperty(pos + 4);
+        case 3: return deserializeClassProperty(pos + 8);
         case 4: return deserializePrivateProperty(pos + 4);
         case 5: return deserializeTsIndexSignature(pos + 4);
         case 6: return deserializeEmptyStatement(pos + 4);
@@ -545,27 +545,27 @@ function deserializeClassMember(pos) {
 function deserializeConstructor(pos) {
     return {
         type: 'Constructor',
-        span: deserializeSpan(pos + 44),
+        span: deserializeSpan(pos + 40),
         key: deserializePropertyName(pos),
-        params: deserializeVecTsParamPropOrParameter(pos + 56),
-        body: deserializeOptionBlockStatement(pos + 64),
-        accessibility: deserializeOptionAccessibility(pos + 88),
-        isOptional: deserializeBoolean(pos + 90)
+        params: deserializeVecTsParamPropOrParameter(pos + 52),
+        body: deserializeOptionBlockStatement(pos + 60),
+        accessibility: deserializeOptionAccessibility(pos + 84),
+        isOptional: deserializeBoolean(pos + 86)
     };
 }
 
 function deserializeClassMethod(pos) {
     return {
         type: 'ClassMethod',
-        span: deserializeSpan(pos + 44),
+        span: deserializeSpan(pos + 40),
         key: deserializePropertyName(pos),
-        function: deserializeFunction(pos + 56),
-        kind: deserializeMethodKind(pos + 156),
-        isStatic: deserializeBoolean(pos + 157),
-        accessibility: deserializeOptionAccessibility(pos + 160),
-        isAbstract: deserializeBoolean(pos + 158),
-        isOptional: deserializeBoolean(pos + 159),
-        isOverride: deserializeBoolean(pos + 162)
+        function: deserializeFunction(pos + 52),
+        kind: deserializeMethodKind(pos + 152),
+        isStatic: deserializeBoolean(pos + 153),
+        accessibility: deserializeOptionAccessibility(pos + 156),
+        isAbstract: deserializeBoolean(pos + 154),
+        isOptional: deserializeBoolean(pos + 155),
+        isOverride: deserializeBoolean(pos + 158)
     };
 }
 
@@ -587,19 +587,19 @@ function deserializePrivateMethod(pos) {
 function deserializeClassProperty(pos) {
     return {
         type: 'ClassProperty',
-        span: deserializeSpan(pos + 44),
+        span: deserializeSpan(pos + 40),
         key: deserializePropertyName(pos),
-        value: deserializeOptionBoxExpression(pos + 56),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 64),
-        isStatic: deserializeBoolean(pos + 92),
-        decorators: deserializeVecDecorator(pos + 84),
-        accessibility: deserializeOptionAccessibility(pos + 93),
-        isAbstract: deserializeBoolean(pos + 95),
-        isOptional: deserializeBoolean(pos + 96),
-        isOverride: deserializeBoolean(pos + 97),
-        readonly: deserializeBoolean(pos + 98),
-        declare: deserializeBoolean(pos + 99),
-        definite: deserializeBoolean(pos + 100)
+        value: deserializeOptionBoxExpression(pos + 52),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 60),
+        isStatic: deserializeBoolean(pos + 88),
+        decorators: deserializeVecDecorator(pos + 80),
+        accessibility: deserializeOptionAccessibility(pos + 89),
+        isAbstract: deserializeBoolean(pos + 91),
+        isOptional: deserializeBoolean(pos + 92),
+        isOverride: deserializeBoolean(pos + 93),
+        readonly: deserializeBoolean(pos + 94),
+        declare: deserializeBoolean(pos + 95),
+        definite: deserializeBoolean(pos + 96)
     };
 }
 
@@ -705,7 +705,7 @@ function deserializeObjectPattern(pos) {
 
 function deserializeObjectPatternProperty(pos) {
     switch (buff[pos]) {
-        case 0: return deserializeKeyValuePatternProperty(pos + 4);
+        case 0: return deserializeKeyValuePatternProperty(pos + 8);
         case 1: return deserializeAssignmentPatternProperty(pos + 4);
         case 2: return deserializeRestElement(pos + 4);
         default: throw new Error('Unexpected enum value for ObjectPatternProperty');
@@ -716,7 +716,7 @@ function deserializeKeyValuePatternProperty(pos) {
     return {
         type: 'KeyValuePatternProperty',
         key: deserializePropertyName(pos),
-        value: deserializeBoxPattern(pos + 44)
+        value: deserializeBoxPattern(pos + 40)
     };
 }
 
@@ -756,7 +756,7 @@ function deserializeExpression(pos) {
         case 12: return deserializeNewExpression(pos + 4);
         case 13: return deserializeSequenceExpression(pos + 4);
         case 14: return deserializeIdentifier(pos + 4);
-        case 15: return deserializeLiteral(pos + 4);
+        case 15: return deserializeLiteral(pos + 8);
         case 16: return deserializeTemplateLiteral(pos + 4);
         case 17: return deserializeTaggedTemplateExpression(pos + 4);
         case 18: return deserializeArrowFunctionExpression(pos + 4);
@@ -1127,11 +1127,11 @@ function deserializeSpreadElement(pos) {
 function deserializeObjectProperty(pos) {
     switch (buff[pos]) {
         case 0: return deserializeIdentifier(pos + 4);
-        case 1: return deserializeKeyValueProperty(pos + 4);
+        case 1: return deserializeKeyValueProperty(pos + 8);
         case 2: return deserializeAssignmentProperty(pos + 4);
-        case 3: return deserializeGetterProperty(pos + 4);
-        case 4: return deserializeSetterProperty(pos + 4);
-        case 5: return deserializeMethodProperty(pos + 4);
+        case 3: return deserializeGetterProperty(pos + 8);
+        case 4: return deserializeSetterProperty(pos + 8);
+        case 5: return deserializeMethodProperty(pos + 8);
         default: throw new Error('Unexpected enum value for ObjectProperty');
     }
 }
@@ -1140,7 +1140,7 @@ function deserializeKeyValueProperty(pos) {
     return {
         type: 'KeyValueProperty',
         key: deserializePropertyName(pos),
-        value: deserializeBoxExpression(pos + 44)
+        value: deserializeBoxExpression(pos + 40)
     };
 }
 
@@ -1156,20 +1156,20 @@ function deserializeAssignmentProperty(pos) {
 function deserializeGetterProperty(pos) {
     return {
         type: 'GetterProperty',
-        span: deserializeSpan(pos + 44),
+        span: deserializeSpan(pos + 40),
         key: deserializePropertyName(pos),
-        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 56),
-        body: deserializeOptionBlockStatement(pos + 76)
+        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 52),
+        body: deserializeOptionBlockStatement(pos + 72)
     };
 }
 
 function deserializeSetterProperty(pos) {
     return {
         type: 'SetterProperty',
-        span: deserializeSpan(pos + 44),
+        span: deserializeSpan(pos + 40),
         key: deserializePropertyName(pos),
-        param: deserializePattern(pos + 56),
-        body: deserializeOptionBlockStatement(pos + 108)
+        param: deserializePattern(pos + 52),
+        body: deserializeOptionBlockStatement(pos + 104)
     };
 }
 
@@ -1177,37 +1177,37 @@ function deserializeMethodProperty(pos) {
     return {
         type: 'MethodProperty',
         key: deserializePropertyName(pos),
-        params: deserializeVecParameter(pos + 44),
-        decorators: deserializeVecDecorator(pos + 52),
-        span: deserializeSpan(pos + 60),
-        body: deserializeOptionBlockStatement(pos + 72),
-        generator: deserializeBoolean(pos + 120),
-        async: deserializeBoolean(pos + 121),
-        typeParameters: deserializeOptionTsTypeParameterDeclaration(pos + 96),
-        returnType: deserializeOptionTsTypeAnnotation(pos + 124)
+        params: deserializeVecParameter(pos + 40),
+        decorators: deserializeVecDecorator(pos + 48),
+        span: deserializeSpan(pos + 56),
+        body: deserializeOptionBlockStatement(pos + 68),
+        generator: deserializeBoolean(pos + 116),
+        async: deserializeBoolean(pos + 117),
+        typeParameters: deserializeOptionTsTypeParameterDeclaration(pos + 92),
+        returnType: deserializeOptionTsTypeAnnotation(pos + 120)
     };
 }
 
 function deserializePropertyName(pos) {
-    switch (buff[pos + 4]) {
-        case 0: return deserializeIdentifier(pos + 8);
-        case 1: return deserializeStringLiteral(pos + 8);
+    switch (buff[pos]) {
+        case 0: return deserializeIdentifier(pos + 4);
+        case 1: return deserializeStringLiteral(pos + 4);
         case 2: return deserializeNumericLiteral(pos + 8);
-        case 3: return deserializeComputed(pos + 8);
-        case 4: return deserializeBigIntLiteral(pos + 8);
+        case 3: return deserializeComputed(pos + 4);
+        case 4: return deserializeBigIntLiteral(pos + 4);
         default: throw new Error('Unexpected enum value for PropertyName');
     }
 }
 
 function deserializeLiteral(pos) {
-    switch (buff[pos + 4]) {
-        case 0: return deserializeStringLiteral(pos + 8);
-        case 1: return deserializeBooleanLiteral(pos + 8);
-        case 2: return deserializeNullLiteral(pos + 8);
+    switch (buff[pos]) {
+        case 0: return deserializeStringLiteral(pos + 4);
+        case 1: return deserializeBooleanLiteral(pos + 4);
+        case 2: return deserializeNullLiteral(pos + 4);
         case 3: return deserializeNumericLiteral(pos + 8);
-        case 4: return deserializeBigIntLiteral(pos + 8);
-        case 5: return deserializeRegExpLiteral(pos + 8);
-        case 6: return deserializeJSXText(pos + 8);
+        case 4: return deserializeBigIntLiteral(pos + 4);
+        case 5: return deserializeRegExpLiteral(pos + 4);
+        case 6: return deserializeJSXText(pos + 4);
         default: throw new Error('Unexpected enum value for Literal');
     }
 }
@@ -1239,8 +1239,8 @@ function deserializeNullLiteral(pos) {
 function deserializeNumericLiteral(pos) {
     return {
         type: 'NumericLiteral',
-        span: deserializeSpan(pos + 4),
-        value: new Float64Array(arrayBuffer, pos + 20, 1)[0]
+        span: deserializeSpan(pos),
+        value: deserializeNumber(pos + 16)
     };
 }
 
@@ -1493,7 +1493,7 @@ function deserializeJsWord(pos) {
     let len = buff[pos + 7];
     if (len > 7) {
         len = uint32[pos >> 2];
-        pos = getPtr(int32, pos + 4) - 4;
+        pos = getPtr(int32, pos + 4) - 4; // TODO Don't know why -4
     }
     return buff.toString('utf8', pos, pos + len); // TODO What encoding?
 }
@@ -1504,6 +1504,10 @@ function deserializeBoolean(pos) {
         case 1: return true;
         default: throw new Error('Unexpected enum value for Boolean');
     }
+}
+
+function deserializeNumber(pos) {
+    return new Float64Array(arrayBuffer, pos, 1)[0];
 }
 
 function deserializeSpan(pos) {

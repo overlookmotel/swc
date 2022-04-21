@@ -11,7 +11,7 @@ module.exports = {
             'BindingIdentifier', 'ArrayPattern', 'RestElement', 'ObjectPattern',
             'AssignmentPattern', 'Invalid', Box('Expression')
         ],
-        { length: 52 } // Length explicit due to circularity
+        { length: 52, align: 4 } // Length + align explicit due to circularity
     ),
 
     BindingIdentifier: Node(
@@ -40,10 +40,9 @@ module.exports = {
         optional: 'Boolean', // TODO Needs tests
         typeAnnotation: Option('TsTypeAnnotation')
     }),
-    ObjectPatternProperty: Enum(
-        ['KeyValuePatternProperty', 'AssignmentPatternProperty', 'RestElement'],
-        { length: 56 } // TODO Should be able to deduce this. 4 longer than expected.
-    ),
+    ObjectPatternProperty: Enum([
+        'KeyValuePatternProperty', 'AssignmentPatternProperty', 'RestElement'
+    ]),
     KeyValuePatternProperty: Node(
         { key: 'PropertyName', value: Box('Pattern') },
         { noSpan: true }

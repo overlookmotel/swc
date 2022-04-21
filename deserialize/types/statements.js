@@ -6,20 +6,16 @@ const { Node, Enum, Option, Box, Vec } = require('../kinds.js');
 // Exports
 
 module.exports = {
-    Statement: Enum(
-        [
-            'BlockStatement', 'EmptyStatement', 'DebuggerStatement', 'WithStatement',
-            'ReturnStatement', 'LabeledStatement', 'BreakStatement', 'ContinueStatement',
-            'IfStatement', 'SwitchStatement', 'ThrowStatement', 'TryStatement',
-            'WhileStatement', 'DoWhileStatement', 'ForStatement', 'ForInStatement',
-            'ForOfStatement', 'Declaration', 'ExpressionStatement'
-        ],
-        { length: 152 } // Length explicit due to circularity
-    ),
+    Statement: Enum([
+        'BlockStatement', 'EmptyStatement', 'DebuggerStatement', 'WithStatement',
+        'ReturnStatement', 'LabeledStatement', 'BreakStatement', 'ContinueStatement',
+        'IfStatement', 'SwitchStatement', 'ThrowStatement', 'TryStatement',
+        'WhileStatement', 'DoWhileStatement', 'ForStatement', 'ForInStatement',
+        'ForOfStatement', 'Declaration', 'ExpressionStatement'
+    ]),
 
-    // Length explicit due to circularity
-    BlockStatement: Node({ stmts: Vec('Statement') }, { length: 20 }),
     // Length + align explicit due to circularity
+    BlockStatement: Node({ stmts: Vec('Statement') }, { length: 20, align: 4 }),
     OptionBlockStatement: Option('BlockStatement', { length: 24, align: 4 }),
 
     EmptyStatement: Node({}),

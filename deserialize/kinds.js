@@ -213,7 +213,6 @@ const enumValues = new Map();
  */
 class Option extends Kind {
     childType = null;
-    childOffset = null;
 
     constructor(childType, options) {
         const optional = optionals.get(childType);

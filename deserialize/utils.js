@@ -97,10 +97,16 @@ function deserializeBox(pos, deserialize) {
  * @returns {number} - Position of boxed value in buffer
  */
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
+    const scratchPosBefore = scratchPos;
+
     const finalizeData = serialize(value);
     alignAndAlloc(valueLength, valueAlign);
     const valuePos = pos;
     finalize(finalizeData);
+
+    // Free scratch space
+    scratchPos = scratchPosBefore;
+
     return valuePos;
 }
 
@@ -155,6 +161,8 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
         return storePos32;
     }
 
+    const scratchPosBefore = scratchPos;
+
     // Serialize values
     const finalizeData = new Array(numValues);
     for (let i = 0; i < numValues; i++) {
@@ -168,6 +176,9 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     for (let i = 0; i < numValues; i++) {
         finalize(finalizeData[i]);
     }
+
+    // Free scratch space
+    scratchPos = scratchPosBefore;
 
     // Return Uint32 position in scratch store
     return storePos32;

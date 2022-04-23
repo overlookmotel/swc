@@ -3757,10 +3757,14 @@ function serializeOption(value, serialize) {
 }
 
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
+    const scratchPosBefore = scratchPos;
+
     const finalizeData = serialize(value);
     alignAndAlloc(valueLength, valueAlign);
     const valuePos = pos;
     finalize(finalizeData);
+    scratchPos = scratchPosBefore;
+
     return valuePos;
 }
 
@@ -3774,6 +3778,8 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
         scratchUint32[storePos32] = pos;
         return storePos32;
     }
+
+    const scratchPosBefore = scratchPos;
     const finalizeData = new Array(numValues);
     for (let i = 0; i < numValues; i++) {
         finalizeData[i] = serialize(values[i]);
@@ -3783,6 +3789,7 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     for (let i = 0; i < numValues; i++) {
         finalize(finalizeData[i]);
     }
+    scratchPos = scratchPosBefore;
     return storePos32;
 }
 

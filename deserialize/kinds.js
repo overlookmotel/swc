@@ -146,8 +146,9 @@ class Node extends Kind {
 
         if (endPos !== this.length) finalizeCodes.push(`pos += ${this.length - endPos};`);
 
+        // NB Scratch must be allocated in 8-byte blocks
         return `function serialize${this.name}(node) {
-            const storePos32 = allocScratch(${propsOrdered.length * 4}) >> 2;
+            const storePos32 = allocScratch(${getAligned(propsOrdered.length * 4, 8)}) >> 2;
             ${serializeCodes.join(`\n${' '.repeat(12)}`)}
             return storePos32;
         }

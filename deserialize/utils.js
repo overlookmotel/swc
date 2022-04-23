@@ -201,8 +201,7 @@ function alloc(bytes) {
 
     const oldBuff = buff;
     initBuffer();
-    // TODO Use `Uint8Array.prototype.set()` instead - should be faster
-    oldBuff.copy(buff, 0, 0, pos);
+    buff.set(oldBuff);
 }
 
 function alignAndAlloc(bytes, align) {
@@ -238,8 +237,7 @@ function allocScratch(bytes) {
 
         const oldScratchBuff = scratchBuff;
         initScratch();
-        // TODO Use `Uint8Array.prototype.set()` instead - should be faster
-        oldScratchBuff.copy(scratchBuff, 0, 0, startPos);
+        scratchBuff.set(oldScratchBuff);
     }
 
     return startPos;

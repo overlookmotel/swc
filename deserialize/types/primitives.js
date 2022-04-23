@@ -31,13 +31,16 @@ module.exports = {
             return buff.utf8Slice(pos, pos + len);
         },
         serialize(str) {
+            // TODO Might be faster to align string to 8 bytes so that the copy later
+            // for short strings is aligned to a 64 bit word if it's aligned in output too
+            // (which it will be about 50% of the time)
             const storePos = allocScratchAligned(4 + str.length * 2),
                 storePos32 = storePos >> 2;
 
-            // TODO Use `Buffer.prototype.utf8Write()` instead - should be faster
-            // TODO Might be faster to align to 8 bytes so that the copy later for short strings
-            // is aligned to a 64 bit word (if it's aligned in output too, it will be about 50% of time)
-            const len = scratchBuff.write(str, storePos + 4);
+            // `Buffer.prototype.utf8Write` is undocumented but used internally by
+            // `Buffer.prototype.write`. `.utf8Write` is faster as skips bounds-checking.
+            // This line is equivalent to `scratchBuff.write(str, storePos + 4)`.
+            const len = scratchBuff.utf8Write(str, storePos + 4);
             scratchUint32[storePos32] = len;
 
             if (len <= 7) {
@@ -65,6 +68,7 @@ module.exports = {
             const storePos32 = storePos >> 2,
                 len = scratchUint32[storePos32];
             if (len <= 7) {
+                // TODO Copy as Uint32s instead?
                 copyFromScratch(storePos + 4, len);
                 buff[pos + 7] = len;
             } else {

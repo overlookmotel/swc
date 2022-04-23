@@ -69,8 +69,8 @@ module.exports = {
                     .replace(
                         'serializeAssignmentLeft(',
                         `node.operator === '=' 
-                    ? serializeAssignmentLeftEquals(node.left)
-                    : serializeAssignmentLeft(`
+                ? serializeAssignmentLeftEquals(node.left)
+                : serializeAssignmentLeft(`
                     );
             }
         }

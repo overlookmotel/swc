@@ -128,14 +128,18 @@ class Node extends Kind {
             finalizeCodes = [];
         let endPos = 0;
         propsOrdered.forEach(({ key, prop, pos }, index) => {
-            serializeCodes.push(`${prop.serializerName}(node.${key})`);
+            const storePosStr = `storePos32${index > 0 ? ` + ${index}` : ''}`;
+            // Need to use `writeScratchUint32()` - reason explained in that function's definition
+            serializeCodes.push(
+                `writeScratchUint32(${storePosStr}, ${prop.serializerName}(node.${key}));`
+            );
 
             if (pos > endPos) {
                 finalizeCodes.push(`pos += ${pos - endPos};`);
             } else if (pos < endPos) {
                 finalizeCodes.push(`pos -= ${endPos - pos};`);
             }
-            finalizeCodes.push(`${prop.finalizerName}(finalizeData[${index}]);`);
+            finalizeCodes.push(`${prop.finalizerName}(scratchUint32[${storePosStr}]);`);
 
             endPos = pos + prop.length;
         });
@@ -143,12 +147,12 @@ class Node extends Kind {
         if (endPos !== this.length) finalizeCodes.push(`pos += ${this.length - endPos};`);
 
         return `function serialize${this.name}(node) {
-            return [
-                ${serializeCodes.join(`,\n${' '.repeat(16)}`)}
-            ];
+            const storePos32 = allocScratch(${propsOrdered.length * 4}) >> 2;
+            ${serializeCodes.join(`\n${' '.repeat(12)}`)}
+            return storePos32;
         }
         
-        function finalize${this.name}(finalizeData) {
+        function finalize${this.name}(storePos32) {
             ${finalizeCodes.join(`\n${' '.repeat(12)}`)}
         }`;
     }
@@ -209,22 +213,18 @@ class Enum extends Kind {
     }
 
     generateSerializer() {
-        // TODO Creating and destructuring array on every call is not efficient.
-        // TODO For nested Enums, does `switch(node.type) {}` more than once - inefficient.
-        const enumOptionCodes = [],
+        // TODO For nested Enums, does `switch (node.type) {}` more than once - inefficient
+        const optionSerializeCodes = [],
+            optionFinalizeCodes = [],
             usedNodeNames = new Set();
         for (const index of this.order) {
             const type = this.enumOptions[index];
+
             const addCode = (nodeName) => {
                 if (usedNodeNames.has(nodeName)) return;
                 usedNodeNames.add(nodeName);
 
-                enumOptionCodes.push(
-                    `case '${nodeName}': `
-                    + 'return ['
-                    + `${index}, ${type.align}, ${type.serializerName}(node), ${type.finalizerName}`
-                    + '];'
-                );
+                optionSerializeCodes.push(`case '${nodeName}':`);
             };
             (function resolve(thisType) {
                 if (thisType instanceof Node) return addCode(thisType.nodeName);
@@ -233,17 +233,37 @@ class Enum extends Kind {
                 if (thisType instanceof Custom) return addCode(thisType.name);
                 throw new Error(`Unexpected enum option type for ${this.name}, option ${index}`);
             })(type);
+
+            optionSerializeCodes.push(...[
+                `scratchBuff[storePos] = ${index};`,
+                // Need to use `writeScratchUint32()` - reason explained in that function's definition
+                `writeScratchUint32((storePos >> 2) + 1, ${type.serializerName}(node));`,
+                'break;'
+            ].map(line => `${' '.repeat(4)}${line}`));
+
+            optionFinalizeCodes.push(
+                `case ${index}: finalizeEnum(`
+                + `${index}, scratchUint32[(storePos >> 2) + 1], ${type.finalizerName}, `
+                + `${type.align}, ${this.length}`
+                + '); '
+                + 'break;'
+            );
         }
 
         return `function serialize${this.name}(node) {
-            switch(node.type) {
-                ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
+            const storePos = allocScratch(8);
+            switch (node.type) {
+                ${optionSerializeCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
+            return storePos;
         }
 
-        function finalize${this.name}(finalizeData) {
-            finalizeEnum(finalizeData, ${this.length});
+        function finalize${this.name}(storePos) {
+            switch (scratchBuff[storePos]) {
+                ${optionFinalizeCodes.join(`\n${' '.repeat(16)}`)}
+                default: throw new Error('Unexpected enum ID for ${this.name}');
+            }
         }`;
     }
 }
@@ -355,8 +375,8 @@ class Option extends Kind {
             return serializeOption(value, ${childType.serializerName});
         }
         
-        function finalize${this.name}(finalizeData) {
-            return finalizeOption(finalizeData, ${finalizerName}, ${childLength}, ${childAlign});
+        function finalize${this.name}(storePos) {
+            return finalizeOption(storePos, ${finalizerName}, ${childLength}, ${childAlign});
         }`;
     }
 }

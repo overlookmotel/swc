@@ -16,7 +16,6 @@ function serialize(ast) {
     const storePos = serializeProgram(ast);
     alignAndAlloc(36, 4);
     finalizeProgram(storePos);
-
     return buff.subarray(0, pos);
 }
 
@@ -2623,14 +2622,12 @@ function finalizeBigIntLiteral(storePos32) {
 
 function serializeBigIntValue(value) {
     if (value[0] === 0) return serializeJsWord('0');
-
     const parts = value[1];
     let num = 0n;
     for (let i = parts.length - 1; i >= 0; i--) {
         num <<= 32n;
         num += BigInt(parts[i]);
     }
-
     return serializeJsWord(num.toString());
 }
 
@@ -2940,20 +2937,16 @@ function serializeJsWord(str) {
         storePos32 = storePos >> 2;
     const len = scratchBuff.utf8Write(str, storePos + 4);
     scratchUint32[storePos32] = len;
-
     if (len <= 7) {
         scratchPos = storePos + (len <= 4 ? 8 : 16);
         return storePos;
     }
-
     const strPos = pos;
     alloc(len);
     copyFromScratch(storePos + 4, len);
     pos += len;
-
     scratchPos = storePos + 8;
     scratchUint32[storePos32 + 1] = strPos;
-
     return storePos;
 }
 
@@ -3759,13 +3752,11 @@ function serializeOption(value, serialize) {
 
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     const scratchPosBefore = scratchPos;
-
     const finalizeData = serialize(value);
     alignAndAlloc(valueLength, valueAlign);
     const valuePos = pos;
     finalize(finalizeData);
     scratchPos = scratchPosBefore;
-
     return valuePos;
 }
 
@@ -3773,13 +3764,11 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     const storePos32 = allocScratch(8) >> 2;
     const numValues = values.length;
     scratchUint32[storePos32 + 1] = numValues;
-
     if (numValues === 0) {
         alignAndAlloc(0, valueAlign);
         scratchUint32[storePos32] = pos;
         return storePos32;
     }
-
     const scratchPosBefore = scratchPos;
     const finalizeData = new Array(numValues);
     for (let i = 0; i < numValues; i++) {
@@ -3841,11 +3830,9 @@ function initBuffer() {
 function alloc(bytes) {
     const end = pos + bytes;
     if (end <= buffLen) return;
-
     do {
         buffLen *= 2;
     } while (buffLen < end);
-
     const oldBuff = buff;
     initBuffer();
     buff.set(oldBuff);
@@ -3869,17 +3856,14 @@ function initScratch() {
 function allocScratch(bytes) {
     const startPos = scratchPos;
     scratchPos += bytes;
-
     if (scratchPos > scratchLen) {
         do {
             scratchLen *= 2;
         } while (scratchLen < scratchPos);
-
         const oldScratchBuff = scratchBuff;
         initScratch();
         scratchBuff.set(oldScratchBuff);
     }
-
     return startPos;
 }
 

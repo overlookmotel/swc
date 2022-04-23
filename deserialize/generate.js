@@ -105,6 +105,7 @@ function generateSerializer() {
             let serializerCode = type.generateSerializer();
             if (!serializerCode) return [];
             serializerCode = conformFunctionCode(serializerCode);
+            serializerCode = serializerCode.replace(/\n\}\n/g, '\n}\n\n');
             if (!DEBUG) return serializerCode;
             return serializerCode
                 .replace(

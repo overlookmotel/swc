@@ -2937,7 +2937,7 @@ function serializeAccessibility(value) {
 function serializeJsWord(str) {
     const storePos = allocScratchAligned(4 + str.length * 2),
         storePos32 = storePos >> 2;
-    const len = scratchBuff.write(str, storePos + 4);
+    const len = scratchBuff.utf8Write(str, storePos + 4);
     scratchUint32[storePos32] = len;
 
     if (len <= 7) {

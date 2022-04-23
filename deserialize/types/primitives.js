@@ -90,8 +90,6 @@ module.exports = {
             return storePos64;
         },
         finalize(storePos64) {
-            // TODO Use `scratchBuff.copy()` instead?
-            // TODO Or `Uint8Array.prototype.set()` which may be faster?
             float64[pos >> 3] = scratchFloat64[storePos64];
             pos += 16;
         },
@@ -117,8 +115,6 @@ module.exports = {
             return storePos32;
         },
         finalize(storePos32) {
-            // TODO Use `scratchBuff.copy()` instead?
-            // TODO Or `Uint8Array.prototype.set()` which may be faster?
             const pos32 = pos >> 2;
             uint32[pos32] = scratchUint32[storePos32];
             uint32[pos32 + 1] = scratchUint32[storePos32 + 1];

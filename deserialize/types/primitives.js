@@ -31,9 +31,7 @@ module.exports = {
             return buff.utf8Slice(pos, pos + len);
         },
         serialize(str) {
-            let storeLen = 4 + str.length * 2;
-            if (storeLen & 2) storeLen += 2;
-            const storePos = allocScratch(storeLen),
+            const storePos = allocScratchAligned(4 + str.length * 2),
                 storePos32 = storePos >> 2;
 
             // TODO Use `Buffer.prototype.utf8Write()` instead - should be faster
@@ -43,7 +41,8 @@ module.exports = {
             scratchUint32[storePos32] = len;
 
             if (len <= 7) {
-                scratchPos = storePos + 12; // Free unused scratch
+                // Free unused scratch. Scratch must remain aligned to 8-byte chunks.
+                scratchPos = storePos + (len <= 4 ? 8 : 16);
                 return storePos;
             }
 
@@ -110,7 +109,8 @@ module.exports = {
             };
         },
         serialize(span) {
-            const storePos32 = allocScratch(12) >> 2;
+            // Only need 12 bytes scratch, but scratch must be allocated in 8-byte blocks
+            const storePos32 = allocScratch(16) >> 2;
             scratchUint32[storePos32] = span.start;
             scratchUint32[storePos32 + 1] = span.end;
             scratchUint32[storePos32 + 2] = span.ctxt;

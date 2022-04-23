@@ -123,7 +123,8 @@ function generateSerializer() {
                 'serializeOption', 'serializeBox', 'serializeVec',
                 'finalizeEnum', 'finalizeEnumValue', 'finalizeOption', 'finalizeBox', 'finalizeVec',
                 'initBuffer', 'alloc', 'alignAndAlloc',
-                'initScratch', 'allocScratch', 'writeScratchUint32', 'copyFromScratch'
+                'initScratch', 'allocScratch', 'allocScratchAligned',
+                'writeScratchUint32', 'copyFromScratch'
             ],
             'debugAst'
         ).map(code => code.replace(

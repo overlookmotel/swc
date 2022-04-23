@@ -19,6 +19,7 @@ module.exports = {
     alignAndAlloc,
     initScratch,
     allocScratch,
+    allocScratchAligned,
     writeScratchUint32,
     copyFromScratch,
     debugBuff,
@@ -224,10 +225,18 @@ function initScratch() {
  * Allocate scratch space of specified number of bytes.
  * Advance position for next allocation.
  * Return position of start of scratch space allocated.
+ * 
+ * Scratch must be allocated in multiples of 8 bytes.
+ * This is to support writing `Float64`s to scratch.
+ * 
  * @param {number} bytes - Num bytes
  * @returns {number} - Position of start of reserved scratch space
  */
 function allocScratch(bytes) {
+    /* DEBUG_ONLY_START */
+    if (bytes % 8 !== 0) throw new Error('Scratch must be allocated in multiples of 8 bytes');
+    /* DEBUG_ONLY_END */
+
     const startPos = scratchPos;
     scratchPos += bytes;
 
@@ -242,6 +251,19 @@ function allocScratch(bytes) {
     }
 
     return startPos;
+}
+
+/**
+ * Allocate scratch space.
+ * Same as `allocScratch()` but ensures number of bytes allocated is a multiple of 8,
+ * to preserve correct alignment.
+ * @param {number} bytes - Num bytes
+ * @returns {number} - Position of start of reserved scratch space
+ */
+function allocScratchAligned(bytes) {
+    const modulus = bytes & 7;
+    if (modulus === 0) return allocScratch(bytes);
+    return allocScratch(bytes + 8 - modulus);
 }
 
 /**

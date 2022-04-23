@@ -3873,8 +3873,8 @@ function allocScratchAligned(bytes) {
     return allocScratch(bytes + 8 - modulus);
 }
 
-function writeScratchUint32(pos, value) {
-    scratchUint32[pos] = value;
+function writeScratchUint32(pos32, value) {
+    scratchUint32[pos32] = value;
 }
 
 function copyFromScratch(scratchPos, len) {

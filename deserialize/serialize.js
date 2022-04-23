@@ -2960,7 +2960,11 @@ function finalizeJsWord(storePos) {
     const storePos32 = storePos >> 2,
         len = scratchUint32[storePos32];
     if (len <= 7) {
-        copyFromScratch(storePos + 4, len);
+        if (len > 0) {
+            const pos32 = pos >> 2;
+            uint32[pos32] = scratchUint32[storePos32 + 1];
+            if (len > 4) uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
+        }
         buff[pos + 7] = len;
     } else {
         const pos32 = pos >> 2;

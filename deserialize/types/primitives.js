@@ -68,8 +68,23 @@ module.exports = {
             const storePos32 = storePos >> 2,
                 len = scratchUint32[storePos32];
             if (len <= 7) {
-                // TODO Copy as Uint32s instead?
-                copyFromScratch(storePos + 4, len);
+                if (len > 0) {
+                    const pos32 = pos >> 2;
+                    uint32[pos32] = scratchUint32[storePos32 + 1];
+                    if (len > 4) uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
+                }
+
+                /* DEBUG_ONLY_START */
+                // Zero out extra bytes which were copied after end of string.
+                // It doesn't matter that this happens, but makes it hard to validate
+                // output by comparing buffers as it introduces a random element.
+                if (len !== 0 && len !== 4 && len !== 7) {
+                    for (let emptyPos = pos + len; emptyPos < pos + (len < 4 ? 4 : 7); emptyPos++) {
+                        buff[emptyPos] = 0;
+                    }
+                }
+                /* DEBUG_ONLY_END */
+
                 buff[pos + 7] = len;
             } else {
                 const pos32 = pos >> 2;

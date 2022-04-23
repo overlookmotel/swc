@@ -31,9 +31,7 @@ module.exports = {
             return buff.utf8Slice(pos, pos + len);
         },
         serialize(str) {
-            // TODO Might be faster to align string to 8 bytes so that the copy later
-            // for short strings is aligned to a 64 bit word if it's aligned in output too
-            // (which it will be about 50% of the time)
+            // Allocate 2 bytes scratch for every character in case of Unicode chars
             const storePos = allocScratchAligned(4 + str.length * 2),
                 storePos32 = storePos >> 2;
 

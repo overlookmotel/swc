@@ -46,6 +46,20 @@ class Kind {
             this.align = align;
         }
     }
+
+    get serializerName() {
+        return `serialize${this.name}`;
+    }
+    set serializerName(name) {
+        Object.defineProperty(this, 'serializerName', { value: name, writable: true });
+    }
+
+    get finalizerName() {
+        return `finalize${this.name}`;
+    }
+    set finalizerName(name) {
+        Object.defineProperty(this, 'finalizerName', { value: name, writable: true });
+    }
 }
 
 /**
@@ -104,6 +118,40 @@ class Node extends Kind {
             };
         }`;
     }
+
+    generateSerializer() {
+        const propsOrdered = [...this.propsWithPos].sort(
+            (prop1, prop2) => prop1.pos < prop2.pos ? -1 : 1
+        );
+
+        const serializeCodes = [],
+            finalizeCodes = [];
+        let endPos = 0;
+        propsOrdered.forEach(({ key, prop, pos }, index) => {
+            serializeCodes.push(`${prop.serializerName}(node.${key})`);
+
+            if (pos > endPos) {
+                finalizeCodes.push(`pos += ${pos - endPos};`);
+            } else if (pos < endPos) {
+                finalizeCodes.push(`pos -= ${endPos - pos};`);
+            }
+            finalizeCodes.push(`${prop.finalizerName}(finalizeData[${index}]);`);
+
+            endPos = pos + prop.length;
+        });
+
+        if (endPos !== this.length) finalizeCodes.push(`pos += ${this.length - endPos};`);
+
+        return `function serialize${this.name}(node) {
+            return [
+                ${serializeCodes.join(`,\n${' '.repeat(16)}`)}
+            ];
+        }
+        
+        function finalize${this.name}(finalizeData) {
+            ${finalizeCodes.join(`\n${' '.repeat(12)}`)}
+        }`;
+    }
 }
 
 /**
@@ -111,9 +159,10 @@ class Node extends Kind {
  */
 class Enum extends Kind {
     enumOptions = null;
+    order = null;
 
     constructor(enumOptions, options) {
-        const enumObj = enums.get(JSON.stringify(enumOptions));
+        const enumObj = enums.get(JSON.stringify({ enumOptions, options }));
         if (enumObj) return enumObj;
 
         assert(enumOptions.length < 256);
@@ -122,8 +171,9 @@ class Enum extends Kind {
         Object.assign(this, options);
 
         this.enumOptions = enumOptions;
+        if (!this.order) this.order = enumOptions.map((_, index) => index);
 
-        enums.set(JSON.stringify(enumOptions), this);
+        enums.set(JSON.stringify({ enumOptions, options }), this);
     }
 
     getName() {
@@ -155,6 +205,45 @@ class Enum extends Kind {
                 ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
+        }`;
+    }
+
+    generateSerializer() {
+        // TODO Creating and destructuring array on every call is not efficient.
+        // TODO For nested Enums, does `switch(node.type) {}` more than once - inefficient.
+        const enumOptionCodes = [],
+            usedNodeNames = new Set();
+        for (const index of this.order) {
+            const type = this.enumOptions[index];
+            const addCode = (nodeName) => {
+                if (usedNodeNames.has(nodeName)) return;
+                usedNodeNames.add(nodeName);
+
+                enumOptionCodes.push(
+                    `case '${nodeName}': `
+                    + 'return ['
+                    + `${index}, ${type.align}, ${type.serializerName}(node), ${type.finalizerName}`
+                    + '];'
+                );
+            };
+            (function resolve(thisType) {
+                if (thisType instanceof Node) return addCode(thisType.nodeName);
+                if (thisType instanceof Enum) return thisType.enumOptions.forEach(resolve);
+                if (thisType instanceof Box) return resolve(thisType.childType);
+                if (thisType instanceof Custom) return addCode(thisType.name);
+                throw new Error(`Unexpected enum option type for ${this.name}, option ${index}`);
+            })(type);
+        }
+
+        return `function serialize${this.name}(node) {
+            switch(node.type) {
+                ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
+                default: throw new Error('Unexpected enum value for ${this.name}');
+            }
+        }
+
+        function finalize${this.name}(finalizeData) {
+            finalizeEnum(finalizeData, ${this.length});
         }`;
     }
 }
@@ -204,6 +293,23 @@ class EnumValue extends Kind {
             }
         }`;
     }
+
+    generateSerializer() {
+        const enumOptionCodes = this.enumOptions.map((value, index) => (
+            `case ${typeof value === 'string' ? `'${value}'` : value}: return ${index};`
+        ));
+
+        return `function serialize${this.name}(value) {
+            switch (value) {
+                ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
+                default: throw new Error('Unexpected enum value for ${this.name}');
+            }
+        }`;
+    }
+
+    get finalizerName() {
+        return 'finalizeEnumValue';
+    }
 }
 
 const enumValues = new Map();
@@ -239,6 +345,18 @@ class Option extends Kind {
     generateDeserializer() {
         return `function deserialize${this.name}(pos) {
             return deserializeOption(pos, deserialize${this.childType.name}, ${this.childType.align});
+        }`;
+    }
+
+    generateSerializer() {
+        const { childType } = this,
+            { finalizerName, length: childLength, align: childAlign } = childType;
+        return `function serialize${this.name}(value) {
+            return serializeOption(value, ${childType.serializerName});
+        }
+        
+        function finalize${this.name}(finalizeData) {
+            return finalizeOption(finalizeData, ${finalizerName}, ${childLength}, ${childAlign});
         }`;
     }
 }
@@ -280,6 +398,19 @@ class Box extends Kind {
             return deserializeBox(pos, deserialize${this.childType.name});
         }`;
     }
+
+    generateSerializer() {
+        const {
+            serializerName, finalizerName, length: childLength, align: childAlign
+        } = this.childType;
+        return `function serialize${this.name}(value) {
+            return serializeBox(value, ${serializerName}, ${finalizerName}, ${childLength}, ${childAlign});
+        }`;
+    }
+
+    get finalizerName() {
+        return 'finalizeBox';
+    }
 }
 
 const boxes = new Map();
@@ -319,6 +450,19 @@ class Vec extends Kind {
             return deserializeVec(pos, deserialize${this.childType.name}, ${this.childType.length});
         }`;
     }
+
+    generateSerializer() {
+        const {
+            serializerName, finalizerName, length: childLength, align: childAlign
+        } = this.childType;
+        return `function serialize${this.name}(values) {
+            return serializeVec(values, ${serializerName}, ${finalizerName}, ${childLength}, ${childAlign});
+        }`;
+    }
+
+    get finalizerName() {
+        return 'finalizeVec';
+    }
 }
 
 const vecs = new Map();
@@ -341,6 +485,11 @@ class Custom extends Kind {
         assert(isPositiveInteger(this.length), `Custom type ${this.name} has invalid length`);
         assert(isPositiveInteger(this.align), `Custom type ${this.name} has invalid align`);
         assert(typeof this.deserialize === 'function', `Custom type ${this.name} has no deserializer`);
+        assert(typeof this.serialize === 'function', `Custom type ${this.name} has no serializer`);
+        assert(
+            typeof this.finalize === 'function' || this.finalize === false,
+            `Custom type ${this.name} has no finalizer`
+        );
     }
 
     generateDeserializer() {
@@ -350,6 +499,26 @@ class Custom extends Kind {
             `Custom type ${this.name} malformed deserializer function`
         );
         return `function deserialize${this.name}${code.slice('deserialize'.length)}`;
+    }
+
+    generateSerializer() {
+        const serializeCode = this.serialize.toString();
+        assert(
+            serializeCode.startsWith('serialize('),
+            `Custom type ${this.name} malformed serializer function`
+        );
+        let code = `function serialize${this.name}${serializeCode.slice('serialize'.length)}`;
+
+        if (this.finalize) {
+            const finalizeCode = this.finalize.toString();
+            assert(
+                finalizeCode.startsWith('finalize('),
+                `Custom type ${this.name} malformed finalizer function`
+            );
+            code += `\n\n${' '.repeat(8)}function finalize${this.name}${finalizeCode.slice('finalize'.length)}`;
+        }
+
+        return code;
     }
 }
 

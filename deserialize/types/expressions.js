@@ -1,7 +1,8 @@
 'use strict';
 
 // Imports
-const { Node, Enum, EnumValue, Option, Box, Vec } = require('../kinds.js');
+const { Node, Enum, EnumValue, Option, Box, Vec } = require('../kinds.js'),
+    { initType } = require('./index.js');
 
 // Exports
 
@@ -53,11 +54,42 @@ module.exports = {
 
     AssignmentExpression: Node(
         {
-            left: Enum([Box('Expression'), Box('Pattern')]),
+            left: 'AssignmentLeft',
             operator: 'AssignmentOperator',
             right: Box('Expression')
         },
-        { keys: ['span', 'operator', 'left', 'right'] }
+        {
+            keys: ['span', 'operator', 'left', 'right'],
+            init() {
+                Node.prototype.init.call(this);
+                initType('AssignmentLeftEquals');
+            },
+            generateSerializer() {
+                return Node.prototype.generateSerializer.call(this)
+                    .replace(
+                        'serializeAssignmentLeft(',
+                        `node.operator === '=' 
+                    ? serializeAssignmentLeftEquals(node.left)
+                    : serializeAssignmentLeft(`
+                    );
+            }
+        }
+    ),
+    AssignmentLeft: Enum([Box('Expression'), Box('Pattern')]),
+    AssignmentLeftEquals: Enum(
+        [Box('Expression'), Box('Pattern')],
+        {
+            order: [1, 0], // Interpret nodes as patterns over expressions
+            generateDeserializer() {
+                // No deserializer needed. Only used in serializer.
+                return null;
+            },
+            generateSerializer() {
+                // No finalizer needed. `finalizeAssignmentLeft()` is used.
+                return Enum.prototype.generateSerializer.call(this)
+                    .replace(/\s+function finalizeAssignmentLeftEquals\([\s\S]+$/, '');
+            }
+        }
     ),
     AssignmentOperator: EnumValue([
         '=', '+=', '-=', '*=',

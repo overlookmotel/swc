@@ -76,6 +76,7 @@ module.exports = {
         }
     ),
     AssignmentLeft: Enum([Box('Expression'), Box('Pattern')]),
+    // TODO This can be made more efficient. The Box(Expression) arm is never visited.
     AssignmentLeftEquals: Enum(
         [Box('Expression'), Box('Pattern')],
         {

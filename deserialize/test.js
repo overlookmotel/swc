@@ -1,8 +1,14 @@
 'use strict';
 
+// Fill buffers with zeros to allow comparison of buffers
+// without failure due to random uninitialized bytes
+const { allocUnsafeSlow } = Buffer;
+Buffer.allocUnsafeSlow = (...args) => allocUnsafeSlow(...args).fill(0);
+
 // Imports
 const { parseSync, parseSyncToBuffer } = require('../index.js'),
-    deserializeBuffer = require('./index.js');
+    deserialize = require('./index.js'),
+    serialize = require('./serialize.js');
 
 // Tests
 
@@ -1506,11 +1512,6 @@ describe('Parses correctly', () => {
 
 // Utils
 
-function parseSyncViaBuffer(code, options) {
-    const buff = parseSyncToBuffer(code, options);
-    return deserializeBuffer(buff);
-}
-
 function getItParses() {
     const itParses = (name, options, codes) => itParsesImpl(describe, name, options, codes);
     itParses.only = (name, options, codes) => itParsesImpl(describe.only, name, options, codes);
@@ -1529,13 +1530,34 @@ function itParsesImpl(describe, name, options, codes) {
             let testName = code.replace(/\s+/g, ' ');
             if (options) testName += ` (${JSON.stringify(options).replace(/"/g, '')})`;
             it(testName, () => {
-                const ast = conformSpans(parseSync(code, options)),
-                    astViaBuffer = conformSpans(parseSyncViaBuffer(code, options));
-                expect(astViaBuffer).toStrictEqual(ast);
-                expect(JSON.stringify(astViaBuffer)).toBe(JSON.stringify(ast));
+                const astOld = conformSpans(parseSync(code, options));
+
+                const buff = parseSyncToBuffer(code, options);
+                const ast = deserialize(buff);
+
+                serialize.initBuffer();
+                const buff2 = serialize(ast);
+                expect(buffToString(buff2)).toEqual(buffToString(buff));
+
+                conformSpans(ast);
+                expect(ast).toStrictEqual(astOld);
+                expect(JSON.stringify(ast)).toBe(JSON.stringify(astOld));
             });
         }
     })
+}
+
+function buffToString(buff) {
+    const str = buff.toString('hex');
+    let out = '';
+    for (let pos = 0; pos < str.length; pos += 8) {
+        if (pos % 32 === 0) {
+            if (pos !== 0) out += '\n';
+            out += `[${`${pos / 2}`.padStart(5, '0')}]`;
+        }
+        out += ' ' + str.slice(pos, pos + 8);
+    }
+    return out;
 }
 
 // Make all spans relative to zero = start of file

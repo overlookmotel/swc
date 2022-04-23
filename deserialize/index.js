@@ -884,9 +884,17 @@ function deserializeAssignmentExpression(pos) {
         type: 'AssignmentExpression',
         span: deserializeSpan(pos),
         operator: deserializeAssignmentOperator(pos + 20),
-        left: deserializeBoxExpressionOrBoxPattern(pos + 12),
+        left: deserializeAssignmentLeft(pos + 12),
         right: deserializeBoxExpression(pos + 24)
     };
+}
+
+function deserializeAssignmentLeft(pos) {
+    switch (buff[pos]) {
+        case 0: return deserializeBoxExpression(pos + 4);
+        case 1: return deserializeBoxPattern(pos + 4);
+        default: throw new Error('Unexpected enum value for AssignmentLeft');
+    }
 }
 
 function deserializeAssignmentOperator(pos) {
@@ -1662,14 +1670,6 @@ function deserializeOptionTsTypeParameterDeclaration(pos) {
 
 function deserializeVecStatement(pos) {
     return deserializeVec(pos, deserializeStatement, 152);
-}
-
-function deserializeBoxExpressionOrBoxPattern(pos) {
-    switch (buff[pos]) {
-        case 0: return deserializeBoxExpression(pos + 4);
-        case 1: return deserializeBoxPattern(pos + 4);
-        default: throw new Error('Unexpected enum value for BoxExpressionOrBoxPattern');
-    }
 }
 
 function deserializeIdentifierOrPrivateNameOrComputed(pos) {

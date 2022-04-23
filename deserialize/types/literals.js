@@ -41,6 +41,19 @@ module.exports = {
 
             return [1, parts]; // TODO What is the initial 1 for?
         },
+        serialize([count, parts]) {
+            if (count === 0) return serializeJsWord('0');
+
+            let num = 0n;
+            for (let i = parts.length - 1; i >= 0; i--) {
+                num <<= 32n;
+                num += BigInt(parts[i]);
+            }
+
+            return serializeJsWord(num.toString());
+        },
+        finalize: false,
+        finalizerName: 'finalizeJsWord',
         dependencies: ['JsWord'],
         length: 8,
         align: 4

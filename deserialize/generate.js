@@ -63,7 +63,7 @@ function generateDeserializer() {
 function getUtilitiesCode(utilNames, debugUtilName) {
     if (DEBUG) utilNames = [...utilNames, debugUtilName];
     return utilNames.map(
-        utilName => removeComments(removeDebugOnlyCode(utils[utilName].toString()))
+        utilName => removeLineBreaks(removeComments(removeDebugOnlyCode(utils[utilName].toString())))
     );
 }
 
@@ -73,7 +73,7 @@ function getUtilitiesCode(utilNames, debugUtilName) {
  * @returns {string} - Conformed code
  */
 function conformFunctionCode(code) {
-    return removeComments(removeDebugOnlyCode(removeIndent(code)));
+    return removeLineBreaks(removeComments(removeDebugOnlyCode(removeIndent(code))));
 }
 
 /**
@@ -97,6 +97,15 @@ function removeIndent(code) {
  */
 function removeComments(code) {
     return code.replace(/\s*\/\/[^\n]+/g, '');
+}
+
+/**
+ * Remove excess line breaks from code.
+ * @param {string} code 
+ * @returns {string} - Code with double line breaks removed
+ */
+function removeLineBreaks(code) {
+    return code.replace(/\n\n+/g, '\n');
 }
 
 /**

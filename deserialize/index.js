@@ -1256,7 +1256,6 @@ function deserializeBigIntLiteral(pos) {
 function deserializeBigIntValue(pos) {
     const str = deserializeJsWord(pos);
     if (str === '0') return [0, []];
-
     let current = BigInt(str);
     const parts = [];
     while (true) {
@@ -1265,11 +1264,9 @@ function deserializeBigIntValue(pos) {
             parts.push(Number(current));
             break;
         }
-
         parts.push(Number(current & 4294967295n));
         current = next;
     }
-
     return [1, parts];
 }
 

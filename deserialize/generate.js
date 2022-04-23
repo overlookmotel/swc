@@ -27,7 +27,7 @@ function generateDeserializer() {
         // Deserializer entry point
         'module.exports = deserialize;',
         'let buff, int32, uint32, float64;',
-        removeIndent(`function deserialize(buffIn) {
+        conformFunctionCode(`function deserialize(buffIn) {
             const arrayBuffer = buffIn.buffer;
             buff = Buffer.from(arrayBuffer);
             int32 = new Int32Array(arrayBuffer);

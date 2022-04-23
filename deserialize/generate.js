@@ -62,16 +62,18 @@ function generateDeserializer() {
  */
 function getUtilitiesCode(utilNames, debugUtilName) {
     if (DEBUG) utilNames = [...utilNames, debugUtilName];
-    return utilNames.map(utilName => removeDebugOnlyCode(utils[utilName].toString()));
+    return utilNames.map(
+        utilName => removeComments(removeDebugOnlyCode(utils[utilName].toString()))
+    );
 }
 
 /**
- * Remove indentation and debug code from function code.
+ * Remove indentation, comments, and debug code from function code.
  * @param {string} code - Function code
  * @returns {string} - Conformed code
  */
 function conformFunctionCode(code) {
-    return removeDebugOnlyCode(removeIndent(code));
+    return removeComments(removeDebugOnlyCode(removeIndent(code)));
 }
 
 /**
@@ -86,6 +88,15 @@ function removeIndent(code) {
 
     const indentDepth = lines[1].match(/^\s+/)[0].length - 4;
     return [lines[0], ...lines.slice(1).map(line => line.slice(indentDepth))].join('\n');
+}
+
+/**
+ * Remove comments from code.
+ * @param {string} code - Code
+ * @returns {string} - Code with comments removed
+ */
+function removeComments(code) {
+    return code.replace(/\s*\/\/[^\n]+/g, '');
 }
 
 /**

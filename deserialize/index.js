@@ -1254,7 +1254,6 @@ function deserializeBigIntLiteral(pos) {
 }
 
 function deserializeBigIntValue(pos) {
-    // TODO This implementation could be more efficient
     const str = deserializeJsWord(pos);
     if (str === '0') return [0, []];
 
@@ -1267,11 +1266,11 @@ function deserializeBigIntValue(pos) {
             break;
         }
 
-        parts.push(Number(current & 4294967295n)); // 4294967295n === (2 ** 32) - 1
+        parts.push(Number(current & 4294967295n));
         current = next;
     }
 
-    return [1, parts]; // TODO What is the initial 1 for?
+    return [1, parts];
 }
 
 function deserializeRegExpLiteral(pos) {
@@ -1486,21 +1485,12 @@ function deserializeAccessibility(pos) {
 }
 
 function deserializeJsWord(pos) {
-    // 8 bytes. Last byte is length.
-    // If length <= 7, bytes 0-6 contain the word.
-    // Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
-    // TODO I don't think this can be correct.
-    // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
     let len = buff[pos + 7];
     if (len > 7) {
         const pos32 = pos >> 2;
         len = uint32[pos32];
-        // Pointer is relative to byte containing length, not byte containing pointer
         pos += int32[pos32 + 1];
     }
-    // `Buffer.prototype.utf8Slice` is undocumented but used internally by
-    // `Buffer.prototype.toString`. `.utf8Slice` is faster as skips bounds-checking.
-    // This line is equivalent to `buff.toString('utf8', pos, pos + len)`.
     return buff.utf8Slice(pos, pos + len);
 }
 

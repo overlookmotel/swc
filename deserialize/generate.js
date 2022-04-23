@@ -2,18 +2,25 @@
 
 // Modules
 const { writeFileSync } = require('fs'),
-    pathJoin = require('path').join;
+    pathJoin = require('path').join,
+    assert = require('assert');
 
 // Imports
 const { types, initType } = require('./types/index.js'),
     utils = require('./utils.js');
 
+// Constants
+const SERIALIZE_INITIAL_BUFFER_SIZE = 8 * 1024; // 8 KB
+
 // Generate deserializer code
 
 const DEBUG = !!process.env.DEBUG;
 
+assert(SERIALIZE_INITIAL_BUFFER_SIZE % 8 === 0);
+
 initType('Program');
 writeFileSync(pathJoin(__dirname, 'index.js'), generateDeserializer());
+writeFileSync(pathJoin(__dirname, 'serialize.js'), generateSerializer());
 
 /**
  * Generate code for deserializer.
@@ -37,8 +44,10 @@ function generateDeserializer() {
         }`),
 
         // Type deserializer functions
-        ...Object.values(types).map((type) => {
-            const deserializerCode = conformFunctionCode(type.generateDeserializer());
+        ...Object.values(types).flatMap((type) => {
+            let deserializerCode = type.generateDeserializer();
+            if (!deserializerCode) return [];
+            deserializerCode = conformFunctionCode(deserializerCode);
             if (!DEBUG) return deserializerCode;
             return deserializerCode.replace(
                 /function deserialize.+\n/,
@@ -51,6 +60,71 @@ function generateDeserializer() {
             ['deserializeOption', 'deserializeBox', 'deserializeVec'],
             'debugBuff'
         )
+    ].join('\n\n') + '\n';
+}
+
+/**
+ * Generate code for serializer.
+ * @returns {string} - Code for serializer
+ */
+function generateSerializer() {
+    return [
+        '// Generated code. Do not edit.',
+        "'use strict';",
+
+        // Serializer entry point
+        'module.exports = serialize;',
+        `let pos, buffLen = ${SERIALIZE_INITIAL_BUFFER_SIZE}, buff, int32, uint32, float64;`,
+        'initBuffer();',
+        conformFunctionCode(`function serialize(ast) {
+            pos = 0;
+
+            /* DEBUG_ONLY_START */
+            // Init new buffer each time
+            buffLen = ${SERIALIZE_INITIAL_BUFFER_SIZE};
+            initBuffer();
+            /* DEBUG_ONLY_END */
+
+            const finalizeData = serializeProgram(ast);
+            alignAndAlloc(${types.Program.length}, ${types.Program.align});
+            finalizeProgram(finalizeData);
+
+            return buff.subarray(0, pos);
+        }`),
+
+        // Type serialize functions
+        ...Object.values(types).flatMap((type) => {
+            let serializerCode = type.generateSerializer();
+            if (!serializerCode) return [];
+            serializerCode = conformFunctionCode(serializerCode);
+            if (!DEBUG) return serializerCode;
+            return serializerCode
+                .replace(
+                    /function serialize.+\n/,
+                    line => line + `${' '.repeat(4)}debugAst('serialize ${type.name}');\n`
+                )
+                .replace(
+                    /function finalize.+\n/,
+                    line => line + `${' '.repeat(4)}debugAst('finalize ${type.name}');\n`
+                );
+        }),
+
+        // Utility functions
+        ...getUtilitiesCode(
+            [
+                'serializeOption', 'serializeBox', 'serializeVec',
+                'finalizeEnum', 'finalizeEnumValue', 'finalizeOption', 'finalizeBox', 'finalizeVec',
+                'initBuffer', 'alloc', 'alignAndAlloc'
+            ],
+            'debugAst'
+        ).map(code => code.replace(
+            /function finalize(.+?)\(.+\n/,
+            (line, name) => DEBUG ? line + `${' '.repeat(4)}debugAst('finalize ${name}');\n` : line
+        )),
+
+        // For use in tests only
+        // TODO Find a better way to do this
+        'serialize.initBuffer = initBuffer;'
     ].join('\n\n') + '\n';
 }
 

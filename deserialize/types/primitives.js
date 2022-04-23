@@ -37,6 +37,8 @@ module.exports = {
                 storePos32 = storePos >> 2;
 
             // TODO Use `Buffer.prototype.utf8Write()` instead - should be faster
+            // TODO Might be faster to align to 8 bytes so that the copy later for short strings
+            // is aligned to a 64 bit word (if it's aligned in output too, it will be about 50% of time)
             const len = scratchBuff.write(str, storePos + 4);
             scratchUint32[storePos32] = len;
 
@@ -52,8 +54,7 @@ module.exports = {
             /* DEBUG_ONLY_END */
 
             alloc(len);
-            // TODO Use `Uint8Array.prototype.set()` instead - probably faster
-            scratchBuff.copy(buff, pos, storePos + 4, storePos + 4 + len);
+            copyFromScratch(storePos + 4, len);
             pos += len;
 
             scratchPos = storePos + 8; // Free scratch which contained string
@@ -65,8 +66,7 @@ module.exports = {
             const storePos32 = storePos >> 2,
                 len = scratchUint32[storePos32];
             if (len <= 7) {
-                // TODO Use `Uint8Array.prototype.set()` instead - probably faster
-                scratchBuff.copy(buff, pos, storePos + 4, storePos + 4 + len);
+                copyFromScratch(storePos + 4, len);
                 buff[pos + 7] = len;
             } else {
                 const pos32 = pos >> 2;

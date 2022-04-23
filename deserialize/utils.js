@@ -17,14 +17,17 @@ module.exports = {
     initBuffer,
     alloc,
     alignAndAlloc,
+    initScratch,
+    allocScratch,
+    writeScratchUint32,
     debugBuff,
     debugAst
 };
 
-function finalizeEnum([id, align, finalizeData, finalize], length) {
+function finalizeEnum(id, finalizeData, finalize, offset, length) {
     const startPos = pos;
     buff[pos] = id;
-    pos += align;
+    pos += offset;
     finalize(finalizeData);
     pos = startPos + length;
 }
@@ -42,19 +45,38 @@ function deserializeOption(pos, deserialize, offset) {
     }
 }
 
+/**
+ * Serialize Option.
+ * Store in scratch:
+ * - Byte 0: 0 if option disabled, 1 if enabled
+ * - Bytes 4-7: Serialize result
+ * Return scratch position (in bytes).
+ * @param {*} value - Value or `null`
+ * @param {Function} serialize - Serialize function for type
+ * @returns {number} - Scratch position (in bytes)
+ */
 function serializeOption(value, serialize) {
-    if (value === null) return null;
-    return serialize(value);
+    const storePos = allocScratch(8);
+    if (value === null) {
+        scratchBuff[storePos] = 0;
+    } else {
+        scratchBuff[storePos] = 1;
+        // Need to use `writeScratchUint32()` - reason explained in that function's definition
+        writeScratchUint32((storePos >> 2) + 1, serialize(value));
+    }
+    return storePos;
 }
 
-function finalizeOption(finalizeData, finalize, valueLength, offset) {
-    if (finalizeData === null) {
+function finalizeOption(storePos, finalize, valueLength, offset) {
+    if (scratchBuff[storePos] === 0) {
+        // Option disabled
         buff[pos] = 0;
         pos += offset + valueLength;
     } else {
+        // Option enabled
         buff[pos] = 1;
         pos += offset;
-        finalize(finalizeData);
+        finalize(scratchUint32[(storePos >> 2) + 1]);
     };
 }
 
@@ -62,6 +84,16 @@ function deserializeBox(pos, deserialize) {
     return deserialize(pos + int32[pos >> 2]);
 }
 
+/**
+ * Serialize Box.
+ * Return position of boxed value in buffer.
+ * @param {*} value - Boxed value
+ * @param {Function} serialize - Serialize function for type
+ * @param {Function} finalize - Finalize function for type
+ * @param {number} valueLength - Length of value type
+ * @param {number} valueAlign - Alignment of value type
+ * @returns {number} - Position of boxed value in buffer
+ */
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     const finalizeData = serialize(value);
     alignAndAlloc(valueLength, valueAlign);
@@ -93,29 +125,56 @@ function deserializeVec(pos, deserialize, length) {
     return entries;
 }
 
+/**
+ * Serialize Vec.
+ * Store in scratch:
+ * - Bytes 0-3: Position of start of values in buffer (Uint32)
+ * - Bytes 4-7: Number of values (Uint32)
+ * Return scratch position (in multiples of 4 bytes).
+ *
+ * @param {Array<*>} values - Values to serialize
+ * @param {Function} serialize - Serialize function for type
+ * @param {Function} finalize - Finalize function for type
+ * @param {number} valueLength - Length of value type
+ * @param {number} valueAlign - Alignment of value type
+ * @returns {number} - Scratch position (in multiples of 4 bytes)
+ */
 function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
+    // Allocate 8 bytes scratch
+    const storePos32 = allocScratch(8) >> 2;
+
+    // Store number of values in scratch bytes 4-7
     const numValues = values.length;
+    scratchUint32[storePos32 + 1] = numValues;
+
     if (numValues === 0) {
         alignAndAlloc(0, valueAlign);
-        return [0, pos];
+        scratchUint32[storePos32] = pos;
+        return storePos32;
     }
 
+    // Serialize values
     const finalizeData = new Array(numValues);
     for (let i = 0; i < numValues; i++) {
         finalizeData[i] = serialize(values[i]);
     }
 
+    // Finalize values.
+    // Store position of values in scratch bytes 0-3.
     alignAndAlloc(valueLength * numValues, valueAlign);
-    const valuesPos = pos;
+    scratchUint32[storePos32] = pos;
     for (let i = 0; i < numValues; i++) {
         finalize(finalizeData[i]);
     }
-    return [numValues, valuesPos];
+
+    // Return Uint32 position in scratch store
+    return storePos32;
 }
 
-function finalizeVec([numValues, valuesPos]) {
-    int32[pos >> 2] = valuesPos - pos;
-    uint32[(pos >> 2) + 1] = numValues;
+function finalizeVec(storePos32) {
+    const pos32 = pos >> 2;
+    int32[pos32] = scratchUint32[storePos32] - pos;
+    uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
     pos += 8;
 }
 
@@ -142,6 +201,7 @@ function alloc(bytes) {
 
     const oldBuff = buff;
     initBuffer();
+    // TODO Use `Uint8Array.prototype.set()` instead - should be faster
     oldBuff.copy(buff, 0, 0, pos);
 }
 
@@ -151,6 +211,64 @@ function alignAndAlloc(bytes, align) {
         if (modulus !== 0) pos += align - modulus;
     }
     alloc(bytes);
+}
+
+function initScratch() {
+    scratchBuff = Buffer.allocUnsafeSlow(scratchLen);
+    const arrayBuffer = scratchBuff.buffer;
+    scratchUint32 = new Uint32Array(arrayBuffer);
+    scratchFloat64 = new Float64Array(arrayBuffer);
+}
+
+/**
+ * Allocate scratch space of specified number of bytes.
+ * Advance position for next allocation.
+ * Return position of start of scratch space allocated.
+ * @param {number} bytes - Num bytes
+ * @returns {number} - Position of start of reserved scratch space
+ */
+function allocScratch(bytes) {
+    const startPos = scratchPos;
+    scratchPos += bytes;
+
+    if (scratchPos > scratchLen) {
+        do {
+            scratchLen *= 2;
+        } while (scratchLen < scratchPos);
+
+        const oldScratchBuff = scratchBuff;
+        initScratch();
+        // TODO Use `Uint8Array.prototype.set()` instead - should be faster
+        oldScratchBuff.copy(scratchBuff, 0, 0, startPos);
+    }
+
+    return startPos;
+}
+
+/**
+ * Write Uint32 to scratch buffer.
+ * In some places, it can't be done directly inline.
+ *
+ * e.g.:
+ * 1. `writeScratchUint32(pos, serialize(node));`
+ * 2. `scratchUint32[pos] = serialize(node);`
+ * The two appear equivalent, but there is a subtle difference.
+ *
+ * Calling the serializer may cause scratch to be grown.
+ * So, the difference is that in (2), `scratchUint32` is the first value to be evaluated,
+ * and a reference is obtained to `scratchUint32` as it is before `serialize()` is called.
+ * If `serialize()` causes scratch to be grown, `scratchUint32` in global scope is replaced
+ * with a new buffer. But the local reference to `scratchUint32` still refers to the old buffer.
+ * So the write is made to the old buffer and has no effect.
+ * `writeScratchUint32()` evaluates `scratchUint32` last,
+ * and therefore always gets an up-to-date reference.
+ *
+ * @param {number} pos32 - Position in scratch buffer to write to (in 4-byte multiple)
+ * @param {number} value - Value to write
+ * @returns {undefined}
+ */
+function writeScratchUint32(pos, value) {
+    scratchUint32[pos] = value;
 }
 
 function debugBuff(typeName, pos, length) {

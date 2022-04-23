@@ -31,9 +31,19 @@ module.exports = {
             return buff.utf8Slice(pos, pos + len);
         },
         serialize(str) {
-            const strBuffer = Buffer.from(str, 'utf8'),
-                len = strBuffer.length;
-            if (len <= 7) return [len, 0, strBuffer];
+            let storeLen = 4 + str.length * 2;
+            if (storeLen & 2) storeLen += 2;
+            const storePos = allocScratch(storeLen),
+                storePos32 = storePos >> 2;
+
+            // TODO Use `Buffer.prototype.utf8Write()` instead - should be faster
+            const len = scratchBuff.write(str, storePos + 4);
+            scratchUint32[storePos32] = len;
+
+            if (len <= 7) {
+                scratchPos = storePos + 12; // Free unused scratch
+                return storePos;
+            }
 
             const strPos = pos;
 
@@ -42,17 +52,26 @@ module.exports = {
             /* DEBUG_ONLY_END */
 
             alloc(len);
-            strBuffer.copy(buff, pos, 0, len);
+            // TODO Use `Uint8Array.prototype.set()` instead - probably faster
+            scratchBuff.copy(buff, pos, storePos + 4, storePos + 4 + len);
             pos += len;
-            return [len, strPos, undefined];
+
+            scratchPos = storePos + 8; // Free scratch which contained string
+            scratchUint32[storePos32 + 1] = strPos;
+
+            return storePos;
         },
-        finalize([len, strPos, strBuffer]) {
+        finalize(storePos) {
+            const storePos32 = storePos >> 2,
+                len = scratchUint32[storePos32];
             if (len <= 7) {
-                strBuffer.copy(buff, pos, 0, len);
+                // TODO Use `Uint8Array.prototype.set()` instead - probably faster
+                scratchBuff.copy(buff, pos, storePos + 4, storePos + 4 + len);
                 buff[pos + 7] = len;
             } else {
-                uint32[pos >> 2] = len;
-                int32[(pos >> 2) + 1] = strPos - pos;
+                const pos32 = pos >> 2;
+                uint32[pos32] = len;
+                int32[pos32 + 1] = scratchUint32[storePos32 + 1] - pos;
             }
             pos += 8;
         },
@@ -67,10 +86,14 @@ module.exports = {
             return float64[pos >> 3];
         },
         serialize(num) {
-            return num;
+            const storePos64 = allocScratch(8) >> 3;
+            scratchFloat64[storePos64] = num;
+            return storePos64;
         },
-        finalize(num) {
-            float64[pos >> 3] = num;
+        finalize(storePos64) {
+            // TODO Use `scratchBuff.copy()` instead?
+            // TODO Or `Uint8Array.prototype.set()` which may be faster?
+            float64[pos >> 3] = scratchFloat64[storePos64];
             pos += 16;
         },
         length: 16, // 8 longer than expected. TODO Not sure why.
@@ -87,13 +110,19 @@ module.exports = {
             };
         },
         serialize(span) {
-            return span;
+            const storePos32 = allocScratch(12) >> 2;
+            scratchUint32[storePos32] = span.start;
+            scratchUint32[storePos32 + 1] = span.end;
+            scratchUint32[storePos32 + 2] = span.ctxt;
+            return storePos32;
         },
-        finalize(span) {
+        finalize(storePos32) {
+            // TODO Use `scratchBuff.copy()` instead?
+            // TODO Or `Uint8Array.prototype.set()` which may be faster?
             const pos32 = pos >> 2;
-            uint32[pos32] = span.start;
-            uint32[pos32 + 1] = span.end;
-            uint32[pos32 + 2] = span.ctxt;
+            uint32[pos32] = scratchUint32[storePos32];
+            uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
+            uint32[pos32 + 2] = scratchUint32[storePos32 + 2];
             pos += 12;
         },
         length: 12,

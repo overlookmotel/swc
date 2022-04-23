@@ -10,6 +10,10 @@ const { parseSync, parseSyncToBuffer } = require('../index.js'),
     deserialize = require('./index.js'),
     serialize = require('./serialize.js');
 
+// Replace `finalizeJsWord()` with a version of function which zeros out unallocated bytes.
+// This allow comparison of buffers without failure due to random uninitialized bytes.
+serialize.replaceFinalizeJsWord();
+
 // Tests
 
 const itParses = getItParses();

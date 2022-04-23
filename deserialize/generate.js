@@ -134,7 +134,8 @@ function generateSerializer() {
 
         // For use in tests only
         // TODO Find a better way to do this
-        'serialize.resetBuffers = resetBuffers;'
+        'serialize.resetBuffers = resetBuffers;',
+        getReplaceFinalizeJsWord()
     ].join('\n\n') + '\n';
 }
 
@@ -200,4 +201,18 @@ function removeLineBreaks(code) {
 function removeDebugOnlyCode(code) {
     if (DEBUG) return code;
     return code.replace(/\s*\/\* DEBUG_ONLY_START \*\/[\s\S]+?\/\* DEBUG_ONLY_END \*\/\n?/g, '');
+}
+
+/**
+ * Create function to replace `finalizeJsWord` function with the debug code left in.
+ * This debug code which is retained zeros out unallocted bytes which would otherwise
+ * contain random data.
+ * This is for use in tests only, where tests compare buffers and these random bytes,
+ * even though they don't actually affect operation, cause the buffer comparisons to fail.
+ * @returns {string}
+ */
+function getReplaceFinalizeJsWord() {
+    return removeIndent(`serialize.replaceFinalizeJsWord = () => {
+        finalizeJsWord = function${types.JsWord.finalize.toString().slice('finalize'.length)};
+    }`);
 }

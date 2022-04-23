@@ -41,9 +41,10 @@ module.exports = {
 
             return [1, parts]; // TODO What is the initial 1 for?
         },
-        serialize([count, parts]) {
-            if (count === 0) return serializeJsWord('0');
+        serialize(value) {
+            if (value[0] === 0) return serializeJsWord('0');
 
+            const parts = value[1];
             let num = 0n;
             for (let i = parts.length - 1; i >= 0; i--) {
                 num <<= 32n;

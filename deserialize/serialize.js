@@ -2621,9 +2621,10 @@ function finalizeBigIntLiteral(storePos32) {
     finalizeJsWord(scratchUint32[storePos32 + 1]);
 }
 
-function serializeBigIntValue([count, parts]) {
-    if (count === 0) return serializeJsWord('0');
+function serializeBigIntValue(value) {
+    if (value[0] === 0) return serializeJsWord('0');
 
+    const parts = value[1];
     let num = 0n;
     for (let i = parts.length - 1; i >= 0; i--) {
         num <<= 32n;

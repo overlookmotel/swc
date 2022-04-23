@@ -25,7 +25,10 @@ module.exports = {
             debugBuff('JsWord content', pos, len);
             /* DEBUG_ONLY_END */
 
-            return buff.toString('utf8', pos, pos + len); // TODO What encoding?
+            // `Buffer.prototype.utf8Slice` is undocumented but used internally by
+            // `Buffer.prototype.toString`. `.utf8Slice` is faster as skips bounds-checking.
+            // This line is equivalent to `buff.toString('utf8', pos, pos + len)`.
+            return buff.utf8Slice(pos, pos + len);
         },
         length: 8,
         align: 4

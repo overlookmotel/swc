@@ -3838,7 +3838,7 @@ function alloc(bytes) {
 
     const oldBuff = buff;
     initBuffer();
-    oldBuff.copy(buff, 0, 0, pos);
+    buff.set(oldBuff);
 }
 
 function alignAndAlloc(bytes, align) {
@@ -3867,7 +3867,7 @@ function allocScratch(bytes) {
 
         const oldScratchBuff = scratchBuff;
         initScratch();
-        oldScratchBuff.copy(scratchBuff, 0, 0, startPos);
+        scratchBuff.set(oldScratchBuff);
     }
 
     return startPos;

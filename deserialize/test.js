@@ -1535,7 +1535,7 @@ function itParsesImpl(describe, name, options, codes) {
                 const buff = parseSyncToBuffer(code, options);
                 const ast = deserialize(buff);
 
-                serialize.initBuffer();
+                serialize.resetBuffers();
                 const buff2 = serialize(ast);
                 expect(buffToString(buff2)).toEqual(buffToString(buff));
 

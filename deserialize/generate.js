@@ -10,13 +10,15 @@ const { types, initType } = require('./types/index.js'),
     utils = require('./utils.js');
 
 // Constants
-const SERIALIZE_INITIAL_BUFFER_SIZE = 8 * 1024; // 8 KB
+const SERIALIZE_INITIAL_BUFFER_SIZE = 8 * 1024, // 8 KB
+    SCRATCH_INITIAL_BUFFER_SIZE = 8 * 1024; // 8 KB
 
 // Generate deserializer code
 
 const DEBUG = !!process.env.DEBUG;
 
 assert(SERIALIZE_INITIAL_BUFFER_SIZE % 8 === 0);
+assert(SCRATCH_INITIAL_BUFFER_SIZE % 8 === 0);
 
 initType('Program');
 writeFileSync(pathJoin(__dirname, 'index.js'), generateDeserializer());
@@ -74,22 +76,28 @@ function generateSerializer() {
 
         // Serializer entry point
         'module.exports = serialize;',
-        `let pos, buffLen = ${SERIALIZE_INITIAL_BUFFER_SIZE}, buff, int32, uint32, float64;`,
-        'initBuffer();',
+        'let pos, buffLen, buff, int32, uint32, float64;',
+        'let scratchPos, scratchLen, scratchBuff, scratchUint32, scratchFloat64;',
+        'resetBuffers();',
         conformFunctionCode(`function serialize(ast) {
             pos = 0;
+            scratchPos = 0;
 
             /* DEBUG_ONLY_START */
-            // Init new buffer each time
-            buffLen = ${SERIALIZE_INITIAL_BUFFER_SIZE};
-            initBuffer();
+            resetBuffers();
             /* DEBUG_ONLY_END */
 
-            const finalizeData = serializeProgram(ast);
+            const storePos = serializeProgram(ast);
             alignAndAlloc(${types.Program.length}, ${types.Program.align});
-            finalizeProgram(finalizeData);
+            finalizeProgram(storePos);
 
             return buff.subarray(0, pos);
+        }`),
+        conformFunctionCode(`function resetBuffers() {
+            buffLen = ${SERIALIZE_INITIAL_BUFFER_SIZE};
+            scratchLen = ${SCRATCH_INITIAL_BUFFER_SIZE};
+            initBuffer();
+            initScratch();
         }`),
 
         // Type serialize functions
@@ -114,7 +122,7 @@ function generateSerializer() {
             [
                 'serializeOption', 'serializeBox', 'serializeVec',
                 'finalizeEnum', 'finalizeEnumValue', 'finalizeOption', 'finalizeBox', 'finalizeVec',
-                'initBuffer', 'alloc', 'alignAndAlloc'
+                'initBuffer', 'alloc', 'alignAndAlloc', 'initScratch', 'allocScratch', 'writeScratchUint32'
             ],
             'debugAst'
         ).map(code => code.replace(
@@ -124,7 +132,7 @@ function generateSerializer() {
 
         // For use in tests only
         // TODO Find a better way to do this
-        'serialize.initBuffer = initBuffer;'
+        'serialize.resetBuffers = resetBuffers;'
     ].join('\n\n') + '\n';
 }
 

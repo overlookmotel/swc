@@ -52,7 +52,7 @@ function finalizeProgram(storePos) {
 }
 
 function serializeModule(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeVecModuleDeclarationOrStatement(node.body));
     writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.interpreter));
@@ -66,7 +66,7 @@ function finalizeModule(storePos32) {
 }
 
 function serializeScript(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeVecStatement(node.body));
     writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.interpreter));
@@ -139,7 +139,7 @@ function finalizeModuleDeclaration(storePos) {
 }
 
 function serializeImportDeclaration(node) {
-    const storePos32 = allocScratch(20) >> 2;
+    const storePos32 = allocScratch(24) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeVecImportSpecifier(node.specifiers));
     writeScratchUint32(storePos32 + 2, serializeStringLiteral(node.source));
@@ -240,7 +240,7 @@ function finalizeExportDeclaration(storePos32) {
 }
 
 function serializeExportNamedDeclaration(node) {
-    const storePos32 = allocScratch(20) >> 2;
+    const storePos32 = allocScratch(24) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeVecExportSpecifier(node.specifiers));
     writeScratchUint32(storePos32 + 2, serializeOptionStringLiteral(node.source));
@@ -353,7 +353,7 @@ function finalizeExportDefaultExpression(storePos32) {
 }
 
 function serializeExportAllDeclaration(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeStringLiteral(node.source));
     writeScratchUint32(storePos32 + 2, serializeOptionObjectExpression(node.asserts));
@@ -526,7 +526,7 @@ function finalizeOptionBlockStatement(storePos) {
 }
 
 function serializeEmptyStatement(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -536,7 +536,7 @@ function finalizeEmptyStatement(storePos32) {
 }
 
 function serializeDebuggerStatement(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -546,7 +546,7 @@ function finalizeDebuggerStatement(storePos32) {
 }
 
 function serializeWithStatement(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.object));
     writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.body));
@@ -572,7 +572,7 @@ function finalizeReturnStatement(storePos32) {
 }
 
 function serializeLabeledStatement(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeIdentifier(node.label));
     writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.body));
@@ -626,7 +626,7 @@ function finalizeIfStatement(storePos32) {
 }
 
 function serializeSwitchStatement(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.discriminant));
     writeScratchUint32(storePos32 + 2, serializeVecSwitchCase(node.cases));
@@ -640,7 +640,7 @@ function finalizeSwitchStatement(storePos32) {
 }
 
 function serializeSwitchCase(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeOptionBoxExpression(node.test));
     writeScratchUint32(storePos32 + 2, serializeVecStatement(node.consequent));
@@ -682,7 +682,7 @@ function finalizeTryStatement(storePos32) {
 }
 
 function serializeCatchClause(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeOptionPattern(node.param));
     writeScratchUint32(storePos32 + 2, serializeBlockStatement(node.body));
@@ -696,7 +696,7 @@ function finalizeCatchClause(storePos32) {
 }
 
 function serializeWhileStatement(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.test));
     writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.body));
@@ -710,7 +710,7 @@ function finalizeWhileStatement(storePos32) {
 }
 
 function serializeDoWhileStatement(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.test));
     writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.body));
@@ -724,7 +724,7 @@ function finalizeDoWhileStatement(storePos32) {
 }
 
 function serializeForStatement(node) {
-    const storePos32 = allocScratch(20) >> 2;
+    const storePos32 = allocScratch(24) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeOptionVariableDeclarationOrBoxExpression(node.init));
     writeScratchUint32(storePos32 + 2, serializeOptionBoxExpression(node.test));
@@ -758,7 +758,7 @@ function finalizeForInStatement(storePos32) {
 }
 
 function serializeForOfStatement(node) {
-    const storePos32 = allocScratch(20) >> 2;
+    const storePos32 = allocScratch(24) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeOptionSpan(node.await));
     writeScratchUint32(storePos32 + 2, serializeVariableDeclarationOrPattern(node.left));
@@ -910,7 +910,7 @@ function finalizeFunctionDeclaration(storePos32) {
 }
 
 function serializeFunctionExpression(node) {
-    const storePos32 = allocScratch(36) >> 2;
+    const storePos32 = allocScratch(40) >> 2;
     writeScratchUint32(storePos32, serializeOptionIdentifier(node.identifier));
     writeScratchUint32(storePos32 + 1, serializeVecParameter(node.params));
     writeScratchUint32(storePos32 + 2, serializeVecDecorator(node.decorators));
@@ -937,7 +937,7 @@ function finalizeFunctionExpression(storePos32) {
 }
 
 function serializeArrowFunctionExpression(node) {
-    const storePos32 = allocScratch(28) >> 2;
+    const storePos32 = allocScratch(32) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeVecPattern(node.params));
     writeScratchUint32(storePos32 + 2, serializeBlockStatementOrBoxExpression(node.body));
@@ -960,7 +960,7 @@ function finalizeArrowFunctionExpression(storePos32) {
 }
 
 function serializeParameter(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeVecDecorator(node.decorators));
     writeScratchUint32(storePos32 + 2, serializePattern(node.pat));
@@ -1016,7 +1016,7 @@ function finalizeClassDeclaration(storePos32) {
 }
 
 function serializeClassExpression(node) {
-    const storePos32 = allocScratch(36) >> 2;
+    const storePos32 = allocScratch(40) >> 2;
     writeScratchUint32(storePos32, serializeOptionIdentifier(node.identifier));
     writeScratchUint32(storePos32 + 1, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 2, serializeVecDecorator(node.decorators));
@@ -1118,7 +1118,7 @@ function finalizeConstructor(storePos32) {
 }
 
 function serializeClassMethod(node) {
-    const storePos32 = allocScratch(36) >> 2;
+    const storePos32 = allocScratch(40) >> 2;
     writeScratchUint32(storePos32, serializePropertyName(node.key));
     writeScratchUint32(storePos32 + 1, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 2, serializeFunction(node.function));
@@ -1145,7 +1145,7 @@ function finalizeClassMethod(storePos32) {
 }
 
 function serializePrivateMethod(node) {
-    const storePos32 = allocScratch(36) >> 2;
+    const storePos32 = allocScratch(40) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializePrivateName(node.key));
     writeScratchUint32(storePos32 + 2, serializeFunction(node.function));
@@ -1172,7 +1172,7 @@ function finalizePrivateMethod(storePos32) {
 }
 
 function serializeClassProperty(node) {
-    const storePos32 = allocScratch(52) >> 2;
+    const storePos32 = allocScratch(56) >> 2;
     writeScratchUint32(storePos32, serializePropertyName(node.key));
     writeScratchUint32(storePos32 + 1, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 2, serializeOptionBoxExpression(node.value));
@@ -1207,7 +1207,7 @@ function finalizeClassProperty(storePos32) {
 }
 
 function serializePrivateProperty(node) {
-    const storePos32 = allocScratch(44) >> 2;
+    const storePos32 = allocScratch(48) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializePrivateName(node.key));
     writeScratchUint32(storePos32 + 2, serializeOptionBoxExpression(node.value));
@@ -1482,7 +1482,7 @@ function finalizeKeyValuePatternProperty(storePos32) {
 }
 
 function serializeAssignmentPatternProperty(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeIdentifier(node.key));
     writeScratchUint32(storePos32 + 2, serializeOptionBoxExpression(node.value));
@@ -1717,7 +1717,7 @@ function finalizeExpression(storePos) {
 }
 
 function serializeThisExpression(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -1739,7 +1739,7 @@ function finalizeArrayExpression(storePos32) {
 }
 
 function serializeUnaryExpression(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeUnaryOperator(node.operator));
     writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.argument));
@@ -2011,7 +2011,7 @@ function serializeAssignmentOperator(value) {
 }
 
 function serializeMemberExpression(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.object));
     writeScratchUint32(storePos32 + 2, serializeIdentifierOrPrivateNameOrComputed(node.property));
@@ -2025,7 +2025,7 @@ function finalizeMemberExpression(storePos32) {
 }
 
 function serializeSuperPropExpression(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeSuper(node.obj));
     writeScratchUint32(storePos32 + 2, serializeIdentifierOrComputed(node.property));
@@ -2099,7 +2099,7 @@ function finalizeSequenceExpression(storePos32) {
 }
 
 function serializeIdentifier(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeJsWord(node.value));
     writeScratchUint32(storePos32 + 2, serializeBoolean(node.optional));
@@ -2114,7 +2114,7 @@ function finalizeIdentifier(storePos32) {
 }
 
 function serializeTemplateLiteral(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeVecBoxExpression(node.expressions));
     writeScratchUint32(storePos32 + 2, serializeVecTemplateElement(node.quasis));
@@ -2161,7 +2161,7 @@ function finalizeTaggedTemplateExpression(storePos32) {
 }
 
 function serializeYieldExpression(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeOptionBoxExpression(node.argument));
     writeScratchUint32(storePos32 + 2, serializeBoolean(node.delegate));
@@ -2233,7 +2233,7 @@ function finalizePrivateName(storePos32) {
 }
 
 function serializeOptionalChainingExpression(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeSpan(node.questionDotToken));
     writeScratchUint32(storePos32 + 2, serializeMemberExpressionOrOptionalChainingCall(node.base));
@@ -2263,7 +2263,7 @@ function finalizeOptionalChainingCall(storePos32) {
 }
 
 function serializeSuper(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2273,7 +2273,7 @@ function finalizeSuper(storePos32) {
 }
 
 function serializeImport(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2283,7 +2283,7 @@ function finalizeImport(storePos32) {
 }
 
 function serializeInvalid(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2398,7 +2398,7 @@ function finalizeKeyValueProperty(storePos32) {
 }
 
 function serializeAssignmentProperty(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeIdentifier(node.key));
     writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.value));
@@ -2444,7 +2444,7 @@ function finalizeSetterProperty(storePos32) {
 }
 
 function serializeMethodProperty(node) {
-    const storePos32 = allocScratch(36) >> 2;
+    const storePos32 = allocScratch(40) >> 2;
     writeScratchUint32(storePos32, serializePropertyName(node.key));
     writeScratchUint32(storePos32 + 1, serializeVecParameter(node.params));
     writeScratchUint32(storePos32 + 2, serializeVecDecorator(node.decorators));
@@ -2560,7 +2560,7 @@ function finalizeLiteral(storePos) {
 }
 
 function serializeStringLiteral(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeJsWord(node.value));
     writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.raw));
@@ -2587,7 +2587,7 @@ function finalizeBooleanLiteral(storePos32) {
 }
 
 function serializeNullLiteral(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2634,7 +2634,7 @@ function serializeBigIntValue([count, parts]) {
 }
 
 function serializeRegExpLiteral(node) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeJsWord(node.pattern));
     writeScratchUint32(storePos32 + 2, serializeJsWord(node.flags));
@@ -2648,7 +2648,7 @@ function finalizeRegExpLiteral(storePos32) {
 }
 
 function serializeJSXText(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2658,7 +2658,7 @@ function finalizeJSXText(storePos32) {
 }
 
 function serializeJSXMemberExpression(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2668,7 +2668,7 @@ function finalizeJSXMemberExpression(storePos32) {
 }
 
 function serializeJSXNamespacedName(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2678,7 +2678,7 @@ function finalizeJSXNamespacedName(storePos32) {
 }
 
 function serializeJSXEmptyExpression(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2688,7 +2688,7 @@ function finalizeJSXEmptyExpression(storePos32) {
 }
 
 function serializeJSXElement(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2698,7 +2698,7 @@ function finalizeJSXElement(storePos32) {
 }
 
 function serializeJSXFragment(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2708,7 +2708,7 @@ function finalizeJSXFragment(storePos32) {
 }
 
 function serializeTsTypeAssertion(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2718,7 +2718,7 @@ function finalizeTsTypeAssertion(storePos32) {
 }
 
 function serializeTsConstAssertion(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2728,7 +2728,7 @@ function finalizeTsConstAssertion(storePos32) {
 }
 
 function serializeTsNonNullExpression(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2738,7 +2738,7 @@ function finalizeTsNonNullExpression(storePos32) {
 }
 
 function serializeTsAsExpression(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2748,7 +2748,7 @@ function finalizeTsAsExpression(storePos32) {
 }
 
 function serializeTsInstantiation(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2770,7 +2770,7 @@ function finalizeTsTypeAnnotation(storePos32) {
 }
 
 function serializeTsInterfaceDeclaration(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2780,7 +2780,7 @@ function finalizeTsInterfaceDeclaration(storePos32) {
 }
 
 function serializeTsTypeAliasDeclaration(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2790,7 +2790,7 @@ function finalizeTsTypeAliasDeclaration(storePos32) {
 }
 
 function serializeTsEnumDeclaration(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2800,7 +2800,7 @@ function finalizeTsEnumDeclaration(storePos32) {
 }
 
 function serializeTsModuleDeclaration(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2810,7 +2810,7 @@ function finalizeTsModuleDeclaration(storePos32) {
 }
 
 function serializeTsImportEqualsDeclaration(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2820,7 +2820,7 @@ function finalizeTsImportEqualsDeclaration(storePos32) {
 }
 
 function serializeTsExportAssignment(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2830,7 +2830,7 @@ function finalizeTsExportAssignment(storePos32) {
 }
 
 function serializeTsNamespaceExportDeclaration(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2864,7 +2864,7 @@ function finalizeTsTypeParameterInstantiation(storePos32) {
 }
 
 function serializeTsExpressionWithTypeArg(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2874,7 +2874,7 @@ function finalizeTsExpressionWithTypeArg(storePos32) {
 }
 
 function serializeTsIndexSignature(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2884,7 +2884,7 @@ function finalizeTsIndexSignature(storePos32) {
 }
 
 function serializeTsParamProp(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2906,7 +2906,7 @@ function finalizeTsTypeParameterDeclaration(storePos32) {
 }
 
 function serializeTsTypeParameter(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2916,7 +2916,7 @@ function finalizeTsTypeParameter(storePos32) {
 }
 
 function serializeTsType(node) {
-    const storePos32 = allocScratch(4) >> 2;
+    const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
@@ -2935,15 +2935,13 @@ function serializeAccessibility(value) {
 }
 
 function serializeJsWord(str) {
-    let storeLen = 4 + str.length * 2;
-    if (storeLen & 2) storeLen += 2;
-    const storePos = allocScratch(storeLen),
+    const storePos = allocScratchAligned(4 + str.length * 2),
         storePos32 = storePos >> 2;
     const len = scratchBuff.write(str, storePos + 4);
     scratchUint32[storePos32] = len;
 
     if (len <= 7) {
-        scratchPos = storePos + 12;
+        scratchPos = storePos + (len <= 4 ? 8 : 16);
         return storePos;
     }
 
@@ -2992,7 +2990,7 @@ function finalizeNumber(storePos64) {
 }
 
 function serializeSpan(span) {
-    const storePos32 = allocScratch(12) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     scratchUint32[storePos32] = span.start;
     scratchUint32[storePos32 + 1] = span.end;
     scratchUint32[storePos32 + 2] = span.ctxt;
@@ -3871,6 +3869,12 @@ function allocScratch(bytes) {
     }
 
     return startPos;
+}
+
+function allocScratchAligned(bytes) {
+    const modulus = bytes & 7;
+    if (modulus === 0) return allocScratch(bytes);
+    return allocScratch(bytes + 8 - modulus);
 }
 
 function writeScratchUint32(pos, value) {

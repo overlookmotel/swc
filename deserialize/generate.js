@@ -77,7 +77,7 @@ function generateSerializer() {
         // Serializer entry point
         'module.exports = serialize;',
         'let pos, buffLen, buff, int32, uint32, float64;',
-        'let scratchPos, scratchLen, scratchBuff, scratchUint32, scratchFloat64;',
+        'let scratchPos, scratchLen, scratchBuff, scratchUint32, scratchFloat64, scratchArrayBuffer;',
         'resetBuffers();',
         conformFunctionCode(`function serialize(ast) {
             pos = 0;
@@ -122,7 +122,8 @@ function generateSerializer() {
             [
                 'serializeOption', 'serializeBox', 'serializeVec',
                 'finalizeEnum', 'finalizeEnumValue', 'finalizeOption', 'finalizeBox', 'finalizeVec',
-                'initBuffer', 'alloc', 'alignAndAlloc', 'initScratch', 'allocScratch', 'writeScratchUint32'
+                'initBuffer', 'alloc', 'alignAndAlloc',
+                'initScratch', 'allocScratch', 'writeScratchUint32', 'copyFromScratch'
             ],
             'debugAst'
         ).map(code => code.replace(

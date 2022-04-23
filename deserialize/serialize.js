@@ -6,7 +6,7 @@ module.exports = serialize;
 
 let pos, buffLen, buff, int32, uint32, float64;
 
-let scratchPos, scratchLen, scratchBuff, scratchUint32, scratchFloat64;
+let scratchPos, scratchLen, scratchBuff, scratchUint32, scratchFloat64, scratchArrayBuffer;
 
 resetBuffers();
 
@@ -2949,7 +2949,7 @@ function serializeJsWord(str) {
 
     const strPos = pos;
     alloc(len);
-    scratchBuff.copy(buff, pos, storePos + 4, storePos + 4 + len);
+    copyFromScratch(storePos + 4, len);
     pos += len;
 
     scratchPos = storePos + 8;
@@ -2962,7 +2962,7 @@ function finalizeJsWord(storePos) {
     const storePos32 = storePos >> 2,
         len = scratchUint32[storePos32];
     if (len <= 7) {
-        scratchBuff.copy(buff, pos, storePos + 4, storePos + 4 + len);
+        copyFromScratch(storePos + 4, len);
         buff[pos + 7] = len;
     } else {
         const pos32 = pos >> 2;
@@ -3851,9 +3851,9 @@ function alignAndAlloc(bytes, align) {
 
 function initScratch() {
     scratchBuff = Buffer.allocUnsafeSlow(scratchLen);
-    const arrayBuffer = scratchBuff.buffer;
-    scratchUint32 = new Uint32Array(arrayBuffer);
-    scratchFloat64 = new Float64Array(arrayBuffer);
+    scratchArrayBuffer = scratchBuff.buffer;
+    scratchUint32 = new Uint32Array(scratchArrayBuffer);
+    scratchFloat64 = new Float64Array(scratchArrayBuffer);
 }
 
 function allocScratch(bytes) {
@@ -3875,6 +3875,10 @@ function allocScratch(bytes) {
 
 function writeScratchUint32(pos, value) {
     scratchUint32[pos] = value;
+}
+
+function copyFromScratch(scratchPos, len) {
+    buff.set(new Uint8Array(scratchArrayBuffer, scratchPos, len), pos);
 }
 
 serialize.resetBuffers = resetBuffers;

@@ -20,6 +20,7 @@ module.exports = {
     initScratch,
     allocScratch,
     writeScratchUint32,
+    copyFromScratch,
     debugBuff,
     debugAst
 };
@@ -214,9 +215,9 @@ function alignAndAlloc(bytes, align) {
 
 function initScratch() {
     scratchBuff = Buffer.allocUnsafeSlow(scratchLen);
-    const arrayBuffer = scratchBuff.buffer;
-    scratchUint32 = new Uint32Array(arrayBuffer);
-    scratchFloat64 = new Float64Array(arrayBuffer);
+    scratchArrayBuffer = scratchBuff.buffer;
+    scratchUint32 = new Uint32Array(scratchArrayBuffer);
+    scratchFloat64 = new Float64Array(scratchArrayBuffer);
 }
 
 /**
@@ -267,6 +268,16 @@ function allocScratch(bytes) {
  */
 function writeScratchUint32(pos, value) {
     scratchUint32[pos] = value;
+}
+
+/**
+ * Copy bytes from scratch buffer to output buffer.
+ * @param {number} scratchPos - Starting position in scratch buffer
+ * @param {number} len - Number of bytes to copy
+ * @returns {undefined}
+ */
+function copyFromScratch(scratchPos, len) {
+    buff.set(new Uint8Array(scratchArrayBuffer, scratchPos, len), pos);
 }
 
 function debugBuff(typeName, pos, length) {

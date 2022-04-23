@@ -299,8 +299,8 @@ function allocScratchAligned(bytes) {
  * @param {number} value - Value to write
  * @returns {undefined}
  */
-function writeScratchUint32(pos, value) {
-    scratchUint32[pos] = value;
+function writeScratchUint32(pos32, value) {
+    scratchUint32[pos32] = value;
 }
 
 /**

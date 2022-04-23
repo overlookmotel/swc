@@ -38,14 +38,12 @@ function generateDeserializer() {
 
         // Type deserializer functions
         ...Object.values(types).map((type) => {
-            const deserializerCode = removeIndent(type.generateDeserializer());
-            if (DEBUG) {
-                return deserializerCode.replace(
-                    /function deserialize.+\n/,
-                    line => line + `${' '.repeat(4)}debugBuff('${type.name}', pos, ${type.length});\n`
-                );
-            }
-            return removeDebugOnlyCode(deserializerCode);
+            const deserializerCode = conformFunctionCode(type.generateDeserializer());
+            if (!DEBUG) return deserializerCode;
+            return deserializerCode.replace(
+                /function deserialize.+\n/,
+                line => line + `${' '.repeat(4)}debugBuff('${type.name}', pos, ${type.length});\n`
+            );
         }),
 
         // Utility functions
@@ -64,10 +62,16 @@ function generateDeserializer() {
  */
 function getUtilitiesCode(utilNames, debugUtilName) {
     if (DEBUG) utilNames = [...utilNames, debugUtilName];
-    return utilNames.map(utilName => {
-        const code = utils[utilName].toString();
-        return DEBUG ? code : removeDebugOnlyCode(code);
-    });
+    return utilNames.map(utilName => removeDebugOnlyCode(utils[utilName].toString()));
+}
+
+/**
+ * Remove indentation and debug code from function code.
+ * @param {string} code - Function code
+ * @returns {string} - Conformed code
+ */
+function conformFunctionCode(code) {
+    return removeDebugOnlyCode(removeIndent(code));
 }
 
 /**
@@ -85,10 +89,11 @@ function removeIndent(code) {
 }
 
 /**
- * Remove debug only code blocks from code.
+ * Remove debug-only code blocks from code if debugging disabled.
  * @param {string} code - Code
  * @returns {string} - Code with debug code removed
  */
 function removeDebugOnlyCode(code) {
+    if (DEBUG) return code;
     return code.replace(/\s*\/\* DEBUG_ONLY_START \*\/[\s\S]+?\/\* DEBUG_ONLY_END \*\/\n?/g, '');
 }

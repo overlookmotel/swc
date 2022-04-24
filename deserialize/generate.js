@@ -214,6 +214,10 @@ function removeDebugOnlyCode(code) {
  */
 function getReplaceFinalizeJsWord() {
     return removeIndent(`serialize.replaceFinalizeJsWord = () => {
+        const original = finalizeJsWord;
         finalizeJsWord = function${types.JsWord.finalize.toString().slice('finalize'.length)};
+        return () => {
+            finalizeJsWord = original;
+        };
     }`);
 }

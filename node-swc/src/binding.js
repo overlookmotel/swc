@@ -236,7 +236,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { bundle, minify, minifySync, parse, parseSync, parseSyncNoReturn, parseSyncToBuffer, parseSyncToBufferNoReturn, parseSyncToTypedArray, parseSyncToTypedArrayNoReturn, parseSyncRkyvVecNoReturn, parseSyncRkyvSliceNoReturn, parseSyncRkyvNoReturn, parseSyncNoSerialization, parseFileSync, parseFile, print, printSync, printSyncFromBuffer, transform, transformSync, transformFile, transformFileSync, getTargetTriple, initCustomTraceSubscriber, Compiler } = nativeBinding
+const { bundle, minify, minifySync, parse, parseSync, parseSyncNoReturn, parseSyncToBuffer, parseSyncToBufferNoReturn, parseSyncToTypedArray, parseSyncToTypedArrayNoReturn, parseSyncRkyvVecNoReturn, parseSyncRkyvSliceNoReturn, parseSyncRkyvNoReturn, parseSyncNoSerialization, parseFileSync, parseFile, print, printSync, printSyncFromBuffer, transform, transformSync, transformSyncFromBuffer, transformFile, transformFileSync, getTargetTriple, initCustomTraceSubscriber, Compiler } = nativeBinding
 
 module.exports.bundle = bundle
 module.exports.minify = minify
@@ -259,6 +259,7 @@ module.exports.printSync = printSync
 module.exports.printSyncFromBuffer = printSyncFromBuffer
 module.exports.transform = transform
 module.exports.transformSync = transformSync
+module.exports.transformSyncFromBuffer = transformSyncFromBuffer
 module.exports.transformFile = transformFile
 module.exports.transformFileSync = transformFileSync
 module.exports.getTargetTriple = getTargetTriple

@@ -172,6 +172,12 @@ export class Compiler {
     return bindings.printSync(JSON.stringify(m), toBuffer(options));
   }
 
+  printSyncFromBuffer(buff: Buffer, options?: Options): Output {
+    options = options || {};
+
+    return bindings.printSyncFromBuffer(buff, toBuffer(options));
+  }
+
   async transform(src: string | Program, options?: Options): Promise<Output> {
     const isModule = typeof src !== "string";
     options = options || {};
@@ -365,6 +371,10 @@ export function print(m: Program, options?: Options): Promise<Output> {
 
 export function printSync(m: Program, options?: Options): Output {
   return compiler.printSync(m, options);
+}
+
+export function printSyncFromBuffer(buff: Buffer, options?: Options): Output {
+  return compiler.printSyncFromBuffer(buff, options);
 }
 
 export function transform(

@@ -3884,6 +3884,7 @@ function copyFromScratch(scratchPos, len) {
 serialize.resetBuffers = resetBuffers;
 
 serialize.replaceFinalizeJsWord = () => {
+    const original = finalizeJsWord;
     finalizeJsWord = function(storePos) {
         const storePos32 = storePos >> 2,
             len = scratchUint32[storePos32];
@@ -3912,5 +3913,8 @@ serialize.replaceFinalizeJsWord = () => {
             int32[pos32 + 1] = scratchUint32[storePos32 + 1] - pos;
         }
         pos += 8;
+    };
+    return () => {
+        finalizeJsWord = original;
     };
 }

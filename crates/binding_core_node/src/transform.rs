@@ -10,7 +10,7 @@ use napi::{
 };
 use path_clean::clean;
 use swc::{config::Options, Compiler, TransformOutput};
-use swc_common::FileName;
+use swc_common::{plugin::Serialized, FileName};
 use swc_ecma_ast::Program;
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
 use tracing::instrument;
@@ -159,6 +159,37 @@ pub fn transform_sync(s: String, is_module: bool, opts: Buffer) -> napi::Result<
             })
         },
     )
+    .convert_err()
+}
+
+#[napi]
+#[instrument(level = "trace", skip_all)]
+pub fn transform_sync_from_buffer(buff: Buffer, opts: Buffer) -> napi::Result<TransformOutput> {
+    crate::util::init_default_trace_subscriber();
+
+    let c = get_compiler();
+
+    let mut options: Options = get_deserialized(&opts)?;
+
+    if !options.filename.is_empty() {
+        options.config.adjust(Path::new(&options.filename));
+    }
+
+    try_with(c.cm.clone(), !options.config.error.filename, |handler| {
+        c.run(|| {
+            let bytes: &[u8] = buff.as_ref();
+            let ptr = bytes.as_ptr();
+            let len: i32 = bytes
+                .len()
+                .try_into()
+                .expect("Should able to convert ptr length");
+            let program: Program = unsafe {
+                Serialized::deserialize_from_ptr(ptr, len).expect("Should able to deserialize")
+            };
+
+            c.process_js(handler, program, &options)
+        })
+    })
     .convert_err()
 }
 

@@ -7,19 +7,23 @@ const b = require('benny'),
 	filesize = require('filesize');
 
 const {
-	parseSync, parseSyncNoReturn,
-	parseSyncToBuffer, parseSyncToBufferNoReturn,
+	parseSync, parseSyncToBuffer,
+	parseSyncNoReturn, parseSyncToBufferNoReturn,
 	parseSyncToTypedArray, parseSyncToTypedArrayNoReturn,
 	parseSyncRkyvVecNoReturn, parseSyncRkyvSliceNoReturn, parseSyncRkyvNoReturn,
-	parseSyncNoSerialization
+	parseSyncNoSerialization,
+	printSync, printSyncFromBuffer,
+	transformSync, transformSyncFromBuffer
 } = require('./index.js'),
 	parseSyncBinding = require('./binding.js').parseSync,
 	deserializeBuffer = require('./deserialize/index.js'),
+	serializeBuffer = require('./deserialize/serialize.js'),
 	babelParse = require('@babel/parser').parse,
+	babelGenerate = require('@babel/generator').default,
 	acornParse = require('acorn').parse;
 
-function parseSyncViaBuffer(code) {
-	const buff = parseSyncToBuffer(code);
+function parseSyncViaBuffer(code, options) {
+	const buff = parseSyncToBuffer(code, options);
 	return deserializeBuffer(buff);
 }
 
@@ -27,6 +31,26 @@ function parseSyncRawJson(code, options, filename) {
 	options = options || { syntax: 'ecmascript' };
 	options.syntax = options.syntax || 'ecmascript';
 	return parseSyncBinding(code, Buffer.from(JSON.stringify(options)), filename);
+}
+
+function printSyncViaBuffer(ast, options) {
+	const buff = serializeBuffer(ast);
+	return printSyncFromBuffer(buff, options);
+}
+
+function transformSyncViaBuffer(code, options) {
+	const { plugin, ...newOptions } = options || {};
+	const ast = parseSyncViaBuffer(code, newOptions?.jsc?.parser);
+	const astTransformed = plugin(ast);
+	const buff = serializeBuffer(astTransformed);
+	return transformSyncFromBuffer(buff, newOptions);
+}
+
+function transformSyncBufferPassthrough(code, options) {
+	const { plugin, ...newOptions } = options || {};
+	const buff = parseSyncToBuffer(code, newOptions?.jsc?.parser);
+	// Assume a JS plugin here which uses lazy AST parsing + serializing and does very little
+	return transformSyncFromBuffer(buff, newOptions);
 }
 
 async function run() {
@@ -38,69 +62,156 @@ async function run() {
 		'utf8'
 	);
 
-	// Check alternative parser produces same result as `parseSync()`
-	const ast = conformSpans(parseSync(code)),
-		astViaBuffer = conformSpans(parseSyncViaBuffer(code));
-	assertAstsEqual(astViaBuffer, ast);
+	const sourceMaps = false;
+	const parseOptions = { isModule: false };
+	const printOptions = { sourceMaps };
+	const transformOptions = {
+		jsc: {
+			parser: parseOptions
+		},
+		plugin: function noopPlugin(ast) {
+			return ast;
+		},
+		sourceMaps
+	};
+
+	// Check buffer parser produces same result as `parseSync()`
+	const astOrig = conformSpans(parseSync(code, parseOptions)),
+		astViaBuffer = conformSpans(parseSyncViaBuffer(code, parseOptions));
+	assertEqual(astViaBuffer, astOrig);
+
+	// Check print via buffer produces same result as `printSync()`
+	const ast = parseSync(code, parseOptions),
+		printedOrig = printSync(ast, printOptions),
+		printedViaBuffer = printSyncViaBuffer(ast, printOptions);
+	assertEqual(printedViaBuffer, printedOrig);
+
+	// Check transform via buffer produces same result as `transformSync()`
+	const transformedOrig = transformSync(code, transformOptions),
+		transformedViaBuffer = transformSyncViaBuffer(code, transformOptions);
+	assertEqual(transformedViaBuffer, transformedOrig);
+
+	// Get Babel AST
+	const astBabel = babelParse(code);
 
 	// Run benchmark
 	await b.suite(
-		`react.production.min.js (${filesize(code.length)})`,
+		`react.production.min.js (${filesize(code.length)}) (${sourceMaps ? 'with' : 'without'} sourcemaps)`,
 
-		b.add('SWC', () => {
+		// Parse
+		b.add('SWC parse', () => {
 			parseSync(code);
 		}),
 
-		b.add('SWC with buffer serialization and deserialization', () => {
+		b.add('SWC parse with buffer serialization and deserialization', () => {
 			parseSyncViaBuffer(code);
 		}),
 
-		b.add('SWC with buffer serialization but no deserialization', () => {
+		/*
+		b.add('SWC parse with buffer serialization but no deserialization', () => {
 			parseSyncToBuffer(code);
 		}),
-
-		b.add('SWC with buffer serialization but buffer not returned to JS', () => {
+	
+		b.add('SWC parse with buffer serialization but buffer not returned to JS', () => {
 			parseSyncToBufferNoReturn(code);
 		}),
-
-		b.add('SWC with typed array serialization but no deserialization', () => {
+	
+		b.add('SWC parse with typed array serialization but no deserialization', () => {
 			parseSyncToTypedArray(code);
 		}),
-
-		b.add('SWC with typed array serialization but buffer not returned to JS', () => {
+	
+		b.add('SWC parse with typed array serialization but buffer not returned to JS', () => {
 			parseSyncToTypedArrayNoReturn(code);
 		}),
-
-		b.add('SWC with RKYV serialization and vec but not returned to JS', () => {
+	
+		b.add('SWC parse with RKYV serialization and vec but not returned to JS', () => {
 			parseSyncRkyvVecNoReturn(code);
 		}),
-
-		b.add('SWC with RKYV serialization and slice but not returned to JS', () => {
+	
+		b.add('SWC parse with RKYV serialization and slice but not returned to JS', () => {
 			parseSyncRkyvSliceNoReturn(code);
 		}),
-
-		b.add('SWC with RKYV serialization but not returned to JS', () => {
+	
+		b.add('SWC parse with RKYV serialization but not returned to JS', () => {
 			parseSyncRkyvNoReturn(code);
 		}),
+		*/
 
-		b.add('SWC with no serialization or deserialization', () => {
+		b.add('SWC parse with no serialization or deserialization', () => {
 			parseSyncNoSerialization(code);
 		}),
 
-		b.add('SWC with JSON serialization but no deserialization', () => {
+		/*
+		b.add('SWC parse with JSON serialization but no deserialization', () => {
 			parseSyncRawJson(code);
 		}),
-
-		b.add('SWC with JSON serialization but JSON not returned to JS', () => {
+	
+		b.add('SWC parse with JSON serialization but JSON not returned to JS', () => {
 			parseSyncNoReturn(code);
 		}),
+		*/
 
-		b.add('Babel', () => {
+		b.add('Babel parse', () => {
 			babelParse(code);
 		}),
 
-		b.add('Acorn', () => {
+		/*
+		b.add('Acorn parse', () => {
 			acornParse(code, { ecmaVersion: 2022 });
+		}),
+		*/
+
+		// Print
+		b.add('SWC print', () => {
+			printSync(ast, printOptions);
+		}),
+
+		b.add('SWC print with buffer serialization', () => {
+			printSyncViaBuffer(ast, printOptions);
+		}),
+
+		b.add('Babel print', () => {
+			babelGenerate(astBabel, { sourceMaps, sourceFileName: 'foo.js' });
+		}),
+
+		// Parse and print
+		b.add('SWC parse + print', () => {
+			const ast = parseSync(code, parseOptions);
+			printSync(ast, printOptions);
+		}),
+
+		b.add('SWC parse + print with buffer serialization', () => {
+			const ast = parseSyncViaBuffer(code, parseOptions);
+			printSyncViaBuffer(ast, printOptions);
+		}),
+
+		b.add('SWC parse + print with buffer passthrough', () => {
+			const buff = parseSyncToBuffer(code, parseOptions);
+			return printSyncFromBuffer(buff, printOptions);
+		}),
+
+		b.add('Babel parse + print', () => {
+			const ast = babelParse(code);
+			babelGenerate(ast, { sourceMaps, sourceFileName: 'foo.js' });
+		}),
+
+		// Transform
+		b.add('SWC transform', () => {
+			transformSync(code, transformOptions);
+		}),
+
+		b.add('SWC transform with buffer serialization/deserialization', () => {
+			transformSyncViaBuffer(code, transformOptions);
+		}),
+
+		b.add('SWC transform with buffer passthrough on JS side', () => {
+			transformSyncBufferPassthrough(code, transformOptions);
+		}),
+
+		b.add('SWC transform without JS roundtrip', () => {
+			const optionsWithoutPlugin = { ...transformOptions };
+			delete optionsWithoutPlugin.plugin;
+			transformSync(code, optionsWithoutPlugin);
 		}),
 
 		b.cycle(),
@@ -162,10 +273,10 @@ function conformSpans(ast) {
 }
 
 // Strip extra properties off Jest's error object for comprehensible output
-function assertAstsEqual(ast1, ast2) {
+function assertEqual(val1, val2) {
 	try {
-		expect(ast1).toStrictEqual(ast2);
-		expect(JSON.stringify(ast1)).toBe(JSON.stringify(ast2));
+		expect(val1).toStrictEqual(val2);
+		expect(JSON.stringify(val1)).toBe(JSON.stringify(val2));
 	} catch (err) {
 		throw new Error(err.message);
 	}

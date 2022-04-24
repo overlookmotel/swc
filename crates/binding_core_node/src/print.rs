@@ -9,6 +9,7 @@ use swc::{
     config::{Options, SourceMapsConfig},
     Compiler, TransformOutput,
 };
+use swc_common::plugin::Serialized;
 use swc_ecma_ast::{EsVersion, Program};
 
 use crate::get_compiler;
@@ -82,6 +83,44 @@ pub fn print_sync(program: String, options: Buffer) -> napi::Result<TransformOut
     let c = get_compiler();
 
     let program: Program = deserialize_json(program.as_str())?;
+
+    let options: Options = get_deserialized(&options)?;
+
+    // Defaults to es3
+    let codegen_target = options.codegen_target().unwrap_or_default();
+
+    c.print(
+        &program,
+        None,
+        options.output_path,
+        true,
+        codegen_target,
+        options
+            .source_maps
+            .clone()
+            .unwrap_or(SourceMapsConfig::Bool(false)),
+        &Default::default(),
+        None,
+        options.config.minify,
+        None,
+    )
+    .convert_err()
+}
+
+#[napi]
+pub fn print_sync_from_buffer(buff: Buffer, options: Buffer) -> napi::Result<TransformOutput> {
+    crate::util::init_default_trace_subscriber();
+
+    let c = get_compiler();
+
+    let bytes: &[u8] = buff.as_ref();
+    let ptr = bytes.as_ptr();
+    let len: i32 = bytes
+        .len()
+        .try_into()
+        .expect("Should able to convert ptr length");
+    let program: Program =
+        unsafe { Serialized::deserialize_from_ptr(ptr, len).expect("Should able to deserialize") };
 
     let options: Options = get_deserialized(&options)?;
 

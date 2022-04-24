@@ -31,8 +31,9 @@ module.exports = {
             return buff.utf8Slice(pos, pos + len);
         },
         serialize(str) {
-            // Allocate 2 bytes scratch for every character in case of Unicode chars
-            const storePos = allocScratchAligned(4 + str.length * 2),
+            // Allocate 4 bytes scratch for every character (in case of Unicode chars)
+            // + 4 bytes for length. Ensure allocated in 8-byte multiple.
+            const storePos = allocScratchAligned(4 + str.length * 4),
                 storePos32 = storePos >> 2;
 
             // `Buffer.prototype.utf8Write` is undocumented but used internally by

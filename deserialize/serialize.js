@@ -2933,7 +2933,7 @@ function serializeAccessibility(value) {
 }
 
 function serializeJsWord(str) {
-    const storePos = allocScratchAligned(4 + str.length * 2),
+    const storePos = allocScratchAligned(4 + str.length * 4),
         storePos32 = storePos >> 2;
     const len = scratchBuff.utf8Write(str, storePos + 4);
     scratchUint32[storePos32] = len;
@@ -3868,9 +3868,7 @@ function allocScratch(bytes) {
 }
 
 function allocScratchAligned(bytes) {
-    const modulus = bytes & 7;
-    if (modulus === 0) return allocScratch(bytes);
-    return allocScratch(bytes + 8 - modulus);
+    return allocScratch((bytes & 4) ? bytes + 4 : bytes);
 }
 
 function writeScratchUint32(pos32, value) {

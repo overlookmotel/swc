@@ -224,6 +224,16 @@ export class Compiler {
     )
   }
 
+  transformSyncFromBuffer(buff: Buffer, options?: Options): Output {
+    options = options || {};
+
+    if (options?.jsc?.parser) {
+      options.jsc.parser.syntax = options.jsc.parser.syntax ?? 'ecmascript';
+    }
+
+    return bindings.transformSyncFromBuffer(buff, toBuffer(options));
+  }
+
   async transformFile(path: string, options?: Options): Promise<Output> {
     options = options || {};
 
@@ -389,6 +399,13 @@ export function transformSync(
   options?: Options
 ): Output {
   return compiler.transformSync(src, options);
+}
+
+export function transformSyncFromBuffer(
+  buff: Buffer,
+  options?: Options
+): Output {
+  return compiler.transformSyncFromBuffer(buff, options);
 }
 
 export function transformFile(

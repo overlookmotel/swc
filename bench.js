@@ -185,10 +185,12 @@ async function run() {
 			printSyncViaBuffer(ast, printOptions);
 		}),
 
+		/*
 		b.add('SWC parse + print with buffer passthrough', () => {
 			const buff = parseSyncToBuffer(code, parseOptions);
 			return printSyncFromBuffer(buff, printOptions);
 		}),
+		*/
 
 		b.add('Babel parse + print', () => {
 			const ast = babelParse(code);
@@ -204,9 +206,11 @@ async function run() {
 			transformSyncViaBuffer(code, transformOptions);
 		}),
 
+		/*
 		b.add('SWC transform with buffer passthrough on JS side', () => {
 			transformSyncBufferPassthrough(code, transformOptions);
 		}),
+		*/
 
 		b.add('SWC transform without JS roundtrip', () => {
 			const optionsWithoutPlugin = { ...transformOptions };

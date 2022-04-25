@@ -16,7 +16,7 @@ module.exports = {
     finalizeVec,
     initBuffer,
     alloc,
-    alignAndAlloc,
+    alignPos,
     initScratch,
     allocScratch,
     allocScratchAligned,
@@ -100,7 +100,8 @@ function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     const scratchPosBefore = scratchPos;
 
     const finalizeData = serialize(value);
-    alignAndAlloc(valueLength, valueAlign);
+    alignPos(valueAlign);
+    alloc(valueLength);
     const valuePos = pos;
     finalize(finalizeData);
 
@@ -156,7 +157,9 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     scratchUint32[storePos32 + 1] = numValues;
 
     if (numValues === 0) {
-        alignAndAlloc(0, valueAlign);
+        // NB No need to alloc for extra bytes required to obtain alignment, as buffer is grown
+        // in 8-byte multiples. So there will always be enough space already allocated.
+        alignPos(valueAlign);
         scratchUint32[storePos32] = pos;
         return storePos32;
     }
@@ -171,7 +174,8 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
 
     // Finalize values.
     // Store position of values in scratch bytes 0-3.
-    alignAndAlloc(valueLength * numValues, valueAlign);
+    alignPos(valueAlign);
+    alloc(valueLength * numValues);
     scratchUint32[storePos32] = pos;
     for (let i = 0; i < numValues; i++) {
         finalize(finalizeData[i]);
@@ -218,12 +222,11 @@ function alloc(bytes) {
     buff.set(oldBuff);
 }
 
-function alignAndAlloc(bytes, align) {
+function alignPos(align) {
     if (align !== 1) {
         const modulus = pos & (align - 1);
         if (modulus !== 0) pos += align - modulus;
     }
-    alloc(bytes);
 }
 
 function initScratch() {

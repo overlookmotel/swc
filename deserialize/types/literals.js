@@ -53,6 +53,7 @@ module.exports = {
 
             return serializeJsWord(num.toString());
         },
+        // Use `finalizeJsWord` as finalizer for type
         finalize: false,
         finalizerName: 'finalizeJsWord',
         dependencies: ['JsWord'],

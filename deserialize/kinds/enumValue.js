@@ -11,7 +11,12 @@ const Kind = require('./kind.js');
 const enumValues = new Map();
 
 /**
- * Enum value class
+ * Enum value class.
+ * e.g. `Boolean` - which is either `true` or `false`.
+ * 
+ * Enum values are are serialized by RYKV as follows:
+ *   - 1 byte for the ID of the value.
+ *   - Aligned on 1.
  */
 class EnumValue extends Kind {
     length = 1;
@@ -54,6 +59,11 @@ class EnumValue extends Kind {
         }`;
     }
 
+    /**
+     * Generate serializer function code for type.
+     * Serializer returns ID of enum value as Uint8.
+     * @returns {string} - Code for `serialize` function
+     */
     generateSerializer() {
         const enumOptionCodes = this.enumOptions.map((value, index) => (
             `case ${typeof value === 'string' ? `'${value}'` : value}: return ${index};`
@@ -67,6 +77,7 @@ class EnumValue extends Kind {
         }`;
     }
 
+    // Use `finalizeEnumValue` as finalizer for all Vec types
     get finalizerName() {
         return 'finalizeEnumValue';
     }
@@ -74,6 +85,8 @@ class EnumValue extends Kind {
 
 /**
  * Finalize EnumValue.
+ * Write value ID to output buffer.
+ * NB Only a single Uint8 value is required, so scratch is not used.
  * @param {number} id - Enum option ID
  * @returns {undefined}
  */

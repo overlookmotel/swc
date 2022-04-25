@@ -9,7 +9,18 @@ const Kind = require('./kind.js'),
 const optionals = new Map();
 
 /**
- * Option class
+ * Option class.
+ * 
+ * Options are serialized by RYKV as follows:
+ *   - 1 byte for whether value is present or not.
+ *     - `0` for no value (becomes `null` is JS object)
+ *     - `1` for value present
+ *   - Empty padding if needed to bring alignment up to alignment of the value type.
+ *   - If value: Serialized value.
+ *   - If no value: Empty padding for length of value.
+ *     i.e. Length of Option is always same, regardless of whether a value is present or not.
+ *   - Empty padding if needed to bring end alignment up to alignment of value type.
+ *   - Alignment of Option is same as alignment of it's value type.
  */
 class Option extends Kind {
     childType = null;
@@ -42,6 +53,10 @@ class Option extends Kind {
         }`;
     }
 
+    /**
+     * Generate serializer + finalizer function code for type.
+     * @returns {string} - Code for `serialize` + `finalize` functions
+     */
     generateSerializer() {
         const { childType } = this,
             { finalizerName, length: childLength, align: childAlign } = childType;
@@ -73,8 +88,8 @@ function deserializeOption(pos, deserialize, offset) {
 /**
  * Serialize Option.
  * Store in scratch:
- * - Byte 0: 0 if option disabled, 1 if enabled
- * - Bytes 4-7: Serialize result
+ *   - Byte 0: 0 if option disabled, 1 if enabled
+ *   - Bytes 4-7: Serialize result
  * Return scratch position (in bytes).
  * @param {*} value - Value or `null`
  * @param {Function} serialize - Serialize function for type
@@ -92,6 +107,13 @@ function serializeOption(value, serialize) {
     return storePos;
 }
 
+/**
+ * Finalize option.
+ * @param {number} storePos - Position of scratch data (in bytes)
+ * @param {Function} finalize - Finalize function for value
+ * @param {number} valueLength - Length of value (NB value not total length of Option)
+ * @param {number} offset - Offset of value from start of Option
+ */
 function finalizeOption(storePos, finalize, valueLength, offset) {
     if (scratchBuff[storePos] === 0) {
         // Option disabled

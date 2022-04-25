@@ -144,9 +144,9 @@ module.exports = {
         },
         finalize(storePos64) {
             float64[pos >> 3] = scratchFloat64[storePos64];
-            pos += 16;
+            pos += 8;
         },
-        length: 16, // 8 longer than expected. TODO Not sure why.
+        length: 8,
         align: 8
     }),
 

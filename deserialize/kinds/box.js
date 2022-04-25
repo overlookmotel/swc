@@ -9,7 +9,14 @@ const Kind = require('./kind.js'),
 const boxes = new Map();
 
 /**
- * Box class
+ * Box class.
+ *
+ * Boxed values are serialized by RYKV as follows:
+ *   - The boxed value is added to buffer.
+ *     Aligned as per the value's type.
+ *   - Where boxed value is referenced (e.g. in a Node or Vec),
+ *     a relative pointer to location of value (Int32, 4 bytes length).
+ *     Pointer aligned on 4.
  */
 class Box extends Kind {
     length = 4;
@@ -44,6 +51,11 @@ class Box extends Kind {
         }`;
     }
 
+    /**
+     * Generate serializer function code for type.
+     * Serializer calls `serializeBox()` with info about value type.
+     * @returns {string} - Code for `serialize` function
+     */
     generateSerializer() {
         const {
             serializerName, finalizerName, length: childLength, align: childAlign
@@ -53,6 +65,7 @@ class Box extends Kind {
         }`;
     }
 
+    // Use `finalizeBox` as finalizer for all Box types
     get finalizerName() {
         return 'finalizeBox';
     }

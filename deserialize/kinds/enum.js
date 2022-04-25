@@ -16,7 +16,21 @@ const Kind = require('./kind.js'),
 const enums = new Map();
 
 /**
- * Enum class
+ * Enum class.
+ *
+ * Enums are serialized by RYKV as follows:
+ *   - 1 byte for the ID of the type.
+ *   - Empty padding if needed to bring alignment up to alignment of the selected value type.
+ *   - Serialized child value.
+ *   - Empty padding to length of longest possible value type.
+ *     i.e. Length of Enum is always the maximum length it could possibly be.
+ *   - Empty padding if needed to bring end alignment up to alignment of highest alignment value type.
+ *   - Alignment of Enum is highest alignment of all possible child value types.
+ *     i.e. if alignment of child types is 4, 4, 8, 4 -> Enum's alignment is 8.
+ * 
+ * `options.order` can be used to specify the priority of the possible types when matching `node.type`
+ * in serialization. This is used for special case of the `left` property of `AssignmentExpression` Node,
+ * which behaves differently when `node.operator === '='`.
  */
 class Enum extends Kind {
     enumOptions = null;
@@ -69,6 +83,18 @@ class Enum extends Kind {
         }`;
     }
 
+    /**
+     * Generate serializer + finalizer functions code for type.
+     * Serializer stores 8 bytes in scratch:
+     *   - Byte 0: ID of enum type selected.
+     *   - Bytes 4-7: Finalizer data from value type's `serialize` function
+     * It returns position of this data in scratch as Uint32.
+     * 
+     * Finalizer retrieves this data from scratch, uses first byte to determine selected type,
+     * and passes bytes 4-7 to finalizer for the selected type (via `finalizeEnum()`).
+     * 
+     * @returns {string} - Code for `serialize` + `finalize` functions
+     */
     generateSerializer() {
         // TODO For nested Enums, does `switch (node.type) {}` more than once - inefficient
         const optionSerializeCodes = [],

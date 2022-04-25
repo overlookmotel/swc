@@ -8,7 +8,31 @@ const Kind = require('./kind.js'),
 // Exports
 
 /**
- * AST node class
+ * AST node class.
+ * 
+ * Nodes are serialized by RYKV as follows:
+ *   - Property values are added to buffer one after another.
+ *   - Each property takes up the number of bytes that type requires.
+ *   - Empty padding is added between properties to ensure each is aligned as it's type requires.
+ *   - Empty padding added on end if needed to bring end alignment up to alignment
+ *     of highest alignment property type.
+ *   - Alignment of Node is highest alignment of its property types.
+ *     i.e. if alignment of properties is 1, 1, 8, 1, 4 -> Node's alignment is 8
+ * 
+ * Order properties is serialized is sometimes different from order they appear
+ * in Rust struct definition. Presumably this is to create a more compact representation.
+ * In such cases, the order of properties in Node definition should be order the properties
+ * appear in JSON.
+ * The order of properties as they appear in RKYV serialized buffer should be specified
+ * with `options.keys`.
+ * 
+ * Most (but not all) Node types contain a `span` property with type `Span` as first property.
+ * By default, a `span` property will be added unless there is already `span` property
+ * defined in a different position, or `options.noSpan === true`.
+ * 
+ * Almost all Node objects in JS also contain a `type` property as first property,
+ * containing name of the type. This is added automatically unless `options.noType === true`.
+ * The value of `node.type` can be overridden with `options.nodeName`.
  */
 class Node extends Kind {
     props = null;
@@ -22,9 +46,7 @@ class Node extends Kind {
         super();
         Object.assign(this, options);
 
-        // Add `span` as first property if not already included in properties.
-        // `FunctionDeclaration`s and a few other nodes don't have `.span` as first property.
-        // In those cases a `span` is included explicitly in `props`.
+        // Add `span` as first property unless already included in properties
         if (!props.span && !options.noSpan) props = { span: 'Span', ...props };
         this.props = props;
 
@@ -64,6 +86,17 @@ class Node extends Kind {
         }`;
     }
 
+    /**
+     * Generate serializer + finalizer functions code for type.
+     * Serializer calls the serializer for each property in turn.
+     * It stores the finalization data for properties in scratch (4 bytes for each property).
+     * It returns position of this data in scratch.
+     *
+     * Finalizer retrieves finalization data from scratch and calls finalizer
+     * for each property in turn with the finalization data for that property.
+     *
+     * @returns {string} - Code for `serialize` + `finalize` functions
+     */
     generateSerializer() {
         const propsOrdered = [...this.propsWithPos].sort(
             (prop1, prop2) => prop1.pos < prop2.pos ? -1 : 1

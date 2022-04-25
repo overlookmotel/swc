@@ -9,7 +9,15 @@ const Kind = require('./kind.js'),
 const vecs = new Map();
 
 /**
- * Vec class
+ * Vec class.
+ * 
+ * Vecs are serialized by RYKV as follows:
+ *   - The values are added to buffer.
+ *     Alignment as per the value's type.
+ *   - Where Vec is referenced (e.g. in a Node or Enum):
+ *     - Relative pointer to location of start of values (Int32, 4 bytes).
+ *     - Number of entries (Uint32, 4 bytes).
+ *   - Vec aligned on 4, length 8.
  */
 class Vec extends Kind {
     length = 8;
@@ -44,6 +52,10 @@ class Vec extends Kind {
         }`;
     }
 
+    /**
+     * Generate serializer function code for type.
+     * @returns {string} - Code for `serialize` function
+     */
     generateSerializer() {
         const {
             serializerName, finalizerName, length: childLength, align: childAlign
@@ -53,6 +65,7 @@ class Vec extends Kind {
         }`;
     }
 
+    // Use `finalizeVec` as finalizer for all Vec types
     get finalizerName() {
         return 'finalizeVec';
     }
@@ -86,8 +99,8 @@ function deserializeVec(pos, deserialize, length) {
 /**
  * Serialize Vec.
  * Store in scratch:
- * - Bytes 0-3: Position of start of values in buffer (Uint32)
- * - Bytes 4-7: Number of values (Uint32)
+ *   - Bytes 0-3: Position of start of values in buffer (Uint32)
+ *   - Bytes 4-7: Number of values (Uint32)
  * Return scratch position (in multiples of 4 bytes).
  *
  * @param {Array<*>} values - Values to serialize
@@ -137,6 +150,16 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     return storePos32;
 }
 
+/**
+ * Finalize Vec.
+ * Retrieve number of values and position of values in output buffer from scratch.
+ * Write to output buffer:
+ *   - Bytes 0-3: Relative pointer to location of values as Int32
+ *   - Bytes 4-7: Number of values as Uint32
+ * 
+ * @param {number} storePos32 - Position of scratch data (in multiple of 4 bytes)
+ * @returns {undefined}
+ */
 function finalizeVec(storePos32) {
     const pos32 = pos >> 2;
     int32[pos32] = scratchUint32[storePos32] - pos;

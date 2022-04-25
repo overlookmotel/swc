@@ -199,6 +199,7 @@ function initBuffer() {
     /* DEBUG_ONLY_END */
 
     const arrayBuffer = buff.buffer;
+    uint16 = new Uint16Array(arrayBuffer);
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer);
@@ -227,9 +228,10 @@ function alignAndAlloc(bytes, align) {
 
 function initScratch() {
     scratchBuff = Buffer.allocUnsafeSlow(scratchLen);
-    scratchArrayBuffer = scratchBuff.buffer;
-    scratchUint32 = new Uint32Array(scratchArrayBuffer);
-    scratchFloat64 = new Float64Array(scratchArrayBuffer);
+    const arrayBuffer = scratchBuff.buffer;
+    scratchUint16 = new Uint16Array(arrayBuffer);
+    scratchUint32 = new Uint32Array(arrayBuffer);
+    scratchFloat64 = new Float64Array(arrayBuffer);
 }
 
 /**
@@ -304,12 +306,73 @@ function writeScratchUint32(pos32, value) {
 
 /**
  * Copy bytes from scratch buffer to output buffer.
+ * Uses fastest method available depending on alignment of output buffer position.
+ *
+ * `len` must be at least 8 bytes.
+ * Scratch buffer position must be aligned to 4 bytes.
+ * Both of these conditions are satisfied when copying `JsWord` content.
+ *
  * @param {number} scratchPos - Starting position in scratch buffer
- * @param {number} len - Number of bytes to copy
+ * @param {number} len - Number of bytes to copy (minimum 8)
  * @returns {undefined}
  */
 function copyFromScratch(scratchPos, len) {
-    buff.set(new Uint8Array(scratchArrayBuffer, scratchPos, len), pos);
+    if ((pos & 3) === 0) {
+        // Output position is aligned to 4 bytes.
+        // Copy bulk as Uint32s.
+        let pos32 = pos >> 2,
+            scratchPos32 = scratchPos >> 2;
+        const last32 = pos32 + (len >> 2) - 1;
+        uint32[pos32] = scratchUint32[scratchPos32];
+        uint32[++pos32] = scratchUint32[++scratchPos32];
+        while (pos32 < last32) {
+            uint32[++pos32] = scratchUint32[++scratchPos32];
+        }
+
+        // Copy final 1-3 bytes as Uint16 and/or Uint8
+        if (len & 3) {
+            if (len & 2) {
+                pos32++;
+                scratchPos32++;
+                uint16[pos32 << 1] = scratchUint16[scratchPos32 << 1];
+                if (len & 1) buff[(pos32 << 2) + 2] = scratchBuff[(scratchPos32 << 2) + 2];
+            } else {
+                buff[(pos32 + 1) << 2] = scratchBuff[(scratchPos32 + 1) << 2];
+            }
+        }
+    } else if ((pos & 1) === 0) {
+        // Output position is aligned to 2 bytes.
+        // Copy bulk as Uint16s.
+        let pos16 = pos >> 1,
+            scratchPos16 = scratchPos >> 1;
+        const last16 = pos16 + (len >> 1) - 1;
+        uint16[pos16] = scratchUint16[scratchPos16];
+        uint16[++pos16] = scratchUint16[++scratchPos16];
+        uint16[++pos16] = scratchUint16[++scratchPos16];
+        uint16[++pos16] = scratchUint16[++scratchPos16];
+        while (pos16 < last16) {
+            uint16[++pos16] = scratchUint16[++scratchPos16];
+        }
+
+        // Copy final byte as Uint8
+        if (len & 1) buff[(pos16 + 1) << 1] = scratchBuff[(scratchPos16 + 1) << 1];
+    } else {
+        // Target position not aligned. Copy all as Uint8s.
+        let pos8 = pos,
+            scratchPos8 = scratchPos;
+        const last8 = pos + len - 1;
+        buff[pos8] = scratchBuff[scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        while (pos8 < last8) {
+            buff[++pos8] = scratchBuff[++scratchPos8];
+        }
+    }
 }
 
 function debugBuff(typeName, pos, length) {

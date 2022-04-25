@@ -4,9 +4,9 @@
 
 module.exports = serialize;
 
-let pos, buffLen, buff, int32, uint32, float64;
+let pos, buffLen, buff, uint16, int32, uint32, float64;
 
-let scratchPos, scratchLen, scratchBuff, scratchUint32, scratchFloat64, scratchArrayBuffer;
+let scratchPos, scratchLen, scratchBuff, scratchUint16, scratchUint32, scratchFloat64;
 
 resetBuffers();
 
@@ -3822,6 +3822,7 @@ function finalizeVec(storePos32) {
 function initBuffer() {
     buff = Buffer.allocUnsafeSlow(buffLen);
     const arrayBuffer = buff.buffer;
+    uint16 = new Uint16Array(arrayBuffer);
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer);
@@ -3848,9 +3849,10 @@ function alignAndAlloc(bytes, align) {
 
 function initScratch() {
     scratchBuff = Buffer.allocUnsafeSlow(scratchLen);
-    scratchArrayBuffer = scratchBuff.buffer;
-    scratchUint32 = new Uint32Array(scratchArrayBuffer);
-    scratchFloat64 = new Float64Array(scratchArrayBuffer);
+    const arrayBuffer = scratchBuff.buffer;
+    scratchUint16 = new Uint16Array(arrayBuffer);
+    scratchUint32 = new Uint32Array(arrayBuffer);
+    scratchFloat64 = new Float64Array(arrayBuffer);
 }
 
 function allocScratch(bytes) {
@@ -3876,7 +3878,53 @@ function writeScratchUint32(pos32, value) {
 }
 
 function copyFromScratch(scratchPos, len) {
-    buff.set(new Uint8Array(scratchArrayBuffer, scratchPos, len), pos);
+    if ((pos & 3) === 0) {
+        let pos32 = pos >> 2,
+            scratchPos32 = scratchPos >> 2;
+        const last32 = pos32 + (len >> 2) - 1;
+        uint32[pos32] = scratchUint32[scratchPos32];
+        uint32[++pos32] = scratchUint32[++scratchPos32];
+        while (pos32 < last32) {
+            uint32[++pos32] = scratchUint32[++scratchPos32];
+        }
+        if (len & 3) {
+            if (len & 2) {
+                pos32++;
+                scratchPos32++;
+                uint16[pos32 << 1] = scratchUint16[scratchPos32 << 1];
+                if (len & 1) buff[(pos32 << 2) + 2] = scratchBuff[(scratchPos32 << 2) + 2];
+            } else {
+                buff[(pos32 + 1) << 2] = scratchBuff[(scratchPos32 + 1) << 2];
+            }
+        }
+    } else if ((pos & 1) === 0) {
+        let pos16 = pos >> 1,
+            scratchPos16 = scratchPos >> 1;
+        const last16 = pos16 + (len >> 1) - 1;
+        uint16[pos16] = scratchUint16[scratchPos16];
+        uint16[++pos16] = scratchUint16[++scratchPos16];
+        uint16[++pos16] = scratchUint16[++scratchPos16];
+        uint16[++pos16] = scratchUint16[++scratchPos16];
+        while (pos16 < last16) {
+            uint16[++pos16] = scratchUint16[++scratchPos16];
+        }
+        if (len & 1) buff[(pos16 + 1) << 1] = scratchBuff[(scratchPos16 + 1) << 1];
+    } else {
+        let pos8 = pos,
+            scratchPos8 = scratchPos;
+        const last8 = pos + len - 1;
+        buff[pos8] = scratchBuff[scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        buff[++pos8] = scratchBuff[++scratchPos8];
+        while (pos8 < last8) {
+            buff[++pos8] = scratchBuff[++scratchPos8];
+        }
+    }
 }
 
 serialize.resetBuffers = resetBuffers;

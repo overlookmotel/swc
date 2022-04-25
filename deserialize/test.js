@@ -749,7 +749,6 @@ describe('Parses correctly', () => {
 
         describe('Meta properties', () => {
             itParses('new.target', [
-                'new.target',
                 'function f() { return new.target; }'
             ]);
 

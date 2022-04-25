@@ -88,7 +88,8 @@ function generateSerializer() {
             /* DEBUG_ONLY_END */
 
             const storePos = serializeProgram(ast);
-            alignAndAlloc(${types.Program.length}, ${types.Program.align});
+            alignPos(${types.Program.align});
+            alloc(${types.Program.length});
             finalizeProgram(storePos);
 
             return buff.subarray(0, pos);
@@ -123,7 +124,7 @@ function generateSerializer() {
             [
                 'serializeOption', 'serializeBox', 'serializeVec',
                 'finalizeEnum', 'finalizeEnumValue', 'finalizeOption', 'finalizeBox', 'finalizeVec',
-                'initBuffer', 'alloc', 'alignAndAlloc',
+                'initBuffer', 'alloc', 'alignPos',
                 'initScratch', 'allocScratch', 'allocScratchAligned',
                 'writeScratchUint32', 'copyFromScratch'
             ],

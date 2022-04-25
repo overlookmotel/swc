@@ -14,7 +14,8 @@ function serialize(ast) {
     pos = 0;
     scratchPos = 0;
     const storePos = serializeProgram(ast);
-    alignAndAlloc(36, 4);
+    alignPos(4);
+    alloc(36);
     finalizeProgram(storePos);
     return buff.subarray(0, pos);
 }
@@ -3769,7 +3770,8 @@ function serializeOption(value, serialize) {
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     const scratchPosBefore = scratchPos;
     const finalizeData = serialize(value);
-    alignAndAlloc(valueLength, valueAlign);
+    alignPos(valueAlign);
+    alloc(valueLength);
     const valuePos = pos;
     finalize(finalizeData);
     scratchPos = scratchPosBefore;
@@ -3781,7 +3783,7 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     const numValues = values.length;
     scratchUint32[storePos32 + 1] = numValues;
     if (numValues === 0) {
-        alignAndAlloc(0, valueAlign);
+        alignPos(valueAlign);
         scratchUint32[storePos32] = pos;
         return storePos32;
     }
@@ -3790,7 +3792,8 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     for (let i = 0; i < numValues; i++) {
         finalizeData[i] = serialize(values[i]);
     }
-    alignAndAlloc(valueLength * numValues, valueAlign);
+    alignPos(valueAlign);
+    alloc(valueLength * numValues);
     scratchUint32[storePos32] = pos;
     for (let i = 0; i < numValues; i++) {
         finalize(finalizeData[i]);
@@ -3855,12 +3858,11 @@ function alloc(bytes) {
     buff.set(oldBuff);
 }
 
-function alignAndAlloc(bytes, align) {
+function alignPos(align) {
     if (align !== 1) {
         const modulus = pos & (align - 1);
         if (modulus !== 0) pos += align - modulus;
     }
-    alloc(bytes);
 }
 
 function initScratch() {

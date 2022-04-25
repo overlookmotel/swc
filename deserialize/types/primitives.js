@@ -1,7 +1,7 @@
 'use strict';
 
 // Imports
-const { EnumValue, Custom } = require('../kinds.js');
+const { EnumValue, Custom } = require('../kinds/index.js');
 
 // Exports
 

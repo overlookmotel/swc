@@ -2933,7 +2933,23 @@ function serializeAccessibility(value) {
 }
 
 function serializeJsWord(str) {
-    const storePos = allocScratchAligned(4 + str.length * 4),
+    const strLen = str.length;
+    if (strLen === 0) {
+        const storePos = allocScratch(8);
+        scratchUint32[storePos >> 2] = 0;
+        return storePos;
+    }
+    if (strLen > 7) {
+        alloc(strLen * 4);
+        const len = buff.utf8Write(str, pos);
+        const storePos = allocScratch(8),
+            storePos32 = storePos >> 2;
+        scratchUint32[storePos32] = len;
+        scratchUint32[storePos32 + 1] = pos;
+        pos += len;
+        return storePos;
+    }
+    const storePos = allocScratchAligned(4 + strLen * 4),
         storePos32 = storePos >> 2;
     const len = scratchBuff.utf8Write(str, storePos + 4);
     scratchUint32[storePos32] = len;

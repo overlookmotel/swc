@@ -31,14 +31,48 @@ module.exports = {
             return buff.utf8Slice(pos, pos + len);
         },
         serialize(str) {
-            // Allocate 4 bytes scratch for every character (in case of Unicode chars)
-            // + 4 bytes for length. Ensure allocated in 8-byte multiple.
-            const storePos = allocScratchAligned(4 + str.length * 4),
-                storePos32 = storePos >> 2;
+            // Handle empty string
+            const strLen = str.length;
+            if (strLen === 0) {
+                const storePos = allocScratch(8);
+                scratchUint32[storePos >> 2] = 0;
+                return storePos;
+            }
 
-            // `Buffer.prototype.utf8Write` is undocumented but used internally by
-            // `Buffer.prototype.write`. `.utf8Write` is faster as skips bounds-checking.
-            // This line is equivalent to `scratchBuff.write(str, storePos + 4)`.
+            // If string is longer than 7 chars, write direct to output buffer
+            if (strLen > 7) {
+                /* DEBUG_ONLY_START */
+                debugAst('finalize JsWord content');
+                /* DEBUG_ONLY_END */
+
+                // Allocate 4 bytes for every character (in case of Unicode chars).
+                // Does not matter if over-allocate, as next allocation will start from end pos
+                // of actual string, regardless of how much space has been pre-allocated.
+                alloc(strLen * 4);
+
+                // `Buffer.prototype.utf8Write` is undocumented but used internally by
+                // `Buffer.prototype.write`. `.utf8Write` is faster as skips bounds-checking.
+                // Next line is equivalent to `buff.write(str, pos)`.
+                const len = buff.utf8Write(str, pos);
+
+                const storePos = allocScratch(8),
+                    storePos32 = storePos >> 2;
+                scratchUint32[storePos32] = len;
+                scratchUint32[storePos32 + 1] = pos;
+                pos += len;
+                return storePos;
+            }
+
+            // Likely string needs to be added to output buffer in `finalize()`, as is 7 chars or less.
+            // Uncommon case is if it contains Unicode chars, and UTF8 byte length
+            // may turn out to be greater than 7.
+            // So write to scratch buffer on assumption UTF8-encoded string is 7 chars or less.
+            // If it turns out longer than 7 chars, copy to output buffer in 2nd step.
+
+            // Allocate 4 bytes scratch for every character (in case of Unicode chars)
+            // + 4 bytes for length. Ensure allocate scratch in multiple of 8 bytes.
+            const storePos = allocScratchAligned(4 + strLen * 4),
+                storePos32 = storePos >> 2;
             const len = scratchBuff.utf8Write(str, storePos + 4);
             scratchUint32[storePos32] = len;
 
@@ -48,6 +82,7 @@ module.exports = {
                 return storePos;
             }
 
+            // UTF8-encoded string ended up being longer than 7 chars - move to output buffer
             const strPos = pos;
 
             /* DEBUG_ONLY_START */

@@ -190,7 +190,7 @@ pub fn parse_sync_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -233,7 +233,7 @@ pub fn parse_sync_to_buffer(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<Buffer> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -278,7 +278,7 @@ pub fn parse_sync_to_buffer_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -323,7 +323,7 @@ pub fn parse_sync_to_typed_array(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<Uint8Array> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -369,7 +369,7 @@ pub fn parse_sync_to_typed_array_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -415,7 +415,7 @@ pub fn parse_sync_rkyv_vec_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -460,7 +460,7 @@ pub fn parse_sync_rkyv_slice_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -504,7 +504,7 @@ pub fn parse_sync_rkyv_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -547,7 +547,7 @@ pub fn parse_sync_no_serialization(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;

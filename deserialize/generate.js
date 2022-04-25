@@ -76,8 +76,8 @@ function generateSerializer() {
 
         // Serializer entry point
         'module.exports = serialize;',
-        'let pos, buffLen, buff, int32, uint32, float64;',
-        'let scratchPos, scratchLen, scratchBuff, scratchUint32, scratchFloat64, scratchArrayBuffer;',
+        'let pos, buffLen, buff, uint16, int32, uint32, float64;',
+        'let scratchPos, scratchLen, scratchBuff, scratchUint16, scratchUint32, scratchFloat64;',
         'resetBuffers();',
         conformFunctionCode(`function serialize(ast) {
             pos = 0;

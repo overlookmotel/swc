@@ -16,7 +16,7 @@ const {
 	transformSync, transformSyncFromBuffer
 } = require('./index.js'),
 	parseSyncBinding = require('./binding.js').parseSync,
-	deserializeBuffer = require('./deserialize/index.js'),
+	deserializeBuffer = require('./deserialize/deserialize.js'),
 	serializeBuffer = require('./deserialize/serialize.js'),
 	babelParse = require('@babel/parser').parse,
 	babelGenerate = require('@babel/generator').default,

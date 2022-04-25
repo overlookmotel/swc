@@ -30,7 +30,7 @@ assert(SERIALIZE_INITIAL_BUFFER_SIZE % 8 === 0);
 assert(SCRATCH_INITIAL_BUFFER_SIZE % 8 === 0);
 
 initType('Program');
-writeFileSync(pathJoin(__dirname, 'index.js'), generateDeserializer());
+writeFileSync(pathJoin(__dirname, 'deserialize.js'), generateDeserializer());
 writeFileSync(pathJoin(__dirname, 'serialize.js'), generateSerializer());
 
 /**

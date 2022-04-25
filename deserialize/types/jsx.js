@@ -1,7 +1,7 @@
 'use strict';
 
 // Imports
-const { Node } = require('../kinds.js');
+const { Node } = require('../kinds/index.js');
 
 // Exports
 

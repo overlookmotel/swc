@@ -7,7 +7,16 @@ const { writeFileSync } = require('fs'),
 
 // Imports
 const { types, initType } = require('./types/index.js'),
-    utils = require('./utils.js');
+    { finalizeEnum } = require('./kinds/enum.js'),
+    { finalizeEnumValue } = require('./kinds/enumValue.js'),
+    { deserializeOption, serializeOption, finalizeOption } = require('./kinds/option.js'),
+    { deserializeBox, serializeBox, finalizeBox } = require('./kinds/box.js'),
+    { deserializeVec, serializeVec, finalizeVec } = require('./kinds/vec.js'),
+    {
+        initBuffer, alloc, alignPos,
+        initScratch, allocScratch, allocScratchAligned, writeScratchUint32, copyFromScratch,
+        debugBuff, debugAst
+    } = require('./utils.js');
 
 // Constants
 const SERIALIZE_INITIAL_BUFFER_SIZE = 8 * 1024, // 8 KB
@@ -59,8 +68,8 @@ function generateDeserializer() {
 
         // Utility functions
         ...getUtilitiesCode(
-            ['deserializeOption', 'deserializeBox', 'deserializeVec'],
-            'debugBuff'
+            [deserializeOption, deserializeBox, deserializeVec],
+            debugBuff
         )
     ].join('\n\n') + '\n';
 }
@@ -122,13 +131,13 @@ function generateSerializer() {
         // Utility functions
         ...getUtilitiesCode(
             [
-                'serializeOption', 'serializeBox', 'serializeVec',
-                'finalizeEnum', 'finalizeEnumValue', 'finalizeOption', 'finalizeBox', 'finalizeVec',
-                'initBuffer', 'alloc', 'alignPos',
-                'initScratch', 'allocScratch', 'allocScratchAligned',
-                'writeScratchUint32', 'copyFromScratch'
+                serializeOption, serializeBox, serializeVec,
+                finalizeEnum, finalizeEnumValue, finalizeOption, finalizeBox, finalizeVec,
+                initBuffer, alloc, alignPos,
+                initScratch, allocScratch, allocScratchAligned,
+                writeScratchUint32, copyFromScratch
             ],
-            'debugAst'
+            debugAst
         ).map(code => code.replace(
             /function finalize(.+?)\(.+\n/,
             (line, name) => DEBUG ? line + `${' '.repeat(4)}debugAst('finalize ${name}');\n` : line
@@ -143,14 +152,14 @@ function generateSerializer() {
 
 /**
  * Get code for utility functions.
- * @param {Array<string>} utilNames - Utility function names
- * @param {string} debugUtilName - Debug utility function name
+ * @param {Array<Function>} utilFns - Utility functions
+ * @param {Function} debugFn - Debug utility function
  * @returns {Array<string>} - Array of functions' code
  */
-function getUtilitiesCode(utilNames, debugUtilName) {
-    if (DEBUG) utilNames = [...utilNames, debugUtilName];
-    return utilNames.map(
-        utilName => removeLineBreaks(removeComments(removeDebugOnlyCode(utils[utilName].toString())))
+function getUtilitiesCode(utilFns, debugFn) {
+    if (DEBUG) utilFns = [...utilFns, debugFn];
+    return utilFns.map(
+        fn => removeLineBreaks(removeComments(removeDebugOnlyCode(fn.toString())))
     );
 }
 

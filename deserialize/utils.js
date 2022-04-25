@@ -26,6 +26,15 @@ module.exports = {
     debugAst
 };
 
+/**
+ * Finalize Enum.
+ * @param {number} id - Enum option ID
+ * @param {number} finalizeData - Finalize data from value serializer
+ * @param {Function} finalize - Finalize function for value
+ * @param {number} offset - Length in bytes of option ID
+ * @param {number} length - Length in bytes of structure including enum option ID and value
+ * @returns {undefined}
+ */
 function finalizeEnum(id, finalizeData, finalize, offset, length) {
     const startPos = pos;
     buff[pos] = id;
@@ -34,11 +43,23 @@ function finalizeEnum(id, finalizeData, finalize, offset, length) {
     pos = startPos + length;
 }
 
+/**
+ * Finalize EnumValue.
+ * @param {number} id - Enum option ID
+ * @returns {undefined}
+ */
 function finalizeEnumValue(id) {
     buff[pos] = id;
     pos++;
 }
 
+/**
+ * Deserialize Option.
+ * @param {number} pos - Buffer position
+ * @param {Function} deserialize - Deserialize function for value
+ * @param {number} offset - Offset of value in buffer
+ * @returns {*} - Value or `null`
+ */
 function deserializeOption(pos, deserialize, offset) {
     switch (buff[pos]) {
         case 0: return null;
@@ -82,12 +103,18 @@ function finalizeOption(storePos, finalize, valueLength, offset) {
     };
 }
 
+/**
+ * Deserialize boxed value.
+ * @param {number} pos - Buffer position
+ * @param {Function} deserialize - Deserialize function for value
+ * @returns {*} - Value
+ */
 function deserializeBox(pos, deserialize) {
     return deserialize(pos + int32[pos >> 2]);
 }
 
 /**
- * Serialize Box.
+ * Serialize boxed value.
  * Return position of boxed value in buffer.
  * @param {*} value - Boxed value
  * @param {Function} serialize - Serialize function for type
@@ -116,6 +143,13 @@ function finalizeBox(valuePos) {
     pos += 4;
 }
 
+/**
+ * Deserialize Vec.
+ * @param {number} pos - Buffer position
+ * @param {Function} deserialize - Deserialize function for value
+ * @param {number} length - Length in bytes of value
+ * @returns {Array<*>} - Array of values
+ */
 function deserializeVec(pos, deserialize, length) {
     const pos32 = pos >> 2;
 
@@ -195,6 +229,13 @@ function finalizeVec(storePos32) {
     pos += 8;
 }
 
+/**
+ * Init output buffer for serializer.
+ * TypedArray views over buffer are also created.
+ * `Buffer.allocUnsafeSlow()` is used to ensure buffer is not created as part of NodeJS's pool
+ * so the data starts at byte 0 of the underlying `ArrayBuffer`.
+ * @returns {undefined}
+ */
 function initBuffer() {
     buff = Buffer.allocUnsafeSlow(buffLen);
 
@@ -209,6 +250,12 @@ function initBuffer() {
     float64 = new Float64Array(arrayBuffer);
 }
 
+/**
+ * Allocate bytes in output buffer.
+ * If buffer is not long enough to hold them, grow buffer.
+ * @param {number} bytes - Number of bytes to allocate in output buffer
+ * @returns {undefined}
+ */
 function alloc(bytes) {
     const end = pos + bytes;
     if (end <= buffLen) return;
@@ -222,6 +269,12 @@ function alloc(bytes) {
     buff.set(oldBuff);
 }
 
+/**
+ * Align pos to specified alignment.
+ * e.g. `alignPos(4)` will ensure `pos % 4 === 0`.
+ * @param {number} align - Alignment in bytes
+ * @returns {undefined}
+ */
 function alignPos(align) {
     if (align !== 1) {
         const modulus = pos & (align - 1);
@@ -229,6 +282,14 @@ function alignPos(align) {
     }
 }
 
+/**
+ * Init scratch buffer for serializer.
+ * Scratch buffer is used for temp storage during serialization.
+ * TypedArray views over buffer are also created.
+ * `Buffer.allocUnsafeSlow()` is used to ensure buffer is not created as part of NodeJS's pool
+ * so the data starts at byte 0 of the underlying `ArrayBuffer`.
+ * @returns {undefined}
+ */
 function initScratch() {
     scratchBuff = Buffer.allocUnsafeSlow(scratchLen);
     const arrayBuffer = scratchBuff.buffer;
@@ -245,7 +306,7 @@ function initScratch() {
  * Scratch must be allocated in multiples of 8 bytes.
  * This is to support writing `Float64`s to scratch.
  * 
- * @param {number} bytes - Num bytes
+ * @param {number} bytes - Number of bytes to allocate
  * @returns {number} - Position of start of reserved scratch space
  */
 function allocScratch(bytes) {
@@ -274,7 +335,7 @@ function allocScratch(bytes) {
  * Same as `allocScratch()` but ensures number of bytes allocated is a multiple of 8,
  * to preserve correct alignment.
  * `bytes` must be a multiple of 4.
- * @param {number} bytes - Num bytes
+ * @param {number} bytes - Number of bytes to allocate
  * @returns {number} - Position of start of reserved scratch space
  */
 function allocScratchAligned(bytes) {
@@ -378,6 +439,15 @@ function copyFromScratch(scratchPos, len) {
     }
 }
 
+/**
+ * Log contents of section of buffer.
+ * This function is added to start of all `deserialize` functions
+ * in generated code in debug mode.
+ * It is not included in production code.
+ * @param {string} typeName - Type name
+ * @param {number} pos - Start position in buffer
+ * @param {number} length - Length of buffer section
+ */
 function debugBuff(typeName, pos, length) {
     console.log(`\x1b[36m${typeName}\x1b[0m:`, pos, pos % 16);
 
@@ -396,6 +466,13 @@ function debugBuff(typeName, pos, length) {
     console.log(out);
 }
 
+/**
+ * Log position in output buffer where writing bytes for a structure.
+ * This function is added to start of all `serialize` and `finalize` functions
+ * in generated code in debug mode.
+ * It is not included in production code.
+ * @param {string} typeName - Type name
+ */
 function debugAst(typeName) {
     console.log(`${typeName}:`, pos, pos % 16);
 }

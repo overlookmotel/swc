@@ -7,7 +7,7 @@ Buffer.allocUnsafeSlow = (...args) => allocUnsafeSlow(...args).fill(0);
 
 // Imports
 const { parseSync, parseSyncToBuffer } = require('../index.js'),
-    deserialize = require('./index.js'),
+    deserialize = require('./deserialize.js'),
     serialize = require('./serialize.js');
 
 // Replace `finalizeJsWord()` with a version of function which zeros out unallocated bytes.

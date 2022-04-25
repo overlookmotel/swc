@@ -165,7 +165,7 @@ pub fn transform_sync(s: String, is_module: bool, opts: Buffer) -> napi::Result<
 #[napi]
 #[instrument(level = "trace", skip_all)]
 pub fn transform_sync_from_buffer(buff: Buffer, opts: Buffer) -> napi::Result<TransformOutput> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
 
     let c = get_compiler();
 

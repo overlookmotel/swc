@@ -113,7 +113,7 @@ pub fn print_sync(program: String, options: Buffer) -> napi::Result<TransformOut
 
 #[napi]
 pub fn print_sync_from_buffer(buff: Buffer, options: Buffer) -> napi::Result<TransformOutput> {
-    crate::util::init_default_trace_subscriber();
+    binding_commons::init_default_trace_subscriber();
 
     let c = get_compiler();
 

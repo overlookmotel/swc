@@ -1,7 +1,7 @@
 'use strict';
 
 // Imports
-const { Node, Enum, EnumValue, Option, Box, Vec } = require('../kinds.js'),
+const { Node, Enum, EnumValue, Option, Box, Vec } = require('../kinds/index.js'),
     { initType } = require('./index.js');
 
 // Exports

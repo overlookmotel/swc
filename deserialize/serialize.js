@@ -2597,28 +2597,31 @@ function finalizeNullLiteral(storePos32) {
 }
 
 function serializeNumericLiteral(node) {
-    const storePos32 = allocScratch(8) >> 2;
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeNumber(node.value));
+    const storePos32 = allocScratch(16) >> 2;
+    writeScratchUint32(storePos32, serializeNumber(node.value));
+    writeScratchUint32(storePos32 + 1, serializeSpan(node.span));
+    writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.raw));
     return storePos32;
 }
 
 function finalizeNumericLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    pos += 4;
-    finalizeNumber(scratchUint32[storePos32 + 1]);
+    finalizeNumber(scratchUint32[storePos32]);
+    finalizeSpan(scratchUint32[storePos32 + 1]);
+    finalizeOptionJsWord(scratchUint32[storePos32 + 2]);
 }
 
 function serializeBigIntLiteral(node) {
-    const storePos32 = allocScratch(8) >> 2;
+    const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeBigIntValue(node.value));
+    writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.raw));
     return storePos32;
 }
 
 function finalizeBigIntLiteral(storePos32) {
     finalizeSpan(scratchUint32[storePos32]);
     finalizeJsWord(scratchUint32[storePos32 + 1]);
+    finalizeOptionJsWord(scratchUint32[storePos32 + 2]);
 }
 
 function serializeBigIntValue(value) {
@@ -3001,7 +3004,7 @@ function serializeNumber(num) {
 
 function finalizeNumber(storePos64) {
     float64[pos >> 3] = scratchFloat64[storePos64];
-    pos += 16;
+    pos += 8;
 }
 
 function serializeSpan(span) {

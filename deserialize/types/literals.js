@@ -17,9 +17,16 @@ module.exports = {
 
     NullLiteral: Node({}),
 
-    NumericLiteral: Node({ value: 'Number' }),
+    NumericLiteral: Node(
+        {
+            value: 'Number',
+            span: 'Span',
+            raw: Option('JsWord')
+        },
+        { keys: ['span', 'value', 'raw'] }
+    ),
 
-    BigIntLiteral: Node({ value: 'BigIntValue' }),
+    BigIntLiteral: Node({ value: 'BigIntValue', raw: Option('JsWord') }),
     BigIntValue: Custom({
         deserialize(pos) {
             // TODO This implementation could be more efficient

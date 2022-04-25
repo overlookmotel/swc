@@ -1248,8 +1248,9 @@ function deserializeNullLiteral(pos) {
 function deserializeNumericLiteral(pos) {
     return {
         type: 'NumericLiteral',
-        span: deserializeSpan(pos),
-        value: deserializeNumber(pos + 16)
+        span: deserializeSpan(pos + 8),
+        value: deserializeNumber(pos),
+        raw: deserializeOptionJsWord(pos + 20)
     };
 }
 
@@ -1257,7 +1258,8 @@ function deserializeBigIntLiteral(pos) {
     return {
         type: 'BigIntLiteral',
         span: deserializeSpan(pos),
-        value: deserializeBigIntValue(pos + 12)
+        value: deserializeBigIntValue(pos + 12),
+        raw: deserializeOptionJsWord(pos + 20)
     };
 }
 

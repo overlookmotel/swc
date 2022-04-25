@@ -16,15 +16,15 @@ const {
 	transformSync, transformSyncFromBuffer
 } = require('./index.js'),
 	parseSyncBinding = require('./binding.js').parseSync,
-	deserializeBuffer = require('./deserialize/deserialize.js'),
-	serializeBuffer = require('./deserialize/serialize.js'),
+	deserialize = require('./deserialize/deserialize.js'),
+	serialize = require('./deserialize/serialize.js'),
 	babelParse = require('@babel/parser').parse,
 	babelGenerate = require('@babel/generator').default,
 	acornParse = require('acorn').parse;
 
 function parseSyncViaBuffer(code, options) {
 	const buff = parseSyncToBuffer(code, options);
-	return deserializeBuffer(buff);
+	return deserialize(buff);
 }
 
 function parseSyncRawJson(code, options, filename) {
@@ -34,7 +34,7 @@ function parseSyncRawJson(code, options, filename) {
 }
 
 function printSyncViaBuffer(ast, options) {
-	const buff = serializeBuffer(ast);
+	const buff = serialize(ast);
 	return printSyncFromBuffer(buff, options);
 }
 
@@ -42,7 +42,7 @@ function transformSyncViaBuffer(code, options) {
 	const { plugin, ...newOptions } = options || {};
 	const ast = parseSyncViaBuffer(code, newOptions?.jsc?.parser);
 	const astTransformed = plugin(ast);
-	const buff = serializeBuffer(astTransformed);
+	const buff = serialize(astTransformed);
 	return transformSyncFromBuffer(buff, newOptions);
 }
 
@@ -55,12 +55,9 @@ function transformSyncBufferPassthrough(code, options) {
 
 async function run() {
 	// Get input code
-	const code = await readFile(
-		// pathJoin(__dirname, 'node_modules/react/cjs/react-jsx-runtime.production.min.js'),
-		pathJoin(__dirname, 'node_modules/react/cjs/react.production.min.js'),
-		// pathJoin(__dirname, 'node_modules/react/cjs/react.development.js'),
-		'utf8'
-	);
+	// const filename = 'react-jsx-runtime.production.min.js';
+	// const filename = 'react.development.js';
+	const filename = 'react.production.min.js';
 
 	const sourceMaps = false;
 	const parseOptions = { isModule: false };
@@ -74,6 +71,8 @@ async function run() {
 		},
 		sourceMaps
 	};
+
+	const code = await readFile(pathJoin(__dirname, 'node_modules/react/cjs', filename), 'utf8');
 
 	// Check buffer parser produces same result as `parseSync()`
 	const astOrig = conformSpans(parseSync(code, parseOptions)),
@@ -96,7 +95,7 @@ async function run() {
 
 	// Run benchmark
 	await b.suite(
-		`react.production.min.js (${filesize(code.length)}) (${sourceMaps ? 'with' : 'without'} sourcemaps)`,
+		`${filename} (${filesize(code.length)}) (${sourceMaps ? 'with' : 'without'} sourcemaps)`,
 
 		// Parse
 		b.add('SWC parse', () => {

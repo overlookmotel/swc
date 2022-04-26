@@ -6,7 +6,7 @@ const { allocUnsafeSlow } = Buffer;
 Buffer.allocUnsafeSlow = (...args) => allocUnsafeSlow(...args).fill(0);
 
 // Imports
-const { parseSync, parseSyncToBuffer } = require('../index.js'),
+const { parseSync, parseSyncToBuffer, printSync, printSyncFromBuffer } = require('../index.js'),
     deserialize = require('./deserialize.js'),
     serialize = require('./serialize.js');
 
@@ -16,18 +16,18 @@ serialize.replaceFinalizeJsWord();
 
 // Tests
 
-const itParses = getItParses();
+const itParsesAndPrints = getItParsesAndPrints();
 
-describe('Parses correctly', () => {
+describe('Parses and prints correctly', () => {
     describe('Program', () => {
-        itParses('Module', { isModule: true }, [
+        itParsesAndPrints('Module', { isModule: true }, [
             '',
             'const x = 1',
             '#!node\nconst x = 1',
             '#!/usr/bin/env node\nconst x = 1'
         ]);
 
-        itParses('Script', { isModule: false }, [
+        itParsesAndPrints('Script', { isModule: false }, [
             '',
             'const x = 1',
             '#!node\nconst x = 1',
@@ -36,7 +36,7 @@ describe('Parses correctly', () => {
     });
 
     describe('Module declarations', () => {
-        itParses('Import declarations', [
+        itParsesAndPrints('Import declarations', [
             "import x from 'm'",
             "import var_name_longer_than_7_chars from 'string_longer_than_7_chars'",
 
@@ -63,7 +63,7 @@ describe('Parses correctly', () => {
             `
         ]);
 
-        itParses('Export declarations', [
+        itParsesAndPrints('Export declarations', [
             'export const x = 1',
             'export const x = 1, y = 2, z = 3',
             'export let x = 1',
@@ -82,7 +82,7 @@ describe('Parses correctly', () => {
         ]);
 
         describe('Export named declarations', () => {
-            itParses('named specifiers', [
+            itParsesAndPrints('named specifiers', [
                 'export {x}',
                 'export {x as y}',
                 "export {x as 'y y'}",
@@ -107,11 +107,11 @@ describe('Parses correctly', () => {
                 "export {x, yy as y, z as 'z z'} from 'm'",
             ]);
 
-            itParses('default specifiers', [
+            itParsesAndPrints('default specifiers', [
                 // TODO What code creates this? TS only?
             ]);
 
-            itParses('namespace specifiers', [
+            itParsesAndPrints('namespace specifiers', [
                 "export * as x from 'm'",
                 "export * as var_name_longer_than_7_chars from 'm'",
                 "export * as 'x x' from 'm'",
@@ -120,7 +120,7 @@ describe('Parses correctly', () => {
             ]);
         });
 
-        itParses('Export default declarations', [
+        itParsesAndPrints('Export default declarations', [
             'export default function() {}',
             'export default function f() {}',
             'export default function func_name_longer_than_7_chars() {}',
@@ -129,20 +129,20 @@ describe('Parses correctly', () => {
             'export default class Class_name_longer_than_7_chars {}'
         ]);
 
-        itParses('Export default expression', [
+        itParsesAndPrints('Export default expression', [
             'export default x',
             'export default 1',
             "export default 'x'"
         ]);
 
-        itParses('Export all declaration', [
+        itParsesAndPrints('Export all declaration', [
             "export * from 'm'",
             "export * from 'string_longer_than_7_chars'"
         ]);
     });
 
     describe('Statements', () => {
-        itParses('Variable declarations', [
+        itParsesAndPrints('Variable declarations', [
             'var x',
             'let x',
             'const x = 1',
@@ -159,36 +159,36 @@ describe('Parses correctly', () => {
             'let x = 1; let y = 2; let z = 3;'
         ]);
 
-        itParses('Block statements', [
+        itParsesAndPrints('Block statements', [
             '{}',
             '{ let x; }',
             '{ let x; let y; }'
         ]);
 
-        itParses('Empty statements', [
+        itParsesAndPrints('Empty statements', [
             ';',
             ';;;'
         ]);
 
-        itParses('`debugger` statements', [
+        itParsesAndPrints('`debugger` statements', [
             'debugger',
             'debugger; debugger; debugger'
         ]);
 
-        itParses('`with` statements', { isModule: false }, [
+        itParsesAndPrints('`with` statements', { isModule: false }, [
             'with (1) {}',
             'with (1) ;',
             'with (1) {}; with (2) ; with (3) {}'
         ]);
 
-        itParses('`return` statements', [
+        itParsesAndPrints('`return` statements', [
             'function f() { return; }',
             'function f() { return 1; }',
             'function f() { return; return; return; }',
             'function f() { return 1; return 2; return 3; }'
         ]);
 
-        itParses('Labeled statements', [
+        itParsesAndPrints('Labeled statements', [
             'a: ;',
             'a: {}',
             'a: { let x; let y; }',
@@ -198,7 +198,7 @@ describe('Parses correctly', () => {
             'a: label_name_longer_than_7_chars: c: { let x; let y; }'
         ]);
 
-        itParses('`break` statements', [
+        itParsesAndPrints('`break` statements', [
             'a: break;',
             'a: break a;',
             'label_name_longer_than_7_chars: break;',
@@ -206,14 +206,14 @@ describe('Parses correctly', () => {
             'a: b: c: break a;'
         ]);
 
-        itParses('`continue` statements', [
+        itParsesAndPrints('`continue` statements', [
             'while (1) { continue; }',
             'a: while (1) { continue a; }',
             'label_name_longer_than_7_chars: while (1) { continue label_name_longer_than_7_chars; }',
             'a: b: c: while (1) { continue a; continue b; continue c; }'
         ]);
 
-        itParses('`if` statements', [
+        itParsesAndPrints('`if` statements', [
             'if (1) ;',
             'if (1) {}',
             'if (1) { let x = 2; }',
@@ -221,7 +221,7 @@ describe('Parses correctly', () => {
             'if (1) { let x = 2; } else { let y = 3; }'
         ]);
 
-        itParses('`switch` statements', [
+        itParsesAndPrints('`switch` statements', [
             'switch (x) {}',
             'switch (x) { case 1: let x = 1; }',
             'switch (x) { default: let x = 1; }',
@@ -236,12 +236,12 @@ describe('Parses correctly', () => {
             }`
         ]);
 
-        itParses('`throw` statements', [
+        itParsesAndPrints('`throw` statements', [
             'throw 1',
             'throw 1; throw 2; throw 3;'
         ]);
 
-        itParses('`try` statements', [
+        itParsesAndPrints('`try` statements', [
             'try {} catch {}',
             'try {} catch (e) {}',
             'try {} finally {}',
@@ -254,7 +254,7 @@ describe('Parses correctly', () => {
             }`
         ]);
 
-        itParses('`while` statements', [
+        itParsesAndPrints('`while` statements', [
             'while (1) ;',
             'while (1) {}',
             `while (1) {
@@ -263,7 +263,7 @@ describe('Parses correctly', () => {
             }`
         ]);
 
-        itParses('`do ... while` statements', [
+        itParsesAndPrints('`do ... while` statements', [
             'do ; while (1)',
             'do {} while (1)',
             `do {
@@ -272,7 +272,7 @@ describe('Parses correctly', () => {
             } while (1);`
         ]);
 
-        itParses('`for` statements', [
+        itParsesAndPrints('`for` statements', [
             'for (;;) ;',
             'for (x; y; z) ;',
             'for (let x = 1; x; x) ;',
@@ -282,7 +282,7 @@ describe('Parses correctly', () => {
             }`
         ]);
 
-        itParses('`for (... in ...)` statements', [
+        itParsesAndPrints('`for (... in ...)` statements', [
             'for (x in y) ;',
             'for (let x in y) ;',
             `for (let x in y) {
@@ -291,7 +291,7 @@ describe('Parses correctly', () => {
             }`
         ]);
 
-        itParses('`for (... of ...)` statements', [
+        itParsesAndPrints('`for (... of ...)` statements', [
             'for (x of y) ;',
             'for (let x of y) ;',
             `for (let x of y) {
@@ -302,19 +302,19 @@ describe('Parses correctly', () => {
             `for await (let x of y) {}`
         ]);
 
-        itParses('Expression statements', [
+        itParsesAndPrints('Expression statements', [
             'x',
             '1'
         ]);
     });
 
     describe('Expressions', () => {
-        itParses('`this` expressions', [
+        itParsesAndPrints('`this` expressions', [
             'this',
             'this; this; this;'
         ]);
 
-        itParses('Array expressions', [
+        itParsesAndPrints('Array expressions', [
             '[]',
             '[1]',
             '[1, 2, 3]',
@@ -328,7 +328,7 @@ describe('Parses correctly', () => {
         ]);
 
         describe('Object expressions', () => {
-            itParses('Shortcut notation', [
+            itParsesAndPrints('Shortcut notation', [
                 '({})',
                 '({x})',
                 '({x, y, z})',
@@ -340,7 +340,7 @@ describe('Parses correctly', () => {
                 })`
             ]);
 
-            itParses('Properties', [
+            itParsesAndPrints('Properties', [
                 '({x: xx})',
                 '({x: xx, y: yy, z: zz})',
                 '({x: 1})',
@@ -357,7 +357,7 @@ describe('Parses correctly', () => {
                 '({ [1]: 2, [3]: 4, [5]: 6 })'
             ]);
 
-            itParses('Spread', [
+            itParsesAndPrints('Spread', [
                 '({ ...x })',
                 '({ ...x, ...y, ...z })',
                 '({ ...1 })',
@@ -368,7 +368,7 @@ describe('Parses correctly', () => {
                 '({ ...x, y: yy, ...z })'
             ]);
 
-            itParses('Getter properties', [
+            itParsesAndPrints('Getter properties', [
                 '({ get x() {} })',
                 '({ get x() {}, get y() {}, get z() {} })',
                 '({ get x() { return 1; } })',
@@ -408,7 +408,7 @@ describe('Parses correctly', () => {
                 })`
             ]);
 
-            itParses('Setter properties', [
+            itParsesAndPrints('Setter properties', [
                 '({ set x(v) {} })',
                 '({ set x(v) {}, set y(v2) {}, set z(v3) {} })',
                 '({ set x(v) { this.xx += v; } })',
@@ -448,7 +448,7 @@ describe('Parses correctly', () => {
                 })`
             ]);
 
-            itParses('Methods', [
+            itParsesAndPrints('Methods', [
                 '({ m() {} })',
                 '({ method_name_longer_than_7_chars() {} })',
                 '({ m() {}, n() {}, o() {} })',
@@ -497,7 +497,7 @@ describe('Parses correctly', () => {
             ]);
         });
 
-        itParses('Unary expressions', [
+        itParsesAndPrints('Unary expressions', [
             '+1',
             '-1',
             '!1',
@@ -508,7 +508,7 @@ describe('Parses correctly', () => {
             '+1; -1; !1; ~1; typeof 1; void 1; delete 1;'
         ]);
 
-        itParses('Update expressions', [
+        itParsesAndPrints('Update expressions', [
             'x++',
             'x--',
             '++x',
@@ -516,7 +516,7 @@ describe('Parses correctly', () => {
             'x++; x--; ++x; --x;'
         ]);
 
-        itParses('Binary expressions', [
+        itParsesAndPrints('Binary expressions', [
             'x == y',
             'x != y',
             'x === y',
@@ -548,7 +548,7 @@ describe('Parses correctly', () => {
             x || y; x && y; x in y; x instanceof y; x ** y; x ?? y`
         ]);
 
-        itParses('Assignment expressions', [
+        itParsesAndPrints('Assignment expressions', [
             'x = 1',
             'x += 1',
             'x -= 1',
@@ -611,7 +611,7 @@ describe('Parses correctly', () => {
             x.y **= 1; x.y &&= 1; x.y ||= 1; x.y ??= 1`
         ]);
 
-        itParses('Member expressions', [
+        itParsesAndPrints('Member expressions', [
             'x.y',
             'x.#y',
             'x[y]',
@@ -624,13 +624,13 @@ describe('Parses correctly', () => {
             "x.#y[1][2][3].z['foo']['bar qux'][a + 3]"
         ]);
 
-        itParses('Conditional expressions', [
+        itParsesAndPrints('Conditional expressions', [
             'x ? y : z',
             '1 ? 2 : 3',
             'x ? 1 : y ? 2 : z ? 3 : 4'
         ]);
 
-        itParses('`super` prop expressions', [
+        itParsesAndPrints('`super` prop expressions', [
             '({ m() { return super.x; } })',
             '({ m() { return super.x(); } })',
             '({ m() { super.x = 1; } })',
@@ -641,7 +641,7 @@ describe('Parses correctly', () => {
             '({ m() { return super[x](y, ...z); } })'
         ]);
 
-        itParses('Call expressions', [
+        itParsesAndPrints('Call expressions', [
             'f()',
             'func_name_longer_than_7_chars()',
             'f(1)',
@@ -679,7 +679,7 @@ describe('Parses correctly', () => {
             'class C extends S { constructor() { super(x, y, ...z); } }'
         ]);
 
-        itParses('`new` expressions', [
+        itParsesAndPrints('`new` expressions', [
             'new C()',
             'new Class_name_longer_than_7_chars()',
             'new C(x)',
@@ -702,14 +702,14 @@ describe('Parses correctly', () => {
             )`
         ]);
 
-        itParses('Sequence expressions', [
+        itParsesAndPrints('Sequence expressions', [
             'x, x',
             'x, x, x',
             '1, 1',
             '1, 1, 1'
         ]);
 
-        itParses('Template literals', [
+        itParsesAndPrints('Template literals', [
             '``',
             '`a`',
             '`str_longer_than_7_chars`',
@@ -722,7 +722,7 @@ describe('Parses correctly', () => {
             ['`', 'a', '${x}', 'b', '${y}', 'c', '${z}', 'd', '`'].join('\n')
         ]);
 
-        itParses('Tagged template expressions', [
+        itParsesAndPrints('Tagged template expressions', [
             'f``',
             'f`a`',
             'f`str_longer_than_7_chars`',
@@ -735,7 +735,7 @@ describe('Parses correctly', () => {
             ['f`', 'a', '${x}', 'b', '${y}', 'c', '${z}', 'd', '`'].join('\n')
         ]);
 
-        itParses('`yield` expressions', [
+        itParsesAndPrints('`yield` expressions', [
             'function *f() { yield; }',
             'function *f() { yield x; }',
             'function *f() { yield var_name_longer_than_7_chars; }',
@@ -748,11 +748,11 @@ describe('Parses correctly', () => {
         ]);
 
         describe('Meta properties', () => {
-            itParses('new.target', [
+            itParsesAndPrints('new.target', [
                 'function f() { return new.target; }'
             ]);
 
-            itParses('import.meta', [
+            itParsesAndPrints('import.meta', [
                 'import.meta',
                 'import.meta.url',
                 'import.meta.resolve',
@@ -761,24 +761,24 @@ describe('Parses correctly', () => {
         });
 
         describe('`await` expressions', () => {
-            itParses('top level', { target: 'es2017', topLevelAwait: true }, [
+            itParsesAndPrints('top level', { target: 'es2017', topLevelAwait: true }, [
                 'await 1;',
                 'await x;',
                 'await var_name_longer_than_7_chars;'
             ]);
 
-            itParses('in functions', [
+            itParsesAndPrints('in functions', [
                 'async function f() { await x; await y; await z; }',
                 'async function *f() { await x; await y; await z; }'
             ]);
         });
 
-        itParses('Parenthesis expressions', [
+        itParsesAndPrints('Parenthesis expressions', [
             '(x)',
             '(1)'
         ]);
 
-        itParses('Optional chaining expressions', [
+        itParsesAndPrints('Optional chaining expressions', [
             'x?.y',
             'x?.[y]',
             'x?.[1]',
@@ -816,27 +816,27 @@ describe('Parses correctly', () => {
     });
 
     describe('Patterns', () => {
-        itParses('Binding identifiers', [
+        itParsesAndPrints('Binding identifiers', [
             'let x;',
             'let var_name_longer_than_7_chars;'
         ]);
 
         describe('Array patterns', () => {
-            itParses('simple', [
+            itParsesAndPrints('simple', [
                 '[] = a',
                 '[x] = a',
                 '[x, y, z] = a',
                 '[, , x, , , y, , , z, , ,] = a'
             ]);
 
-            itParses('Rest elements', [
+            itParsesAndPrints('Rest elements', [
                 '[...x] = a',
                 '[x, y, ...z] = a',
                 '[, , ...z] = a',
                 '[, , x, , , y, , , ...z] = a'
             ]);
 
-            itParses('Assignment patterns', [
+            itParsesAndPrints('Assignment patterns', [
                 '[x = 1] = a',
                 '[x = 1, y = 2, z = 3] = a',
                 '[, , x = 1] = a',
@@ -844,7 +844,7 @@ describe('Parses correctly', () => {
                 '[, , x = 1, , , y = 2, , , ...z] = a'
             ]);
 
-            itParses('Expression patterns', [
+            itParsesAndPrints('Expression patterns', [
                 '[x.b] = a',
                 '[x.b.c.d] = a',
                 '[x.b = 1, y.c = 2, z.d = 3] = a',
@@ -855,16 +855,16 @@ describe('Parses correctly', () => {
         });
 
         describe('Object patterns', () => {
-            itParses('empty', [
+            itParsesAndPrints('empty', [
                 '({} = a)'
             ]);
 
-            itParses('Shortcuts', [
+            itParsesAndPrints('Shortcuts', [
                 '({x} = a)',
                 '({x, y, z} = a)'
             ]);
 
-            itParses('Key value patterns', [
+            itParsesAndPrints('Key value patterns', [
                 '({b: x} = a)',
                 '({b: x, c: y, d: z} = a)',
                 "({'x x': x} = a)",
@@ -879,21 +879,21 @@ describe('Parses correctly', () => {
                 '({ [1]: x, [2]: y, [3]: z} = a)'
             ]);
 
-            itParses('Assignment pattern properties', [
+            itParsesAndPrints('Assignment pattern properties', [
                 '({x = xx} = a)',
                 '({x = xx, y = yy, z = zz} = a)',
                 '({x = 1} = a)',
                 '({x = 1, y = 2, z = 3} = a)'
             ]);
 
-            itParses('Rest elements', [
+            itParsesAndPrints('Rest elements', [
                 '({...x} = a)',
                 '({x, y, ...z} = a)',
                 '({b: x, c: y, ...z} = a)',
                 '({x = 1, y = 2, ...z} = a)'
             ]);
 
-            itParses('Assignment patterns', [
+            itParsesAndPrints('Assignment patterns', [
                 '({b: x = 1} = a)',
                 '({b: x = 1, c: y = 2, d: z = 3} = a)',
                 "({'x x': x = 1} = a)",
@@ -909,7 +909,7 @@ describe('Parses correctly', () => {
                 '({b: x = 1, c: y = 2, ...z} = a)'
             ]);
 
-            itParses('Expression patterns', [
+            itParsesAndPrints('Expression patterns', [
                 '({b: x.c} = a)',
                 '({b: x.c.d.e} = a)',
                 '({b: x.c, d: y.e, f: z.g} = a)',
@@ -927,7 +927,7 @@ describe('Parses correctly', () => {
             ]);
         });
 
-        itParses('combination of patterns', [
+        itParsesAndPrints('combination of patterns', [
             `[
                 {
                     b,
@@ -955,7 +955,7 @@ describe('Parses correctly', () => {
     });
 
     describe('Functions', () => {
-        itParses('Function declarations', [
+        itParsesAndPrints('Function declarations', [
             'function f() {}',
             'function func_name_longer_than_7_chars() {}',
             'function f(x) {}',
@@ -986,7 +986,7 @@ describe('Parses correctly', () => {
             'async function* f() {}'
         ]);
 
-        itParses('Function expressions', [
+        itParsesAndPrints('Function expressions', [
             '(function f() {})',
             '(function func_name_longer_than_7_chars() {})',
             '(function f(x) {})',
@@ -1017,7 +1017,7 @@ describe('Parses correctly', () => {
             '(async function* f() {})'
         ]);
 
-        itParses('Arrow function expressions', [
+        itParsesAndPrints('Arrow function expressions', [
             '() => {}',
             '() => 1',
             'x => x',
@@ -1049,21 +1049,21 @@ describe('Parses correctly', () => {
 
     describe('Classes', () => {
         describe('Class declarations', () => {
-            itParses('empty', [
+            itParsesAndPrints('empty', [
                 'class C {}',
                 'class Class_name_longer_than_7_chars {}',
 
                 'class C extends S {}'
             ]);
 
-            itParses('Constructors', [
+            itParsesAndPrints('Constructors', [
                 'class C { constructor() {} }',
                 'class C { constructor(x) {} }',
                 'class C { constructor(x, y, z) {} }',
                 'class C { constructor(x, y) { this.x = x; this.y = y;} }'
             ]);
 
-            itParses('Methods', [
+            itParsesAndPrints('Methods', [
                 'class C { m() {} }',
                 'class C { method_name_longer_than_7_chars() {} }',
                 "class C { 'm m'() {} }",
@@ -1095,7 +1095,7 @@ describe('Parses correctly', () => {
                 }`
             ]);
 
-            itParses('Private methods', [
+            itParsesAndPrints('Private methods', [
                 'class C { #m() {} }',
                 'class C { #method_name_longer_than_7_chars() {} }',
 
@@ -1123,7 +1123,7 @@ describe('Parses correctly', () => {
                 }`
             ]);
 
-            itParses('Properties', [
+            itParsesAndPrints('Properties', [
                 'class C { x; }',
                 'class C { prop_name_longer_than_7_chars; }',
                 "class C { 'm m'; }",
@@ -1161,7 +1161,7 @@ describe('Parses correctly', () => {
                 }`
             ]);
 
-            itParses('Private properties', [
+            itParsesAndPrints('Private properties', [
                 'class C { #x; }',
                 'class C { #prop_name_longer_than_7_chars; }',
 
@@ -1183,7 +1183,7 @@ describe('Parses correctly', () => {
                 }`
             ]);
 
-            itParses('Static blocks', { staticBlocks: true }, [
+            itParsesAndPrints('Static blocks', { staticBlocks: true }, [
                 'class C { static {} }',
                 'class C { static { this.x = 1; this.y = 2; } }',
 
@@ -1200,7 +1200,7 @@ describe('Parses correctly', () => {
                 }`
             ]);
 
-            itParses('multiple', { staticBlocks: true }, [
+            itParsesAndPrints('multiple', { staticBlocks: true }, [
                 'class C {}; class D {}; class E {}',
 
                 `
@@ -1240,7 +1240,7 @@ describe('Parses correctly', () => {
         });
 
         describe('Class expressions', () => {
-            itParses('empty', [
+            itParsesAndPrints('empty', [
                 '(class {})',
                 '(class C {})',
                 '(class Class_name_longer_than_7_chars {})',
@@ -1248,14 +1248,14 @@ describe('Parses correctly', () => {
                 '(class extends S {})'
             ]);
 
-            itParses('Constructors', [
+            itParsesAndPrints('Constructors', [
                 '(class { constructor() {} })',
                 '(class { constructor(x) {} })',
                 '(class { constructor(x, y, z) {} })',
                 '(class { constructor(x, y) { this.x = x; this.y = y;} })'
             ]);
 
-            itParses('Methods', [
+            itParsesAndPrints('Methods', [
                 '(class { m() {} })',
                 '(class { method_name_longer_than_7_chars() {} })',
                 "(class { 'm m'() {} })",
@@ -1287,7 +1287,7 @@ describe('Parses correctly', () => {
                 })`
             ]);
 
-            itParses('Private methods', [
+            itParsesAndPrints('Private methods', [
                 '(class { #m() {} })',
                 '(class { #method_name_longer_than_7_chars() {} })',
 
@@ -1315,7 +1315,7 @@ describe('Parses correctly', () => {
                 })`
             ]);
 
-            itParses('Properties', [
+            itParsesAndPrints('Properties', [
                 '(class { x; })',
                 '(class { prop_name_longer_than_7_chars; })',
                 "(class { 'm m'; })",
@@ -1353,7 +1353,7 @@ describe('Parses correctly', () => {
                 })`
             ]);
 
-            itParses('Private properties', [
+            itParsesAndPrints('Private properties', [
                 '(class { #x; })',
                 '(class { #prop_name_longer_than_7_chars; })',
 
@@ -1375,7 +1375,7 @@ describe('Parses correctly', () => {
                 })`
             ]);
 
-            itParses('Static blocks', { staticBlocks: true }, [
+            itParsesAndPrints('Static blocks', { staticBlocks: true }, [
                 '(class { static {} })',
                 '(class { static { this.x = 1; this.y = 2; } })',
 
@@ -1392,7 +1392,7 @@ describe('Parses correctly', () => {
                 })`
             ]);
 
-            itParses('multiple', { staticBlocks: true }, [
+            itParsesAndPrints('multiple', { staticBlocks: true }, [
                 '(class {}, class {}, class {})',
                 '(class C {}, class D {}, class E {})',
 
@@ -1434,7 +1434,7 @@ describe('Parses correctly', () => {
     });
 
     describe('Literals', () => {
-        itParses('String literals', [
+        itParsesAndPrints('String literals', [
             "''",
             "'a'",
             "'ab'",
@@ -1458,18 +1458,18 @@ describe('Parses correctly', () => {
             "'a', 'b', 'c', 'string_longer_than_7_chars', '😀', 'd', 'e'"
         ]);
 
-        itParses('Boolean literals', [
+        itParsesAndPrints('Boolean literals', [
             'true',
             'false',
             'true, true, false, false, true, false, true, false'
         ]);
 
-        itParses('`null` literals', [
+        itParsesAndPrints('`null` literals', [
             'null',
             'null, null, null'
         ]);
 
-        itParses('Numeric literals', [
+        itParsesAndPrints('Numeric literals', [
             '0',
             '1',
             '1234',
@@ -1484,7 +1484,7 @@ describe('Parses correctly', () => {
             '1.234e20'
         ]);
 
-        itParses('BigInt literals', [
+        itParsesAndPrints('BigInt literals', [
             '0n',
             '1n',
             '100000n',
@@ -1500,7 +1500,7 @@ describe('Parses correctly', () => {
             '100n, 10000000n, 100n, 10000000n'
         ]);
 
-        itParses('RegExp literals', [
+        itParsesAndPrints('RegExp literals', [
             '/a/',
             '/abc/',
             '/string_longer_than_7_chars/',
@@ -1515,14 +1515,14 @@ describe('Parses correctly', () => {
 
 // Utils
 
-function getItParses() {
-    const itParses = (name, options, codes) => itParsesImpl(describe, name, options, codes);
-    itParses.only = (name, options, codes) => itParsesImpl(describe.only, name, options, codes);
-    itParses.skip = (name, options, codes) => itParsesImpl(describe.skip, name, options, codes);
+function getItParsesAndPrints() {
+    const itParses = (name, options, codes) => itParsesAndPrintsImpl(describe, name, options, codes);
+    itParses.only = (name, options, codes) => itParsesAndPrintsImpl(describe.only, name, options, codes);
+    itParses.skip = (name, options, codes) => itParsesAndPrintsImpl(describe.skip, name, options, codes);
     return itParses;
 }
 
-function itParsesImpl(describe, name, options, codes) {
+function itParsesAndPrintsImpl(describe, name, options, codes) {
     if (Array.isArray(options)) {
         codes = options;
         options = undefined;
@@ -1533,17 +1533,25 @@ function itParsesImpl(describe, name, options, codes) {
             let testName = code.replace(/\s+/g, ' ');
             if (options) testName += ` (${JSON.stringify(options).replace(/"/g, '')})`;
             it(testName, () => {
-                const astOld = conformSpans(parseSync(code, options));
-
                 const buff = parseSyncToBuffer(code, options);
                 const ast = deserialize(buff);
 
+                // Test `serialize()` produces identical buffer to what `parseSyncToBuffer()` produced
                 serialize.resetBuffers();
                 const buff2 = serialize(ast);
                 expect(buffToString(buff2)).toEqual(buffToString(buff));
 
-                conformSpans(ast);
-                expect(ast).toStrictEqual(astOld);
+                // Test `printSyncFromBuffer()` produces same output as `printSync()`
+                const astOld = parseSync(code, options);
+                const printedOld = printSync(astOld, { sourceMaps: true });
+                const printed = printSyncFromBuffer(buff2, { sourceMaps: true });
+                expect(printed).toStrictEqual(printedOld);
+
+                // Test ASTs are identical.
+                // Have to test this last as need to conform spans to compare ASTs.
+                // This mutates ASTs and would result in different buffer output
+                // reflecting those changes.
+                expect(conformSpans(ast)).toStrictEqual(conformSpans(astOld));
                 expect(JSON.stringify(ast)).toBe(JSON.stringify(astOld));
             });
         }

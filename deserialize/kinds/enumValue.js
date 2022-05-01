@@ -30,7 +30,7 @@ class EnumValue extends Kind {
         assert(values.length < 256);
 
         super();
-        Object.assign(this, options);
+        this.setOptions(options);
 
         this.values = values;
 
@@ -78,9 +78,7 @@ class EnumValue extends Kind {
     }
 
     // Use `finalizeEnumValue` as finalizer for all Vec types
-    get finalizerName() {
-        return 'finalizeEnumValue';
-    }
+    finalizerName = 'finalizeEnumValue';
 }
 
 /**

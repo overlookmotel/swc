@@ -44,7 +44,7 @@ class Node extends Kind {
 
     constructor(props, options = {}) {
         super();
-        Object.assign(this, options);
+        this.setOptions(options);
 
         // Add `span` as first property unless already included in properties
         if (!props.span && !options.noSpan) props = { span: 'Span', ...props };

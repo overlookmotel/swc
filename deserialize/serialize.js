@@ -1929,62 +1929,8 @@ function finalizeAssignmentLeft(storePos) {
 
 function serializeAssignmentLeftEquals(node) {
     const storePos = allocScratch(8);
-    switch (node.type) {
-        case 'Identifier':
-        case 'ArrayPattern':
-        case 'RestElement':
-        case 'ObjectPattern':
-        case 'AssignmentPattern':
-        case 'Invalid':
-        case 'ThisExpression':
-        case 'ArrayExpression':
-        case 'ObjectExpression':
-        case 'FunctionExpression':
-        case 'UnaryExpression':
-        case 'UpdateExpression':
-        case 'BinaryExpression':
-        case 'AssignmentExpression':
-        case 'MemberExpression':
-        case 'SuperPropExpression':
-        case 'ConditionalExpression':
-        case 'CallExpression':
-        case 'NewExpression':
-        case 'SequenceExpression':
-        case 'StringLiteral':
-        case 'BooleanLiteral':
-        case 'NullLiteral':
-        case 'NumericLiteral':
-        case 'BigIntLiteral':
-        case 'RegExpLiteral':
-        case 'JSXText':
-        case 'TemplateLiteral':
-        case 'TaggedTemplateExpression':
-        case 'ArrowFunctionExpression':
-        case 'ClassExpression':
-        case 'YieldExpression':
-        case 'MetaProperty':
-        case 'AwaitExpression':
-        case 'ParenthesisExpression':
-        case 'JSXMemberExpression':
-        case 'JSXNamespacedName':
-        case 'JSXEmptyExpression':
-        case 'JSXElement':
-        case 'JSXFragment':
-        case 'TsTypeAssertion':
-        case 'TsConstAssertion':
-        case 'TsNonNullExpression':
-        case 'TsAsExpression':
-        case 'TsInstantiation':
-        case 'PrivateName':
-        case 'OptionalChainingExpression':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
-            break;
-            scratchBuff[storePos] = 0;
-            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-            break;
-        default: throw new Error('Unexpected enum value for AssignmentLeftEquals');
-    }
+    scratchBuff[storePos] = 1;
+    writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
     return storePos;
 }
 

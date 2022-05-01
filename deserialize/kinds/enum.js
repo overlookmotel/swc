@@ -27,14 +27,9 @@ const enums = new Map();
  *   - Empty padding if needed to bring end alignment up to alignment of highest alignment value type.
  *   - Alignment of Enum is highest alignment of all possible child value types.
  *     i.e. if alignment of child types is 4, 4, 8, 4 -> Enum's alignment is 8.
- * 
- * `options.order` can be used to specify the priority of the possible types when matching `node.type`
- * in serialization. This is used for special case of the `left` property of `AssignmentExpression` Node,
- * which behaves differently when `node.operator === '='`.
  */
 class Enum extends Kind {
     enumOptions = null;
-    order = null;
 
     constructor(enumOptions, options) {
         const enumObj = enums.get(JSON.stringify({ enumOptions, options }));
@@ -46,7 +41,6 @@ class Enum extends Kind {
         Object.assign(this, options);
 
         this.enumOptions = enumOptions;
-        if (!this.order) this.order = enumOptions.map((_, index) => index);
 
         enums.set(JSON.stringify({ enumOptions, options }), this);
     }
@@ -100,9 +94,7 @@ class Enum extends Kind {
         const optionSerializeCodes = [],
             optionFinalizeCodes = [],
             usedNodeNames = new Set();
-        for (const index of this.order) {
-            const type = this.enumOptions[index];
-
+        this.enumOptions.forEach((type, index) => {
             const addCode = (nodeName) => {
                 if (usedNodeNames.has(nodeName)) return;
                 usedNodeNames.add(nodeName);
@@ -131,7 +123,7 @@ class Enum extends Kind {
                 + '); '
                 + 'break;'
             );
-        }
+        });
 
         return `function serialize${this.name}(node) {
             const storePos = allocScratch(8);

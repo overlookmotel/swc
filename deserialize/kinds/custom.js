@@ -27,7 +27,10 @@ class Custom extends Kind {
 
         assert(isPositiveInteger(this.length), `Custom type ${this.name} has invalid length`);
         assert(isPositiveInteger(this.align), `Custom type ${this.name} has invalid align`);
-        assert(typeof this.deserialize === 'function', `Custom type ${this.name} has no deserializer`);
+        assert(
+            typeof this.deserialize === 'function' || this.deserialize === false,
+            `Custom type ${this.name} has no deserializer`
+        );
         assert(typeof this.serialize === 'function', `Custom type ${this.name} has no serializer`);
         assert(
             typeof this.finalize === 'function' || this.finalize === false,
@@ -36,6 +39,7 @@ class Custom extends Kind {
     }
 
     generateDeserializer() {
+        if (!this.deserialize) return null;
         let code = this.deserialize.toString();
         assert(
             code.startsWith('deserialize('),

@@ -54,6 +54,9 @@ class Kind {
         }
     }
 
+    get deserializerName() {
+        return `deserialize${this.name}`;
+    }
     get serializerName() {
         return `serialize${this.name}`;
     }

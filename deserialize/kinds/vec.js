@@ -47,8 +47,8 @@ class Vec extends Kind {
     }
 
     generateDeserializer() {
-        return `function deserialize${this.name}(pos) {
-            return deserializeVec(pos, deserialize${this.valueType.name}, ${this.valueType.length});
+        return `function ${this.deserializerName}(pos) {
+            return deserializeVec(pos, ${this.valueType.deserializerName}, ${this.valueType.length});
         }`;
     }
 
@@ -60,7 +60,7 @@ class Vec extends Kind {
         const {
             serializerName, finalizerName, length: valueLength, align: valueAlign
         } = this.valueType;
-        return `function serialize${this.name}(values) {
+        return `function ${this.serializerName}(values) {
             return serializeVec(values, ${serializerName}, ${finalizerName}, ${valueLength}, ${valueAlign});
         }`;
     }

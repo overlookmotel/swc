@@ -19,45 +19,45 @@ const enums = new Map();
  * Enum class.
  *
  * Enums are serialized by RYKV as follows:
- *   - 1 byte for the ID of the type.
+ *   - 1 byte for the ID of the selected value type.
  *   - Empty padding if needed to bring alignment up to alignment of the selected value type.
- *   - Serialized child value.
+ *   - Serialized value.
  *   - Empty padding to length of longest possible value type.
  *     i.e. Length of Enum is always the maximum length it could possibly be.
  *   - Empty padding if needed to bring end alignment up to alignment of highest alignment value type.
- *   - Alignment of Enum is highest alignment of all possible child value types.
- *     i.e. if alignment of child types is 4, 4, 8, 4 -> Enum's alignment is 8.
+ *   - Alignment of Enum is highest alignment of all possible value types.
+ *     i.e. if alignment of value types is 4, 4, 8, 4 -> Enum's alignment is 8.
  */
 class Enum extends Kind {
-    enumOptions = null;
+    valueTypes = null;
 
-    constructor(enumOptions, options) {
-        const enumObj = enums.get(JSON.stringify({ enumOptions, options }));
+    constructor(valueTypes, options) {
+        const enumObj = enums.get(JSON.stringify({ valueTypes, options }));
         if (enumObj) return enumObj;
 
-        assert(enumOptions.length < 256);
+        assert(valueTypes.length < 256);
 
         super();
         Object.assign(this, options);
 
-        this.enumOptions = enumOptions;
+        this.valueTypes = valueTypes;
 
-        enums.set(JSON.stringify({ enumOptions, options }), this);
+        enums.set(JSON.stringify({ valueTypes, options }), this);
     }
 
     getName() {
-        return this.enumOptions.map(getTypeName).join('Or');
+        return this.valueTypes.map(getTypeName).join('Or');
     }
 
     init() {
         let length = 0,
             align = 0;
-        this.enumOptions = this.enumOptions.map((enumOption) => {
-            enumOption = initType(enumOption);
-            const optionLength = enumOption.length + enumOption.align;
+        this.valueTypes = this.valueTypes.map((valueType) => {
+            valueType = initType(valueType);
+            const optionLength = valueType.length + valueType.align;
             if (optionLength > length) length = optionLength;
-            if (enumOption.align > align) align = enumOption.align;
-            return enumOption;
+            if (valueType.align > align) align = valueType.align;
+            return valueType;
         });
 
         this.setLength(getAligned(length, align));
@@ -65,14 +65,14 @@ class Enum extends Kind {
     }
 
     generateDeserializer() {
-        const enumOptionCodes = this.enumOptions.map(({ name, align }, index) => (
+        const caseCodes = this.valueTypes.map(({ name, align }, index) => (
             `case ${index}: return deserialize${name}(pos + ${align});`
         ));
 
         return `function deserialize${this.name}(pos) {
             switch (buff[pos]) {
-                ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum value for ${this.name}');
+                ${caseCodes.join(`\n${' '.repeat(16)}`)}
+                default: throw new Error('Unexpected enum option ID for ${this.name}');
             }
         }`;
     }
@@ -80,7 +80,7 @@ class Enum extends Kind {
     /**
      * Generate serializer + finalizer functions code for type.
      * Serializer stores 8 bytes in scratch:
-     *   - Byte 0: ID of enum type selected.
+     *   - Byte 0: ID of selected value type.
      *   - Bytes 4-7: Finalizer data from value type's `serialize` function
      * It returns position of this data in scratch as Uint32.
      * 
@@ -94,7 +94,7 @@ class Enum extends Kind {
         const optionSerializeCodes = [],
             optionFinalizeCodes = [],
             usedNodeNames = new Set();
-        this.enumOptions.forEach((type, index) => {
+        this.valueTypes.forEach((type, index) => {
             const addCode = (nodeName) => {
                 if (usedNodeNames.has(nodeName)) return;
                 usedNodeNames.add(nodeName);
@@ -103,8 +103,8 @@ class Enum extends Kind {
             };
             (function resolve(thisType) {
                 if (thisType instanceof Node) return addCode(thisType.nodeName);
-                if (thisType instanceof Enum) return thisType.enumOptions.forEach(resolve);
-                if (thisType instanceof Box) return resolve(thisType.childType);
+                if (thisType instanceof Enum) return thisType.valueTypes.forEach(resolve);
+                if (thisType instanceof Box) return resolve(thisType.valueType);
                 if (thisType instanceof Custom) return addCode(thisType.name);
                 throw new Error(`Unexpected enum option type for ${this.name}, option ${index}`);
             })(type);
@@ -129,7 +129,7 @@ class Enum extends Kind {
             const storePos = allocScratch(8);
             switch (node.type) {
                 ${optionSerializeCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum value for ${this.name}');
+                default: throw new Error('Unexpected enum option type for ${this.name}');
             }
             return storePos;
         }
@@ -137,7 +137,7 @@ class Enum extends Kind {
         function finalize${this.name}(storePos) {
             switch (scratchBuff[storePos]) {
                 ${optionFinalizeCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum ID for ${this.name}');
+                default: throw new Error('Unexpected enum option ID for ${this.name}');
             }
         }`;
     }

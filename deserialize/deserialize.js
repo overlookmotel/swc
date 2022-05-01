@@ -19,7 +19,7 @@ function deserializeProgram(pos) {
     switch (buff[pos]) {
         case 0: return deserializeModule(pos + 4);
         case 1: return deserializeScript(pos + 4);
-        default: throw new Error('Unexpected enum value for Program');
+        default: throw new Error('Unexpected enum option ID for Program');
     }
 }
 
@@ -52,7 +52,7 @@ function deserializeModuleDeclaration(pos) {
         case 6: return deserializeTsImportEqualsDeclaration(pos + 4);
         case 7: return deserializeTsExportAssignment(pos + 4);
         case 8: return deserializeTsNamespaceExportDeclaration(pos + 4);
-        default: throw new Error('Unexpected enum value for ModuleDeclaration');
+        default: throw new Error('Unexpected enum option ID for ModuleDeclaration');
     }
 }
 
@@ -72,7 +72,7 @@ function deserializeImportSpecifier(pos) {
         case 0: return deserializeImportNamedSpecifier(pos + 4);
         case 1: return deserializeImportDefaultSpecifier(pos + 4);
         case 2: return deserializeImportNamespaceSpecifier(pos + 4);
-        default: throw new Error('Unexpected enum value for ImportSpecifier');
+        default: throw new Error('Unexpected enum option ID for ImportSpecifier');
     }
 }
 
@@ -126,7 +126,7 @@ function deserializeExportSpecifier(pos) {
         case 0: return deserializeExportNamespaceSpecifier(pos + 4);
         case 1: return deserializeExportDefaultSpecifier(pos + 4);
         case 2: return deserializeExportNamedSpecifier(pos + 4);
-        default: throw new Error('Unexpected enum value for ExportSpecifier');
+        default: throw new Error('Unexpected enum option ID for ExportSpecifier');
     }
 }
 
@@ -185,7 +185,7 @@ function deserializeModuleExportName(pos) {
     switch (buff[pos]) {
         case 0: return deserializeIdentifier(pos + 4);
         case 1: return deserializeStringLiteral(pos + 4);
-        default: throw new Error('Unexpected enum value for ModuleExportName');
+        default: throw new Error('Unexpected enum option ID for ModuleExportName');
     }
 }
 
@@ -210,7 +210,7 @@ function deserializeStatement(pos) {
         case 16: return deserializeForOfStatement(pos + 4);
         case 17: return deserializeDeclaration(pos + 4);
         case 18: return deserializeExpressionStatement(pos + 4);
-        default: throw new Error('Unexpected enum value for Statement');
+        default: throw new Error('Unexpected enum option ID for Statement');
     }
 }
 
@@ -404,7 +404,7 @@ function deserializeDeclaration(pos) {
         case 4: return deserializeTsTypeAliasDeclaration(pos + 4);
         case 5: return deserializeTsEnumDeclaration(pos + 4);
         case 6: return deserializeTsModuleDeclaration(pos + 4);
-        default: throw new Error('Unexpected enum value for Declaration');
+        default: throw new Error('Unexpected enum option ID for Declaration');
     }
 }
 
@@ -423,7 +423,7 @@ function deserializeVariableDeclarationKind(pos) {
         case 0: return 'var';
         case 1: return 'let';
         case 2: return 'const';
-        default: throw new Error('Unexpected enum value for VariableDeclarationKind');
+        default: throw new Error('Unexpected enum value ID for VariableDeclarationKind');
     }
 }
 
@@ -539,7 +539,7 @@ function deserializeClassMember(pos) {
         case 5: return deserializeTsIndexSignature(pos + 4);
         case 6: return deserializeEmptyStatement(pos + 4);
         case 7: return deserializeStaticBlock(pos + 4);
-        default: throw new Error('Unexpected enum value for ClassMember');
+        default: throw new Error('Unexpected enum option ID for ClassMember');
     }
 }
 
@@ -634,7 +634,7 @@ function deserializeMethodKind(pos) {
         case 0: return 'method';
         case 1: return 'getter';
         case 2: return 'setter';
-        default: throw new Error('Unexpected enum value for MethodKind');
+        default: throw new Error('Unexpected enum value ID for MethodKind');
     }
 }
 
@@ -660,7 +660,7 @@ function deserializePattern(pos) {
         case 4: return deserializeAssignmentPattern(pos + 4);
         case 5: return deserializeInvalid(pos + 4);
         case 6: return deserializeBoxExpression(pos + 4);
-        default: throw new Error('Unexpected enum value for Pattern');
+        default: throw new Error('Unexpected enum option ID for Pattern');
     }
 }
 
@@ -709,7 +709,7 @@ function deserializeObjectPatternProperty(pos) {
         case 0: return deserializeKeyValuePatternProperty(pos + 8);
         case 1: return deserializeAssignmentPatternProperty(pos + 4);
         case 2: return deserializeRestElement(pos + 4);
-        default: throw new Error('Unexpected enum value for ObjectPatternProperty');
+        default: throw new Error('Unexpected enum option ID for ObjectPatternProperty');
     }
 }
 
@@ -779,7 +779,7 @@ function deserializeExpression(pos) {
         case 34: return deserializePrivateName(pos + 4);
         case 35: return deserializeOptionalChainingExpression(pos + 4);
         case 36: return deserializeInvalid(pos + 4);
-        default: throw new Error('Unexpected enum value for Expression');
+        default: throw new Error('Unexpected enum option ID for Expression');
     }
 }
 
@@ -816,7 +816,7 @@ function deserializeUnaryOperator(pos) {
         case 4: return 'typeof';
         case 5: return 'void';
         case 6: return 'delete';
-        default: throw new Error('Unexpected enum value for UnaryOperator');
+        default: throw new Error('Unexpected enum value ID for UnaryOperator');
     }
 }
 
@@ -834,7 +834,7 @@ function deserializeUpdateOperator(pos) {
     switch (buff[pos]) {
         case 0: return '++';
         case 1: return '--';
-        default: throw new Error('Unexpected enum value for UpdateOperator');
+        default: throw new Error('Unexpected enum value ID for UpdateOperator');
     }
 }
 
@@ -875,7 +875,7 @@ function deserializeBinaryOperator(pos) {
         case 22: return 'instanceof';
         case 23: return '**';
         case 24: return '??';
-        default: throw new Error('Unexpected enum value for BinaryOperator');
+        default: throw new Error('Unexpected enum value ID for BinaryOperator');
     }
 }
 
@@ -893,7 +893,7 @@ function deserializeAssignmentLeft(pos) {
     switch (buff[pos]) {
         case 0: return deserializeBoxExpression(pos + 4);
         case 1: return deserializeBoxPattern(pos + 4);
-        default: throw new Error('Unexpected enum value for AssignmentLeft');
+        default: throw new Error('Unexpected enum option ID for AssignmentLeft');
     }
 }
 
@@ -915,7 +915,7 @@ function deserializeAssignmentOperator(pos) {
         case 13: return '&&=';
         case 14: return '||=';
         case 15: return '??=';
-        default: throw new Error('Unexpected enum value for AssignmentOperator');
+        default: throw new Error('Unexpected enum value ID for AssignmentOperator');
     }
 }
 
@@ -1034,7 +1034,7 @@ function deserializeMetaPropertyKind(pos) {
     switch (buff[pos]) {
         case 0: return 'new.target';
         case 1: return 'import.meta';
-        default: throw new Error('Unexpected enum value for MetaPropertyKind');
+        default: throw new Error('Unexpected enum value ID for MetaPropertyKind');
     }
 }
 
@@ -1141,7 +1141,7 @@ function deserializeObjectProperty(pos) {
         case 3: return deserializeGetterProperty(pos + 8);
         case 4: return deserializeSetterProperty(pos + 8);
         case 5: return deserializeMethodProperty(pos + 8);
-        default: throw new Error('Unexpected enum value for ObjectProperty');
+        default: throw new Error('Unexpected enum option ID for ObjectProperty');
     }
 }
 
@@ -1204,7 +1204,7 @@ function deserializePropertyName(pos) {
         case 2: return deserializeNumericLiteral(pos + 8);
         case 3: return deserializeComputed(pos + 4);
         case 4: return deserializeBigIntLiteral(pos + 4);
-        default: throw new Error('Unexpected enum value for PropertyName');
+        default: throw new Error('Unexpected enum option ID for PropertyName');
     }
 }
 
@@ -1217,7 +1217,7 @@ function deserializeLiteral(pos) {
         case 4: return deserializeBigIntLiteral(pos + 4);
         case 5: return deserializeRegExpLiteral(pos + 4);
         case 6: return deserializeJSXText(pos + 4);
-        default: throw new Error('Unexpected enum value for Literal');
+        default: throw new Error('Unexpected enum option ID for Literal');
     }
 }
 
@@ -1487,7 +1487,7 @@ function deserializeAccessibility(pos) {
         case 0: return 'public';
         case 1: return 'protected';
         case 2: return 'private';
-        default: throw new Error('Unexpected enum value for Accessibility');
+        default: throw new Error('Unexpected enum value ID for Accessibility');
     }
 }
 
@@ -1505,7 +1505,7 @@ function deserializeBoolean(pos) {
     switch (buff[pos]) {
         case 0: return false;
         case 1: return true;
-        default: throw new Error('Unexpected enum value for Boolean');
+        default: throw new Error('Unexpected enum value ID for Boolean');
     }
 }
 
@@ -1610,7 +1610,7 @@ function deserializeVariableDeclarationOrBoxExpression(pos) {
     switch (buff[pos]) {
         case 0: return deserializeVariableDeclaration(pos + 4);
         case 1: return deserializeBoxExpression(pos + 4);
-        default: throw new Error('Unexpected enum value for VariableDeclarationOrBoxExpression');
+        default: throw new Error('Unexpected enum option ID for VariableDeclarationOrBoxExpression');
     }
 }
 
@@ -1622,7 +1622,7 @@ function deserializeVariableDeclarationOrPattern(pos) {
     switch (buff[pos]) {
         case 0: return deserializeVariableDeclaration(pos + 4);
         case 1: return deserializePattern(pos + 4);
-        default: throw new Error('Unexpected enum value for VariableDeclarationOrPattern');
+        default: throw new Error('Unexpected enum option ID for VariableDeclarationOrPattern');
     }
 }
 
@@ -1630,7 +1630,7 @@ function deserializeTsParamPropOrParameter(pos) {
     switch (buff[pos]) {
         case 0: return deserializeTsParamProp(pos + 4);
         case 1: return deserializeParameter(pos + 4);
-        default: throw new Error('Unexpected enum value for TsParamPropOrParameter');
+        default: throw new Error('Unexpected enum option ID for TsParamPropOrParameter');
     }
 }
 
@@ -1679,7 +1679,7 @@ function deserializeIdentifierOrPrivateNameOrComputed(pos) {
         case 0: return deserializeIdentifier(pos + 4);
         case 1: return deserializePrivateName(pos + 4);
         case 2: return deserializeComputed(pos + 4);
-        default: throw new Error('Unexpected enum value for IdentifierOrPrivateNameOrComputed');
+        default: throw new Error('Unexpected enum option ID for IdentifierOrPrivateNameOrComputed');
     }
 }
 
@@ -1687,7 +1687,7 @@ function deserializeIdentifierOrComputed(pos) {
     switch (buff[pos]) {
         case 0: return deserializeIdentifier(pos + 4);
         case 1: return deserializeComputed(pos + 4);
-        default: throw new Error('Unexpected enum value for IdentifierOrComputed');
+        default: throw new Error('Unexpected enum option ID for IdentifierOrComputed');
     }
 }
 
@@ -1696,7 +1696,7 @@ function deserializeSuperOrImportOrBoxExpression(pos) {
         case 0: return deserializeSuper(pos + 4);
         case 1: return deserializeImport(pos + 4);
         case 2: return deserializeBoxExpression(pos + 4);
-        default: throw new Error('Unexpected enum value for SuperOrImportOrBoxExpression');
+        default: throw new Error('Unexpected enum option ID for SuperOrImportOrBoxExpression');
     }
 }
 
@@ -1724,7 +1724,7 @@ function deserializeBlockStatementOrBoxExpression(pos) {
     switch (buff[pos]) {
         case 0: return deserializeBlockStatement(pos + 4);
         case 1: return deserializeBoxExpression(pos + 4);
-        default: throw new Error('Unexpected enum value for BlockStatementOrBoxExpression');
+        default: throw new Error('Unexpected enum option ID for BlockStatementOrBoxExpression');
     }
 }
 
@@ -1732,7 +1732,7 @@ function deserializeMemberExpressionOrOptionalChainingCall(pos) {
     switch (buff[pos]) {
         case 0: return deserializeMemberExpression(pos + 4);
         case 1: return deserializeOptionalChainingCall(pos + 4);
-        default: throw new Error('Unexpected enum value for MemberExpressionOrOptionalChainingCall');
+        default: throw new Error('Unexpected enum option ID for MemberExpressionOrOptionalChainingCall');
     }
 }
 
@@ -1748,7 +1748,7 @@ function deserializeSpreadElementOrBoxObjectProperty(pos) {
     switch (buff[pos]) {
         case 0: return deserializeSpreadElement(pos + 4);
         case 1: return deserializeBoxObjectProperty(pos + 4);
-        default: throw new Error('Unexpected enum value for SpreadElementOrBoxObjectProperty');
+        default: throw new Error('Unexpected enum option ID for SpreadElementOrBoxObjectProperty');
     }
 }
 
@@ -1773,7 +1773,7 @@ function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
         case 0: return deserializeClassExpression(pos + 4);
         case 1: return deserializeFunctionExpression(pos + 4);
         case 2: return deserializeTsInterfaceDeclaration(pos + 4);
-        default: throw new Error('Unexpected enum value for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
+        default: throw new Error('Unexpected enum option ID for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
     }
 }
 
@@ -1781,7 +1781,7 @@ function deserializeModuleDeclarationOrStatement(pos) {
     switch (buff[pos]) {
         case 0: return deserializeModuleDeclaration(pos + 4);
         case 1: return deserializeStatement(pos + 4);
-        default: throw new Error('Unexpected enum value for ModuleDeclarationOrStatement');
+        default: throw new Error('Unexpected enum option ID for ModuleDeclarationOrStatement');
     }
 }
 

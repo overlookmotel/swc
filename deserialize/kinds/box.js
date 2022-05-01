@@ -28,7 +28,7 @@ class Box extends Kind {
         if (box) return box;
 
         super();
-        Object.assign(this, options);
+        this.setOptions(options);
 
         this.valueType = valueType;
 
@@ -66,9 +66,7 @@ class Box extends Kind {
     }
 
     // Use `finalizeBox` as finalizer for all Box types
-    get finalizerName() {
-        return 'finalizeBox';
-    }
+    finalizerName = 'finalizeBox';
 }
 
 /**

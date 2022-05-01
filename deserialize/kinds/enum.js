@@ -38,7 +38,7 @@ class Enum extends Kind {
         assert(valueTypes.length < 256);
 
         super();
-        Object.assign(this, options);
+        this.setOptions(options);
 
         this.valueTypes = valueTypes;
 

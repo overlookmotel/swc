@@ -30,7 +30,7 @@ class Option extends Kind {
         if (optional) return optional;
 
         super();
-        Object.assign(this, options);
+        this.setOptions(options);
 
         this.valueType = valueType;
 

@@ -18,6 +18,12 @@ class Kind {
     align = null;
     isInitialized = false;
 
+    setOptions(options) {
+        if (!options) return;
+        // Set options with define not assign so getters can be overridden
+        Object.defineProperties(this, Object.getOwnPropertyDescriptors(options));
+    }
+
     getName() {
         return this.name;
     }
@@ -51,15 +57,8 @@ class Kind {
     get serializerName() {
         return `serialize${this.name}`;
     }
-    set serializerName(name) {
-        Object.defineProperty(this, 'serializerName', { value: name, writable: true });
-    }
-
     get finalizerName() {
         return `finalize${this.name}`;
-    }
-    set finalizerName(name) {
-        Object.defineProperty(this, 'finalizerName', { value: name, writable: true });
     }
 }
 

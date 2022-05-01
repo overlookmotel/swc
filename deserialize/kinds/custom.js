@@ -19,7 +19,7 @@ class Custom extends Kind {
 
     constructor(options) {
         super();
-        Object.assign(this, options);
+        this.setOptions(options);
     }
 
     init() {

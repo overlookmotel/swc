@@ -29,7 +29,7 @@ class Vec extends Kind {
         if (vec) return vec;
 
         super();
-        Object.assign(this, options);
+        this.setOptions(options);
 
         this.valueType = valueType;
 
@@ -66,9 +66,7 @@ class Vec extends Kind {
     }
 
     // Use `finalizeVec` as finalizer for all Vec types
-    get finalizerName() {
-        return 'finalizeVec';
-    }
+    finalizerName = 'finalizeVec';
 }
 
 /**

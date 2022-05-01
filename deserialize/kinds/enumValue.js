@@ -31,19 +31,15 @@ class EnumValue extends Kind {
 
         super();
         this.setOptions(options);
-
         this.values = values;
 
         enumValues.set(JSON.stringify(values), this);
     }
 
+    link() { }
+
     getName() {
         return this.values.join('Or');
-    }
-
-    init() {
-        this.setLength(1);
-        this.setAlign(1);
     }
 
     generateDeserializer() {

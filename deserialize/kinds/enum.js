@@ -9,7 +9,7 @@ const Kind = require('./kind.js'),
     { Box } = require('./box.js'),
     Custom = require('./custom.js'),
     { getAligned } = require('./utils.js'),
-    { initType, getTypeName } = require('../types/index.js');
+    { getType } = require('../types/index.js');
 
 // Exports
 
@@ -39,29 +39,30 @@ class Enum extends Kind {
 
         super();
         this.setOptions(options);
-
         this.valueTypes = valueTypes;
 
         enums.set(JSON.stringify({ valueTypes, options }), this);
     }
 
-    getName() {
-        return this.valueTypes.map(getTypeName).join('Or');
+    link() {
+        this.valueTypes = this.valueTypes.map(getType);
     }
 
-    init() {
+    getName() {
+        return this.valueTypes.map(valueType => valueType.initName()).join('Or');
+    }
+
+    getLengthAndAlign() {
         let length = 0,
             align = 0;
-        this.valueTypes = this.valueTypes.map((valueType) => {
-            valueType = initType(valueType);
+        for (const valueType of this.valueTypes) {
+            valueType.initLengthAndAlign();
             const optionLength = valueType.length + valueType.align;
             if (optionLength > length) length = optionLength;
             if (valueType.align > align) align = valueType.align;
-            return valueType;
-        });
+        }
 
-        this.setLength(getAligned(length, align));
-        this.setAlign(align);
+        return { length: getAligned(length, align), align };
     }
 
     generateDeserializer() {

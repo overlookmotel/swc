@@ -222,10 +222,6 @@ function deserializeBlockStatement(pos) {
     };
 }
 
-function deserializeOptionBlockStatement(pos) {
-    return deserializeOption(pos, deserializeBlockStatement, 4);
-}
-
 function deserializeEmptyStatement(pos) {
     return {
         type: 'EmptyStatement',
@@ -1522,68 +1518,108 @@ function deserializeSpan(pos) {
     };
 }
 
-function deserializeOptionJsWord(pos) {
-    return deserializeOption(pos, deserializeJsWord, 4);
+function deserializeVecModuleDeclarationOrStatement(pos) {
+    return deserializeVec(pos, deserializeModuleDeclarationOrStatement, 156);
 }
 
-function deserializeOptionModuleExportName(pos) {
-    return deserializeOption(pos, deserializeModuleExportName, 4);
+function deserializeModuleDeclarationOrStatement(pos) {
+    switch (buff[pos]) {
+        case 0: return deserializeModuleDeclaration(pos + 4);
+        case 1: return deserializeStatement(pos + 4);
+        default: throw new Error('Unexpected enum option ID for ModuleDeclarationOrStatement');
+    }
 }
 
 function deserializeVecImportSpecifier(pos) {
     return deserializeVec(pos, deserializeImportSpecifier, 84);
 }
 
-function deserializeOptionSpan(pos) {
-    return deserializeOption(pos, deserializeSpan, 4);
+function deserializeOptionModuleExportName(pos) {
+    return deserializeOption(pos, deserializeModuleExportName, 4);
 }
 
-function deserializeOptionExpressionOrSpread(pos) {
-    return deserializeOption(pos, deserializeExpressionOrSpread, 4);
+function deserializeOptionJsWord(pos) {
+    return deserializeOption(pos, deserializeJsWord, 4);
+}
+
+function deserializeOptionObjectExpression(pos) {
+    return deserializeOption(pos, deserializeObjectExpression, 4);
+}
+
+function deserializeVecSpreadElementOrBoxObjectProperty(pos) {
+    return deserializeVec(pos, deserializeSpreadElementOrBoxObjectProperty, 20);
+}
+
+function deserializeSpreadElementOrBoxObjectProperty(pos) {
+    switch (buff[pos]) {
+        case 0: return deserializeSpreadElement(pos + 4);
+        case 1: return deserializeBoxObjectProperty(pos + 4);
+        default: throw new Error('Unexpected enum option ID for SpreadElementOrBoxObjectProperty');
+    }
+}
+
+function deserializeBoxExpression(pos) {
+    return deserializeBox(pos, deserializeExpression);
 }
 
 function deserializeVecOptionExpressionOrSpread(pos) {
     return deserializeVec(pos, deserializeOptionExpressionOrSpread, 24);
 }
 
+function deserializeOptionExpressionOrSpread(pos) {
+    return deserializeOption(pos, deserializeExpressionOrSpread, 4);
+}
+
+function deserializeOptionSpan(pos) {
+    return deserializeOption(pos, deserializeSpan, 4);
+}
+
 function deserializeOptionIdentifier(pos) {
     return deserializeOption(pos, deserializeIdentifier, 4);
+}
+
+function deserializeVecParameter(pos) {
+    return deserializeVec(pos, deserializeParameter, 72);
 }
 
 function deserializeVecDecorator(pos) {
     return deserializeVec(pos, deserializeDecorator, 16);
 }
 
-function deserializeBoxTsType(pos) {
-    return deserializeBox(pos, deserializeTsType);
-}
-
 function deserializeOptionTsTypeAnnotation(pos) {
     return deserializeOption(pos, deserializeTsTypeAnnotation, 4);
 }
 
-function deserializeOptionPattern(pos) {
-    return deserializeOption(pos, deserializePattern, 4);
+function deserializeBoxTsType(pos) {
+    return deserializeBox(pos, deserializeTsType);
 }
 
 function deserializeVecOptionPattern(pos) {
     return deserializeVec(pos, deserializeOptionPattern, 56);
 }
 
-function deserializeBoxPattern(pos) {
-    return deserializeBox(pos, deserializePattern);
+function deserializeOptionPattern(pos) {
+    return deserializeOption(pos, deserializePattern, 4);
 }
 
-function deserializeOptionBoxExpression(pos) {
-    return deserializeOption(pos, deserializeBoxExpression, 4);
+function deserializeBoxPattern(pos) {
+    return deserializeBox(pos, deserializePattern);
 }
 
 function deserializeVecObjectPatternProperty(pos) {
     return deserializeVec(pos, deserializeObjectPatternProperty, 56);
 }
 
-function deserializeVecParameter(pos) {
-    return deserializeVec(pos, deserializeParameter, 72);
+function deserializeOptionBoxExpression(pos) {
+    return deserializeOption(pos, deserializeBoxExpression, 4);
+}
+
+function deserializeOptionBlockStatement(pos) {
+    return deserializeOption(pos, deserializeBlockStatement, 4);
+}
+
+function deserializeVecStatement(pos) {
+    return deserializeVec(pos, deserializeStatement, 152);
 }
 
 function deserializeBoxStatement(pos) {
@@ -1602,8 +1638,8 @@ function deserializeOptionCatchClause(pos) {
     return deserializeOption(pos, deserializeCatchClause, 4);
 }
 
-function deserializeVecVariableDeclarator(pos) {
-    return deserializeVec(pos, deserializeVariableDeclarator, 76);
+function deserializeOptionVariableDeclarationOrBoxExpression(pos) {
+    return deserializeOption(pos, deserializeVariableDeclarationOrBoxExpression, 4);
 }
 
 function deserializeVariableDeclarationOrBoxExpression(pos) {
@@ -1614,8 +1650,8 @@ function deserializeVariableDeclarationOrBoxExpression(pos) {
     }
 }
 
-function deserializeOptionVariableDeclarationOrBoxExpression(pos) {
-    return deserializeOption(pos, deserializeVariableDeclarationOrBoxExpression, 4);
+function deserializeVecVariableDeclarator(pos) {
+    return deserializeVec(pos, deserializeVariableDeclarator, 76);
 }
 
 function deserializeVariableDeclarationOrPattern(pos) {
@@ -1626,6 +1662,14 @@ function deserializeVariableDeclarationOrPattern(pos) {
     }
 }
 
+function deserializeVecClassMember(pos) {
+    return deserializeVec(pos, deserializeClassMember, 168);
+}
+
+function deserializeVecTsParamPropOrParameter(pos) {
+    return deserializeVec(pos, deserializeTsParamPropOrParameter, 76);
+}
+
 function deserializeTsParamPropOrParameter(pos) {
     switch (buff[pos]) {
         case 0: return deserializeTsParamProp(pos + 4);
@@ -1634,32 +1678,24 @@ function deserializeTsParamPropOrParameter(pos) {
     }
 }
 
-function deserializeVecTsParamPropOrParameter(pos) {
-    return deserializeVec(pos, deserializeTsParamPropOrParameter, 76);
-}
-
 function deserializeOptionAccessibility(pos) {
     return deserializeOption(pos, deserializeAccessibility, 1);
-}
-
-function deserializeVecTsTypeParameter(pos) {
-    return deserializeVec(pos, deserializeTsTypeParameter, 12);
 }
 
 function deserializeOptionTsTypeParamDeclaration(pos) {
     return deserializeOption(pos, deserializeTsTypeParamDeclaration, 4);
 }
 
-function deserializeVecClassMember(pos) {
-    return deserializeVec(pos, deserializeClassMember, 168);
-}
-
-function deserializeVecBoxTsType(pos) {
-    return deserializeVec(pos, deserializeBoxTsType, 4);
+function deserializeVecTsTypeParameter(pos) {
+    return deserializeVec(pos, deserializeTsTypeParameter, 12);
 }
 
 function deserializeOptionTsTypeParameterInstantiation(pos) {
     return deserializeOption(pos, deserializeTsTypeParameterInstantiation, 4);
+}
+
+function deserializeVecBoxTsType(pos) {
+    return deserializeVec(pos, deserializeBoxTsType, 4);
 }
 
 function deserializeVecTsExpressionWithTypeArg(pos) {
@@ -1668,10 +1704,6 @@ function deserializeVecTsExpressionWithTypeArg(pos) {
 
 function deserializeOptionTsTypeParameterDeclaration(pos) {
     return deserializeOption(pos, deserializeTsTypeParameterDeclaration, 4);
-}
-
-function deserializeVecStatement(pos) {
-    return deserializeVec(pos, deserializeStatement, 152);
 }
 
 function deserializeIdentifierOrPrivateNameOrComputed(pos) {
@@ -1736,28 +1768,8 @@ function deserializeMemberExpressionOrOptionalChainingCall(pos) {
     }
 }
 
-function deserializeBoxExpression(pos) {
-    return deserializeBox(pos, deserializeExpression);
-}
-
 function deserializeBoxObjectProperty(pos) {
     return deserializeBox(pos, deserializeObjectProperty);
-}
-
-function deserializeSpreadElementOrBoxObjectProperty(pos) {
-    switch (buff[pos]) {
-        case 0: return deserializeSpreadElement(pos + 4);
-        case 1: return deserializeBoxObjectProperty(pos + 4);
-        default: throw new Error('Unexpected enum option ID for SpreadElementOrBoxObjectProperty');
-    }
-}
-
-function deserializeVecSpreadElementOrBoxObjectProperty(pos) {
-    return deserializeVec(pos, deserializeSpreadElementOrBoxObjectProperty, 20);
-}
-
-function deserializeOptionObjectExpression(pos) {
-    return deserializeOption(pos, deserializeObjectExpression, 4);
 }
 
 function deserializeVecExportSpecifier(pos) {
@@ -1775,18 +1787,6 @@ function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
         case 2: return deserializeTsInterfaceDeclaration(pos + 4);
         default: throw new Error('Unexpected enum option ID for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
     }
-}
-
-function deserializeModuleDeclarationOrStatement(pos) {
-    switch (buff[pos]) {
-        case 0: return deserializeModuleDeclaration(pos + 4);
-        case 1: return deserializeStatement(pos + 4);
-        default: throw new Error('Unexpected enum option ID for ModuleDeclarationOrStatement');
-    }
-}
-
-function deserializeVecModuleDeclarationOrStatement(pos) {
-    return deserializeVec(pos, deserializeModuleDeclarationOrStatement, 156);
 }
 
 function deserializeOption(pos, deserialize, offset) {

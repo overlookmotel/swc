@@ -16,6 +16,7 @@ class Kind {
     name = null;
     length = null;
     align = null;
+    isLinked = false;
     isInitialized = false;
 
     setOptions(options) {
@@ -24,34 +25,26 @@ class Kind {
         Object.defineProperties(this, Object.getOwnPropertyDescriptors(options));
     }
 
-    getName() {
+    initName() {
+        if (!this.name) {
+            this.name = this.getName();
+            assert(typeof this.name === 'string', 'Failed to get type name');
+        }
         return this.name;
     }
 
-    init() { }
+    initLengthAndAlign() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
 
-    setLength(length) {
-        assert(isPositiveInteger(length), `Type ${this.name} has invalid length`);
-        if (this.length) {
-            assert(
-                length === this.length,
-                `Type ${this.name} specified length does not match calculated length`
-            );
-        } else {
+        if (this.getLengthAndAlign) {
+            const { length, align } = this.getLengthAndAlign();
             this.length = length;
-        }
-    }
-
-    setAlign(align) {
-        assert(isPositiveInteger(align), `Type ${this.name} has invalid align`);
-        if (this.align) {
-            assert(
-                align === this.align,
-                `Type ${this.name} specified align does not match calculated align`
-            );
-        } else {
             this.align = align;
         }
+
+        assert(isPositiveInteger(this.length), `Type ${this.name} has invalid length`);
+        assert(isPositiveInteger(this.align), `Type ${this.name} has invalid align`);
     }
 
     get deserializerName() {

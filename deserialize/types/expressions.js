@@ -2,7 +2,7 @@
 
 // Imports
 const { Node, Enum, EnumValue, Option, Box, Vec, Custom } = require('../kinds/index.js'),
-    { initType } = require('./index.js');
+    { getType } = require('./index.js');
 
 // Exports
 
@@ -66,9 +66,9 @@ module.exports = {
         },
         {
             keys: ['span', 'operator', 'left', 'right'],
-            init() {
-                Node.prototype.init.call(this);
-                initType('AssignmentLeftEquals');
+            link() {
+                Node.prototype.link.call(this);
+                getType('AssignmentLeftEquals');
             },
             generateSerializer() {
                 return Node.prototype.generateSerializer.call(this)

@@ -2,7 +2,7 @@
 
 // Imports
 const Kind = require('./kind.js'),
-    { initType, getTypeName } = require('../types/index.js');
+    { getType } = require('../types/index.js');
 
 // Exports
 
@@ -31,20 +31,25 @@ class Option extends Kind {
 
         super();
         this.setOptions(options);
-
         this.valueType = valueType;
 
         optionals.set(valueType, this);
     }
 
-    getName() {
-        return `Option${getTypeName(this.valueType)}`;
+    link() {
+        this.valueType = getType(this.valueType);
     }
 
-    init() {
-        this.valueType = initType(this.valueType);
-        this.setLength(this.valueType.align + this.valueType.length);
-        this.setAlign(this.valueType.align);
+    getName() {
+        return `Option${this.valueType.initName()}`;
+    }
+
+    getLengthAndAlign() {
+        this.valueType.initLengthAndAlign();
+        return {
+            length: this.valueType.align + this.valueType.length,
+            align: this.valueType.align
+        };
     }
 
     generateDeserializer() {

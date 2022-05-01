@@ -14,9 +14,7 @@ module.exports = {
         'ForOfStatement', 'Declaration', 'ExpressionStatement'
     ]),
 
-    // Length + align explicit due to circularity
-    BlockStatement: Node({ stmts: Vec('Statement') }, { length: 20, align: 4 }),
-    OptionBlockStatement: Option('BlockStatement', { length: 24, align: 4 }),
+    BlockStatement: Node({ stmts: Vec('Statement') }),
 
     EmptyStatement: Node({}),
 
@@ -52,7 +50,7 @@ module.exports = {
     TryStatement: Node({
         block: 'BlockStatement',
         handler: Option('CatchClause'),
-        finalizer: 'OptionBlockStatement'
+        finalizer: Option('BlockStatement')
     }),
     CatchClause: Node({ param: Option('Pattern'), body: 'BlockStatement' }),
 

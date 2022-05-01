@@ -51,7 +51,7 @@ class EnumValue extends Kind {
             `case ${index}: return ${typeof value === 'string' ? `'${value}'` : value};`
         ));
 
-        return `function deserialize${this.name}(pos) {
+        return `function ${this.deserializerName}(pos) {
             switch (buff[pos]) {
                 ${caseCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value ID for ${this.name}');
@@ -69,7 +69,7 @@ class EnumValue extends Kind {
             `case ${typeof value === 'string' ? `'${value}'` : value}: return ${index};`
         ));
 
-        return `function serialize${this.name}(value) {
+        return `function ${this.serializerName}(value) {
             switch (value) {
                 ${caseCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');

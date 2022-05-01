@@ -65,11 +65,11 @@ class Enum extends Kind {
     }
 
     generateDeserializer() {
-        const caseCodes = this.valueTypes.map(({ name, align }, index) => (
-            `case ${index}: return deserialize${name}(pos + ${align});`
+        const caseCodes = this.valueTypes.map(({ deserializerName, align }, index) => (
+            `case ${index}: return ${deserializerName}(pos + ${align});`
         ));
 
-        return `function deserialize${this.name}(pos) {
+        return `function ${this.deserializerName}(pos) {
             switch (buff[pos]) {
                 ${caseCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum option ID for ${this.name}');
@@ -125,7 +125,7 @@ class Enum extends Kind {
             );
         });
 
-        return `function serialize${this.name}(node) {
+        return `function ${this.serializerName}(node) {
             const storePos = allocScratch(8);
             switch (node.type) {
                 ${optionSerializeCodes.join(`\n${' '.repeat(16)}`)}
@@ -134,7 +134,7 @@ class Enum extends Kind {
             return storePos;
         }
 
-        function finalize${this.name}(storePos) {
+        function ${this.finalizerName}(storePos) {
             switch (scratchBuff[storePos]) {
                 ${optionFinalizeCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum option ID for ${this.name}');

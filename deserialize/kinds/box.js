@@ -46,8 +46,8 @@ class Box extends Kind {
     }
 
     generateDeserializer() {
-        return `function deserialize${this.name}(pos) {
-            return deserializeBox(pos, deserialize${this.valueType.name});
+        return `function ${this.deserializerName}(pos) {
+            return deserializeBox(pos, ${this.valueType.deserializerName});
         }`;
     }
 
@@ -60,7 +60,7 @@ class Box extends Kind {
         const {
             serializerName, finalizerName, length: valueLength, align: valueAlign
         } = this.valueType;
-        return `function serialize${this.name}(value) {
+        return `function ${this.serializerName}(value) {
             return serializeBox(value, ${serializerName}, ${finalizerName}, ${valueLength}, ${valueAlign});
         }`;
     }

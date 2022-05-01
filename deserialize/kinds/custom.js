@@ -45,7 +45,7 @@ class Custom extends Kind {
             code.startsWith('deserialize('),
             `Custom type ${this.name} malformed deserializer function`
         );
-        return `function deserialize${this.name}${code.slice('deserialize'.length)}`;
+        return `function ${this.deserializerName}${code.slice('deserialize'.length)}`;
     }
 
     generateSerializer() {
@@ -54,7 +54,7 @@ class Custom extends Kind {
             serializeCode.startsWith('serialize('),
             `Custom type ${this.name} malformed serializer function`
         );
-        let code = `function serialize${this.name}${serializeCode.slice('serialize'.length)}`;
+        let code = `function ${this.serializerName}${serializeCode.slice('serialize'.length)}`;
 
         if (this.finalize) {
             const finalizeCode = this.finalize.toString();
@@ -62,7 +62,7 @@ class Custom extends Kind {
                 finalizeCode.startsWith('finalize('),
                 `Custom type ${this.name} malformed finalizer function`
             );
-            code += `\n\n${' '.repeat(8)}function finalize${this.name}${finalizeCode.slice('finalize'.length)}`;
+            code += `\n\n${' '.repeat(8)}function ${this.finalizerName}${finalizeCode.slice('finalize'.length)}`;
         }
 
         return code;

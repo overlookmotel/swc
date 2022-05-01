@@ -74,12 +74,12 @@ class Node extends Kind {
 
     generateDeserializer() {
         const propsCodes = this.propsWithPos.map(({ key, prop, pos }) => {
-            return `${key}: deserialize${prop.name}(pos${pos === 0 ? '' : ` + ${pos}`})`;
+            return `${key}: ${prop.deserializerName}(pos${pos === 0 ? '' : ` + ${pos}`})`;
         });
 
         if (!this.noType) propsCodes.unshift(`type: '${this.nodeName}'`);
 
-        return `function deserialize${this.name}(pos) {
+        return `function ${this.deserializerName}(pos) {
             return {
                 ${propsCodes.join(`,\n${' '.repeat(16)}`)}
             };
@@ -125,13 +125,13 @@ class Node extends Kind {
         if (endPos !== this.length) finalizeCodes.push(`pos += ${this.length - endPos};`);
 
         // NB Scratch must be allocated in 8-byte blocks
-        return `function serialize${this.name}(node) {
+        return `function ${this.serializerName}(node) {
             const storePos32 = allocScratch(${getAligned(propsOrdered.length * 4, 8)}) >> 2;
             ${serializeCodes.join(`\n${' '.repeat(12)}`)}
             return storePos32;
         }
         
-        function finalize${this.name}(storePos32) {
+        function ${this.finalizerName}(storePos32) {
             ${finalizeCodes.join(`\n${' '.repeat(12)}`)}
         }`;
     }

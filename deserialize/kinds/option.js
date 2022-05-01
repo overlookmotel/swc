@@ -48,8 +48,8 @@ class Option extends Kind {
     }
 
     generateDeserializer() {
-        return `function deserialize${this.name}(pos) {
-            return deserializeOption(pos, deserialize${this.valueType.name}, ${this.valueType.align});
+        return `function ${this.deserializerName}(pos) {
+            return deserializeOption(pos, ${this.valueType.deserializerName}, ${this.valueType.align});
         }`;
     }
 
@@ -60,11 +60,11 @@ class Option extends Kind {
     generateSerializer() {
         const { valueType } = this,
             { finalizerName, length: valueLength, align: valueAlign } = valueType;
-        return `function serialize${this.name}(value) {
+        return `function ${this.serializerName}(value) {
             return serializeOption(value, ${valueType.serializerName});
         }
         
-        function finalize${this.name}(storePos) {
+        function ${this.finalizerName}(storePos) {
             return finalizeOption(storePos, ${finalizerName}, ${valueLength}, ${valueAlign});
         }`;
     }

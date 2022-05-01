@@ -38,7 +38,7 @@ function serializeProgram(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeScript(node));
             break;
-        default: throw new Error('Unexpected enum value for Program');
+        default: throw new Error('Unexpected enum option type for Program');
     }
     return storePos;
 }
@@ -47,7 +47,7 @@ function finalizeProgram(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeModule, 4, 36); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeScript, 4, 36); break;
-        default: throw new Error('Unexpected enum ID for Program');
+        default: throw new Error('Unexpected enum option ID for Program');
     }
 }
 
@@ -118,7 +118,7 @@ function serializeModuleDeclaration(node) {
             scratchBuff[storePos] = 8;
             writeScratchUint32((storePos >> 2) + 1, serializeTsNamespaceExportDeclaration(node));
             break;
-        default: throw new Error('Unexpected enum value for ModuleDeclaration');
+        default: throw new Error('Unexpected enum option type for ModuleDeclaration');
     }
     return storePos;
 }
@@ -134,7 +134,7 @@ function finalizeModuleDeclaration(storePos) {
         case 6: finalizeEnum(6, scratchUint32[(storePos >> 2) + 1], finalizeTsImportEqualsDeclaration, 4, 148); break;
         case 7: finalizeEnum(7, scratchUint32[(storePos >> 2) + 1], finalizeTsExportAssignment, 4, 148); break;
         case 8: finalizeEnum(8, scratchUint32[(storePos >> 2) + 1], finalizeTsNamespaceExportDeclaration, 4, 148); break;
-        default: throw new Error('Unexpected enum ID for ModuleDeclaration');
+        default: throw new Error('Unexpected enum option ID for ModuleDeclaration');
     }
 }
 
@@ -172,7 +172,7 @@ function serializeImportSpecifier(node) {
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeImportNamespaceSpecifier(node));
             break;
-        default: throw new Error('Unexpected enum value for ImportSpecifier');
+        default: throw new Error('Unexpected enum option type for ImportSpecifier');
     }
     return storePos;
 }
@@ -182,7 +182,7 @@ function finalizeImportSpecifier(storePos) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeImportNamedSpecifier, 4, 84); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeImportDefaultSpecifier, 4, 84); break;
         case 2: finalizeEnum(2, scratchUint32[(storePos >> 2) + 1], finalizeImportNamespaceSpecifier, 4, 84); break;
-        default: throw new Error('Unexpected enum ID for ImportSpecifier');
+        default: throw new Error('Unexpected enum option ID for ImportSpecifier');
     }
 }
 
@@ -273,7 +273,7 @@ function serializeExportSpecifier(node) {
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeExportNamedSpecifier(node));
             break;
-        default: throw new Error('Unexpected enum value for ExportSpecifier');
+        default: throw new Error('Unexpected enum option type for ExportSpecifier');
     }
     return storePos;
 }
@@ -283,7 +283,7 @@ function finalizeExportSpecifier(storePos) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeExportNamespaceSpecifier, 4, 96); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeExportDefaultSpecifier, 4, 96); break;
         case 2: finalizeEnum(2, scratchUint32[(storePos >> 2) + 1], finalizeExportNamedSpecifier, 4, 96); break;
-        default: throw new Error('Unexpected enum ID for ExportSpecifier');
+        default: throw new Error('Unexpected enum option ID for ExportSpecifier');
     }
 }
 
@@ -377,7 +377,7 @@ function serializeModuleExportName(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeStringLiteral(node));
             break;
-        default: throw new Error('Unexpected enum value for ModuleExportName');
+        default: throw new Error('Unexpected enum option type for ModuleExportName');
     }
     return storePos;
 }
@@ -386,7 +386,7 @@ function finalizeModuleExportName(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeIdentifier, 4, 36); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeStringLiteral, 4, 36); break;
-        default: throw new Error('Unexpected enum ID for ModuleExportName');
+        default: throw new Error('Unexpected enum option ID for ModuleExportName');
     }
 }
 
@@ -475,7 +475,7 @@ function serializeStatement(node) {
             scratchBuff[storePos] = 18;
             writeScratchUint32((storePos >> 2) + 1, serializeExpressionStatement(node));
             break;
-        default: throw new Error('Unexpected enum value for Statement');
+        default: throw new Error('Unexpected enum option type for Statement');
     }
     return storePos;
 }
@@ -501,7 +501,7 @@ function finalizeStatement(storePos) {
         case 16: finalizeEnum(16, scratchUint32[(storePos >> 2) + 1], finalizeForOfStatement, 4, 152); break;
         case 17: finalizeEnum(17, scratchUint32[(storePos >> 2) + 1], finalizeDeclaration, 4, 152); break;
         case 18: finalizeEnum(18, scratchUint32[(storePos >> 2) + 1], finalizeExpressionStatement, 4, 152); break;
-        default: throw new Error('Unexpected enum ID for Statement');
+        default: throw new Error('Unexpected enum option ID for Statement');
     }
 }
 
@@ -818,7 +818,7 @@ function serializeDeclaration(node) {
             scratchBuff[storePos] = 6;
             writeScratchUint32((storePos >> 2) + 1, serializeTsModuleDeclaration(node));
             break;
-        default: throw new Error('Unexpected enum value for Declaration');
+        default: throw new Error('Unexpected enum option type for Declaration');
     }
     return storePos;
 }
@@ -832,7 +832,7 @@ function finalizeDeclaration(storePos) {
         case 4: finalizeEnum(4, scratchUint32[(storePos >> 2) + 1], finalizeTsTypeAliasDeclaration, 4, 132); break;
         case 5: finalizeEnum(5, scratchUint32[(storePos >> 2) + 1], finalizeTsEnumDeclaration, 4, 132); break;
         case 6: finalizeEnum(6, scratchUint32[(storePos >> 2) + 1], finalizeTsModuleDeclaration, 4, 132); break;
-        default: throw new Error('Unexpected enum ID for Declaration');
+        default: throw new Error('Unexpected enum option ID for Declaration');
     }
 }
 
@@ -1077,7 +1077,7 @@ function serializeClassMember(node) {
             scratchBuff[storePos] = 7;
             writeScratchUint32((storePos >> 2) + 1, serializeStaticBlock(node));
             break;
-        default: throw new Error('Unexpected enum value for ClassMember');
+        default: throw new Error('Unexpected enum option type for ClassMember');
     }
     return storePos;
 }
@@ -1092,7 +1092,7 @@ function finalizeClassMember(storePos) {
         case 5: finalizeEnum(5, scratchUint32[(storePos >> 2) + 1], finalizeTsIndexSignature, 4, 168); break;
         case 6: finalizeEnum(6, scratchUint32[(storePos >> 2) + 1], finalizeEmptyStatement, 4, 168); break;
         case 7: finalizeEnum(7, scratchUint32[(storePos >> 2) + 1], finalizeStaticBlock, 4, 168); break;
-        default: throw new Error('Unexpected enum ID for ClassMember');
+        default: throw new Error('Unexpected enum option ID for ClassMember');
     }
 }
 
@@ -1354,7 +1354,7 @@ function serializePattern(node) {
             scratchBuff[storePos] = 6;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        default: throw new Error('Unexpected enum value for Pattern');
+        default: throw new Error('Unexpected enum option type for Pattern');
     }
     return storePos;
 }
@@ -1368,7 +1368,7 @@ function finalizePattern(storePos) {
         case 4: finalizeEnum(4, scratchUint32[(storePos >> 2) + 1], finalizeAssignmentPattern, 4, 52); break;
         case 5: finalizeEnum(5, scratchUint32[(storePos >> 2) + 1], finalizeInvalid, 4, 52); break;
         case 6: finalizeEnum(6, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 52); break;
-        default: throw new Error('Unexpected enum ID for Pattern');
+        default: throw new Error('Unexpected enum option ID for Pattern');
     }
 }
 
@@ -1454,7 +1454,7 @@ function serializeObjectPatternProperty(node) {
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeRestElement(node));
             break;
-        default: throw new Error('Unexpected enum value for ObjectPatternProperty');
+        default: throw new Error('Unexpected enum option type for ObjectPatternProperty');
     }
     return storePos;
 }
@@ -1464,7 +1464,7 @@ function finalizeObjectPatternProperty(storePos) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeKeyValuePatternProperty, 8, 56); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeAssignmentPatternProperty, 4, 56); break;
         case 2: finalizeEnum(2, scratchUint32[(storePos >> 2) + 1], finalizeRestElement, 4, 56); break;
-        default: throw new Error('Unexpected enum ID for ObjectPatternProperty');
+        default: throw new Error('Unexpected enum option ID for ObjectPatternProperty');
     }
 }
 
@@ -1668,7 +1668,7 @@ function serializeExpression(node) {
             scratchBuff[storePos] = 36;
             writeScratchUint32((storePos >> 2) + 1, serializeInvalid(node));
             break;
-        default: throw new Error('Unexpected enum value for Expression');
+        default: throw new Error('Unexpected enum option type for Expression');
     }
     return storePos;
 }
@@ -1712,7 +1712,7 @@ function finalizeExpression(storePos) {
         case 34: finalizeEnum(34, scratchUint32[(storePos >> 2) + 1], finalizePrivateName, 4, 136); break;
         case 35: finalizeEnum(35, scratchUint32[(storePos >> 2) + 1], finalizeOptionalChainingExpression, 4, 136); break;
         case 36: finalizeEnum(36, scratchUint32[(storePos >> 2) + 1], finalizeInvalid, 4, 136); break;
-        default: throw new Error('Unexpected enum ID for Expression');
+        default: throw new Error('Unexpected enum option ID for Expression');
     }
 }
 
@@ -1914,7 +1914,7 @@ function serializeAssignmentLeft(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
             break;
-        default: throw new Error('Unexpected enum value for AssignmentLeft');
+        default: throw new Error('Unexpected enum option type for AssignmentLeft');
     }
     return storePos;
 }
@@ -1923,7 +1923,7 @@ function finalizeAssignmentLeft(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 8); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 8); break;
-        default: throw new Error('Unexpected enum ID for AssignmentLeft');
+        default: throw new Error('Unexpected enum option ID for AssignmentLeft');
     }
 }
 
@@ -2313,7 +2313,7 @@ function serializeObjectProperty(node) {
             scratchBuff[storePos] = 5;
             writeScratchUint32((storePos >> 2) + 1, serializeMethodProperty(node));
             break;
-        default: throw new Error('Unexpected enum value for ObjectProperty');
+        default: throw new Error('Unexpected enum option type for ObjectProperty');
     }
     return storePos;
 }
@@ -2326,7 +2326,7 @@ function finalizeObjectProperty(storePos) {
         case 3: finalizeEnum(3, scratchUint32[(storePos >> 2) + 1], finalizeGetterProperty, 8, 152); break;
         case 4: finalizeEnum(4, scratchUint32[(storePos >> 2) + 1], finalizeSetterProperty, 8, 152); break;
         case 5: finalizeEnum(5, scratchUint32[(storePos >> 2) + 1], finalizeMethodProperty, 8, 152); break;
-        default: throw new Error('Unexpected enum ID for ObjectProperty');
+        default: throw new Error('Unexpected enum option ID for ObjectProperty');
     }
 }
 
@@ -2440,7 +2440,7 @@ function serializePropertyName(node) {
             scratchBuff[storePos] = 4;
             writeScratchUint32((storePos >> 2) + 1, serializeBigIntLiteral(node));
             break;
-        default: throw new Error('Unexpected enum value for PropertyName');
+        default: throw new Error('Unexpected enum option type for PropertyName');
     }
     return storePos;
 }
@@ -2452,7 +2452,7 @@ function finalizePropertyName(storePos) {
         case 2: finalizeEnum(2, scratchUint32[(storePos >> 2) + 1], finalizeNumericLiteral, 8, 40); break;
         case 3: finalizeEnum(3, scratchUint32[(storePos >> 2) + 1], finalizeComputed, 4, 40); break;
         case 4: finalizeEnum(4, scratchUint32[(storePos >> 2) + 1], finalizeBigIntLiteral, 4, 40); break;
-        default: throw new Error('Unexpected enum ID for PropertyName');
+        default: throw new Error('Unexpected enum option ID for PropertyName');
     }
 }
 
@@ -2487,7 +2487,7 @@ function serializeLiteral(node) {
             scratchBuff[storePos] = 6;
             writeScratchUint32((storePos >> 2) + 1, serializeJSXText(node));
             break;
-        default: throw new Error('Unexpected enum value for Literal');
+        default: throw new Error('Unexpected enum option type for Literal');
     }
     return storePos;
 }
@@ -2501,7 +2501,7 @@ function finalizeLiteral(storePos) {
         case 4: finalizeEnum(4, scratchUint32[(storePos >> 2) + 1], finalizeBigIntLiteral, 4, 40); break;
         case 5: finalizeEnum(5, scratchUint32[(storePos >> 2) + 1], finalizeRegExpLiteral, 4, 40); break;
         case 6: finalizeEnum(6, scratchUint32[(storePos >> 2) + 1], finalizeJSXText, 4, 40); break;
-        default: throw new Error('Unexpected enum ID for Literal');
+        default: throw new Error('Unexpected enum option ID for Literal');
     }
 }
 
@@ -3146,7 +3146,7 @@ function serializeVariableDeclarationOrBoxExpression(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        default: throw new Error('Unexpected enum value for VariableDeclarationOrBoxExpression');
+        default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
     }
     return storePos;
 }
@@ -3155,7 +3155,7 @@ function finalizeVariableDeclarationOrBoxExpression(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeVariableDeclaration, 4, 28); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 28); break;
-        default: throw new Error('Unexpected enum ID for VariableDeclarationOrBoxExpression');
+        default: throw new Error('Unexpected enum option ID for VariableDeclarationOrBoxExpression');
     }
 }
 
@@ -3224,7 +3224,7 @@ function serializeVariableDeclarationOrPattern(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
             break;
-        default: throw new Error('Unexpected enum value for VariableDeclarationOrPattern');
+        default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
     }
     return storePos;
 }
@@ -3233,7 +3233,7 @@ function finalizeVariableDeclarationOrPattern(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeVariableDeclaration, 4, 56); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizePattern, 4, 56); break;
-        default: throw new Error('Unexpected enum ID for VariableDeclarationOrPattern');
+        default: throw new Error('Unexpected enum option ID for VariableDeclarationOrPattern');
     }
 }
 
@@ -3248,7 +3248,7 @@ function serializeTsParamPropOrParameter(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeParameter(node));
             break;
-        default: throw new Error('Unexpected enum value for TsParamPropOrParameter');
+        default: throw new Error('Unexpected enum option type for TsParamPropOrParameter');
     }
     return storePos;
 }
@@ -3257,7 +3257,7 @@ function finalizeTsParamPropOrParameter(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeTsParamProp, 4, 76); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeParameter, 4, 76); break;
-        default: throw new Error('Unexpected enum ID for TsParamPropOrParameter');
+        default: throw new Error('Unexpected enum option ID for TsParamPropOrParameter');
     }
 }
 
@@ -3332,7 +3332,7 @@ function serializeIdentifierOrPrivateNameOrComputed(node) {
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeComputed(node));
             break;
-        default: throw new Error('Unexpected enum value for IdentifierOrPrivateNameOrComputed');
+        default: throw new Error('Unexpected enum option type for IdentifierOrPrivateNameOrComputed');
     }
     return storePos;
 }
@@ -3342,7 +3342,7 @@ function finalizeIdentifierOrPrivateNameOrComputed(storePos) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeIdentifier, 4, 40); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizePrivateName, 4, 40); break;
         case 2: finalizeEnum(2, scratchUint32[(storePos >> 2) + 1], finalizeComputed, 4, 40); break;
-        default: throw new Error('Unexpected enum ID for IdentifierOrPrivateNameOrComputed');
+        default: throw new Error('Unexpected enum option ID for IdentifierOrPrivateNameOrComputed');
     }
 }
 
@@ -3357,7 +3357,7 @@ function serializeIdentifierOrComputed(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeComputed(node));
             break;
-        default: throw new Error('Unexpected enum value for IdentifierOrComputed');
+        default: throw new Error('Unexpected enum option type for IdentifierOrComputed');
     }
     return storePos;
 }
@@ -3366,7 +3366,7 @@ function finalizeIdentifierOrComputed(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeIdentifier, 4, 28); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeComputed, 4, 28); break;
-        default: throw new Error('Unexpected enum ID for IdentifierOrComputed');
+        default: throw new Error('Unexpected enum option ID for IdentifierOrComputed');
     }
 }
 
@@ -3427,7 +3427,7 @@ function serializeSuperOrImportOrBoxExpression(node) {
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        default: throw new Error('Unexpected enum value for SuperOrImportOrBoxExpression');
+        default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
     }
     return storePos;
 }
@@ -3437,7 +3437,7 @@ function finalizeSuperOrImportOrBoxExpression(storePos) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeSuper, 4, 16); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeImport, 4, 16); break;
         case 2: finalizeEnum(2, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 16); break;
-        default: throw new Error('Unexpected enum ID for SuperOrImportOrBoxExpression');
+        default: throw new Error('Unexpected enum option ID for SuperOrImportOrBoxExpression');
     }
 }
 
@@ -3518,7 +3518,7 @@ function serializeBlockStatementOrBoxExpression(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        default: throw new Error('Unexpected enum value for BlockStatementOrBoxExpression');
+        default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
     }
     return storePos;
 }
@@ -3527,7 +3527,7 @@ function finalizeBlockStatementOrBoxExpression(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeBlockStatement, 4, 24); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 24); break;
-        default: throw new Error('Unexpected enum ID for BlockStatementOrBoxExpression');
+        default: throw new Error('Unexpected enum option ID for BlockStatementOrBoxExpression');
     }
 }
 
@@ -3542,7 +3542,7 @@ function serializeMemberExpressionOrOptionalChainingCall(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeOptionalChainingCall(node));
             break;
-        default: throw new Error('Unexpected enum value for MemberExpressionOrOptionalChainingCall');
+        default: throw new Error('Unexpected enum option type for MemberExpressionOrOptionalChainingCall');
     }
     return storePos;
 }
@@ -3551,7 +3551,7 @@ function finalizeMemberExpressionOrOptionalChainingCall(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeMemberExpression, 4, 60); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeOptionalChainingCall, 4, 60); break;
-        default: throw new Error('Unexpected enum ID for MemberExpressionOrOptionalChainingCall');
+        default: throw new Error('Unexpected enum option ID for MemberExpressionOrOptionalChainingCall');
     }
 }
 
@@ -3579,7 +3579,7 @@ function serializeSpreadElementOrBoxObjectProperty(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
             break;
-        default: throw new Error('Unexpected enum value for SpreadElementOrBoxObjectProperty');
+        default: throw new Error('Unexpected enum option type for SpreadElementOrBoxObjectProperty');
     }
     return storePos;
 }
@@ -3588,7 +3588,7 @@ function finalizeSpreadElementOrBoxObjectProperty(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeSpreadElement, 4, 20); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 20); break;
-        default: throw new Error('Unexpected enum ID for SpreadElementOrBoxObjectProperty');
+        default: throw new Error('Unexpected enum option ID for SpreadElementOrBoxObjectProperty');
     }
 }
 
@@ -3631,7 +3631,7 @@ function serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(no
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeTsInterfaceDeclaration(node));
             break;
-        default: throw new Error('Unexpected enum value for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
+        default: throw new Error('Unexpected enum option type for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
     }
     return storePos;
 }
@@ -3641,7 +3641,7 @@ function finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(sto
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeClassExpression, 4, 132); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeFunctionExpression, 4, 132); break;
         case 2: finalizeEnum(2, scratchUint32[(storePos >> 2) + 1], finalizeTsInterfaceDeclaration, 4, 132); break;
-        default: throw new Error('Unexpected enum ID for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
+        default: throw new Error('Unexpected enum option ID for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
     }
 }
 
@@ -3688,7 +3688,7 @@ function serializeModuleDeclarationOrStatement(node) {
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
             break;
-        default: throw new Error('Unexpected enum value for ModuleDeclarationOrStatement');
+        default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
     }
     return storePos;
 }
@@ -3697,7 +3697,7 @@ function finalizeModuleDeclarationOrStatement(storePos) {
     switch (scratchBuff[storePos]) {
         case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeModuleDeclaration, 4, 156); break;
         case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeStatement, 4, 156); break;
-        default: throw new Error('Unexpected enum ID for ModuleDeclarationOrStatement');
+        default: throw new Error('Unexpected enum option ID for ModuleDeclarationOrStatement');
     }
 }
 

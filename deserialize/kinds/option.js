@@ -23,33 +23,33 @@ const optionals = new Map();
  *   - Alignment of Option is same as alignment of it's value type.
  */
 class Option extends Kind {
-    childType = null;
+    valueType = null;
 
-    constructor(childType, options) {
-        const optional = optionals.get(childType);
+    constructor(valueType, options) {
+        const optional = optionals.get(valueType);
         if (optional) return optional;
 
         super();
         Object.assign(this, options);
 
-        this.childType = childType;
+        this.valueType = valueType;
 
-        optionals.set(childType, this);
+        optionals.set(valueType, this);
     }
 
     getName() {
-        return `Option${getTypeName(this.childType)}`;
+        return `Option${getTypeName(this.valueType)}`;
     }
 
     init() {
-        this.childType = initType(this.childType);
-        this.setLength(this.childType.align + this.childType.length);
-        this.setAlign(this.childType.align);
+        this.valueType = initType(this.valueType);
+        this.setLength(this.valueType.align + this.valueType.length);
+        this.setAlign(this.valueType.align);
     }
 
     generateDeserializer() {
         return `function deserialize${this.name}(pos) {
-            return deserializeOption(pos, deserialize${this.childType.name}, ${this.childType.align});
+            return deserializeOption(pos, deserialize${this.valueType.name}, ${this.valueType.align});
         }`;
     }
 
@@ -58,14 +58,14 @@ class Option extends Kind {
      * @returns {string} - Code for `serialize` + `finalize` functions
      */
     generateSerializer() {
-        const { childType } = this,
-            { finalizerName, length: childLength, align: childAlign } = childType;
+        const { valueType } = this,
+            { finalizerName, length: valueLength, align: valueAlign } = valueType;
         return `function serialize${this.name}(value) {
-            return serializeOption(value, ${childType.serializerName});
+            return serializeOption(value, ${valueType.serializerName});
         }
         
         function finalize${this.name}(storePos) {
-            return finalizeOption(storePos, ${finalizerName}, ${childLength}, ${childAlign});
+            return finalizeOption(storePos, ${finalizerName}, ${valueLength}, ${valueAlign});
         }`;
     }
 }

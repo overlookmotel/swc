@@ -22,33 +22,33 @@ const vecs = new Map();
 class Vec extends Kind {
     length = 8;
     align = 4;
-    childType = null;
+    valueType = null;
 
-    constructor(childType, options) {
-        const vec = vecs.get(childType);
+    constructor(valueType, options) {
+        const vec = vecs.get(valueType);
         if (vec) return vec;
 
         super();
         Object.assign(this, options);
 
-        this.childType = childType;
+        this.valueType = valueType;
 
-        vecs.set(childType, this);
+        vecs.set(valueType, this);
     }
 
     getName() {
-        return `Vec${getTypeName(this.childType)}`;
+        return `Vec${getTypeName(this.valueType)}`;
     }
 
     init() {
-        this.childType = initType(this.childType);
+        this.valueType = initType(this.valueType);
         this.setLength(8);
         this.setAlign(4);
     }
 
     generateDeserializer() {
         return `function deserialize${this.name}(pos) {
-            return deserializeVec(pos, deserialize${this.childType.name}, ${this.childType.length});
+            return deserializeVec(pos, deserialize${this.valueType.name}, ${this.valueType.length});
         }`;
     }
 
@@ -58,10 +58,10 @@ class Vec extends Kind {
      */
     generateSerializer() {
         const {
-            serializerName, finalizerName, length: childLength, align: childAlign
-        } = this.childType;
+            serializerName, finalizerName, length: valueLength, align: valueAlign
+        } = this.valueType;
         return `function serialize${this.name}(values) {
-            return serializeVec(values, ${serializerName}, ${finalizerName}, ${childLength}, ${childAlign});
+            return serializeVec(values, ${serializerName}, ${finalizerName}, ${valueLength}, ${valueAlign});
         }`;
     }
 

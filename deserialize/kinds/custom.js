@@ -5,8 +5,7 @@ const assert = require("assert");
 
 // Imports
 const Kind = require('./kind.js'),
-    { isPositiveInteger } = require('./utils.js'),
-    { initType } = require('../types/index.js');
+    { getType } = require('../types/index.js');
 
 // Exports
 
@@ -15,18 +14,14 @@ const Kind = require('./kind.js'),
  */
 class Custom extends Kind {
     deserialize = null;
+    serialize = null;
+    finalize = null;
     dependencies = [];
 
     constructor(options) {
         super();
         this.setOptions(options);
-    }
 
-    init() {
-        this.dependencies = this.dependencies.map(name => initType(name));
-
-        assert(isPositiveInteger(this.length), `Custom type ${this.name} has invalid length`);
-        assert(isPositiveInteger(this.align), `Custom type ${this.name} has invalid align`);
         assert(
             typeof this.deserialize === 'function' || this.deserialize === false,
             `Custom type ${this.name} has no deserializer`
@@ -36,6 +31,10 @@ class Custom extends Kind {
             typeof this.finalize === 'function' || this.finalize === false,
             `Custom type ${this.name} has no finalizer`
         );
+    }
+
+    link() {
+        this.dependencies = this.dependencies.map(getType);
     }
 
     generateDeserializer() {

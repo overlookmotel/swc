@@ -6,7 +6,7 @@ const { writeFileSync } = require('fs'),
     assert = require('assert');
 
 // Imports
-const { types, initType } = require('./types/index.js'),
+const { types } = require('./types/index.js'),
     { finalizeEnum } = require('./kinds/enum.js'),
     { finalizeEnumValue } = require('./kinds/enumValue.js'),
     { deserializeOption, serializeOption, finalizeOption } = require('./kinds/option.js'),
@@ -29,7 +29,6 @@ const DEBUG = !!process.env.DEBUG;
 assert(SERIALIZE_INITIAL_BUFFER_SIZE % 8 === 0);
 assert(SCRATCH_INITIAL_BUFFER_SIZE % 8 === 0);
 
-initType('Program');
 writeFileSync(pathJoin(__dirname, 'deserialize.js'), generateDeserializer());
 writeFileSync(pathJoin(__dirname, 'serialize.js'), generateSerializer());
 

@@ -2,7 +2,7 @@
 
 // Imports
 const Kind = require('./kind.js'),
-    { initType, getTypeName } = require('../types/index.js');
+    { getType } = require('../types/index.js');
 
 // Exports
 
@@ -30,20 +30,17 @@ class Vec extends Kind {
 
         super();
         this.setOptions(options);
-
         this.valueType = valueType;
 
         vecs.set(valueType, this);
     }
 
-    getName() {
-        return `Vec${getTypeName(this.valueType)}`;
+    link() {
+        this.valueType = getType(this.valueType);
     }
 
-    init() {
-        this.valueType = initType(this.valueType);
-        this.setLength(8);
-        this.setAlign(4);
+    getName() {
+        return `Vec${this.valueType.initName()}`;
     }
 
     generateDeserializer() {

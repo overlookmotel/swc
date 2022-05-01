@@ -6,13 +6,10 @@ const { Node, Enum, Option, Box, Vec } = require('../kinds/index.js');
 // Exports
 
 module.exports = {
-    Pattern: Enum(
-        [
-            'BindingIdentifier', 'ArrayPattern', 'RestElement', 'ObjectPattern',
-            'AssignmentPattern', 'Invalid', Box('Expression')
-        ],
-        { length: 52, align: 4 } // Length + align explicit due to circularity
-    ),
+    Pattern: Enum([
+        'BindingIdentifier', 'ArrayPattern', 'RestElement', 'ObjectPattern',
+        'AssignmentPattern', 'Invalid', Box('Expression')
+    ]),
 
     BindingIdentifier: Node(
         {

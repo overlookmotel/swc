@@ -3,7 +3,7 @@
 // Imports
 const Kind = require('./kind.js'),
     { getAligned } = require('./utils.js'),
-    { initType } = require('../types/index.js');
+    { getType } = require('../types/index.js');
 
 // Exports
 
@@ -53,12 +53,20 @@ class Node extends Kind {
         if (!this.keys) this.keys = Object.keys(props);
     }
 
-    init() {
+    link() {
+        if (!this.nodeName) this.nodeName = this.name;
+
+        for (let [key, prop] of Object.entries(this.props)) {
+            this.props[key] = getType(prop);
+        }
+    }
+
+    getLengthAndAlign() {
         const propsWithPosMap = {};
         let pos = 0,
             align = 0;
         for (let [key, prop] of Object.entries(this.props)) {
-            prop = initType(prop);
+            prop.initLengthAndAlign();
             pos = getAligned(pos, prop.align);
             if (prop.align > align) align = prop.align;
             propsWithPosMap[key] = { key, prop, pos };
@@ -67,9 +75,7 @@ class Node extends Kind {
 
         this.propsWithPos = this.keys.map(key => propsWithPosMap[key]);
 
-        this.setLength(getAligned(pos, align));
-        this.setAlign(align);
-        if (!this.nodeName) this.nodeName = this.name;
+        return { length: getAligned(pos, align), align };
     }
 
     generateDeserializer() {

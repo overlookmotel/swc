@@ -29,7 +29,7 @@ module.exports = {
             key: 'PropertyName',
             span: 'Span',
             typeAnnotation: Option('TsTypeAnnotation'),
-            body: 'OptionBlockStatement'
+            body: Option('BlockStatement')
         },
         { keys: ['span', 'key', 'typeAnnotation', 'body'] }
     ),
@@ -38,7 +38,7 @@ module.exports = {
             key: 'PropertyName',
             span: 'Span',
             param: 'Pattern',
-            body: 'OptionBlockStatement'
+            body: Option('BlockStatement')
         },
         { keys: ['span', 'key', 'param', 'body'] }
     ),
@@ -48,7 +48,7 @@ module.exports = {
             params: Vec('Parameter'),
             decorators: Vec('Decorator'),
             span: 'Span',
-            body: 'OptionBlockStatement',
+            body: Option('BlockStatement'),
             typeParameters: Option('TsTypeParameterDeclaration'),
             generator: 'Boolean',
             async: 'Boolean',

@@ -44,7 +44,7 @@ module.exports = {
             key: 'PropertyName',
             span: 'Span',
             params: Vec(Enum(['TsParamProp', 'Parameter'])),
-            body: 'OptionBlockStatement',
+            body: Option('BlockStatement'),
             accessibility: Option('Accessibility'), // TODO Needs tests
             isOptional: 'Boolean' // TODO Needs tests
         },
@@ -150,7 +150,7 @@ module.exports = {
             params: Vec('Parameter'),
             decorators: Vec('Decorator'),
             span: 'Span',
-            body: 'OptionBlockStatement',
+            body: Option('BlockStatement'),
             typeParameters: Option('TsTypeParamDeclaration'),
             generator: 'Boolean',
             async: 'Boolean',

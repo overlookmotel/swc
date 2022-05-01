@@ -517,14 +517,6 @@ function finalizeBlockStatement(storePos32) {
     finalizeVec(scratchUint32[storePos32 + 1]);
 }
 
-function serializeOptionBlockStatement(value) {
-    return serializeOption(value, serializeBlockStatement);
-}
-
-function finalizeOptionBlockStatement(storePos) {
-    return finalizeOption(storePos, finalizeBlockStatement, 20, 4);
-}
-
 function serializeEmptyStatement(node) {
     const storePos32 = allocScratch(8) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
@@ -2969,12 +2961,68 @@ function finalizeSpan(storePos32) {
     pos += 12;
 }
 
-function serializeOptionJsWord(value) {
-    return serializeOption(value, serializeJsWord);
+function serializeVecModuleDeclarationOrStatement(values) {
+    return serializeVec(values, serializeModuleDeclarationOrStatement, finalizeModuleDeclarationOrStatement, 156, 4);
 }
 
-function finalizeOptionJsWord(storePos) {
-    return finalizeOption(storePos, finalizeJsWord, 8, 4);
+function serializeModuleDeclarationOrStatement(node) {
+    const storePos = allocScratch(8);
+    switch (node.type) {
+        case 'ImportDeclaration':
+        case 'ExportDeclaration':
+        case 'ExportNamedDeclaration':
+        case 'ExportDefaultDeclaration':
+        case 'ExportDefaultExpression':
+        case 'ExportAllDeclaration':
+        case 'TsImportEqualsDeclaration':
+        case 'TsExportAssignment':
+        case 'TsNamespaceExportDeclaration':
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
+            break;
+        case 'BlockStatement':
+        case 'EmptyStatement':
+        case 'DebuggerStatement':
+        case 'WithStatement':
+        case 'ReturnStatement':
+        case 'LabeledStatement':
+        case 'BreakStatement':
+        case 'ContinueStatement':
+        case 'IfStatement':
+        case 'SwitchStatement':
+        case 'ThrowStatement':
+        case 'TryStatement':
+        case 'WhileStatement':
+        case 'DoWhileStatement':
+        case 'ForStatement':
+        case 'ForInStatement':
+        case 'ForOfStatement':
+        case 'ClassDeclaration':
+        case 'FunctionDeclaration':
+        case 'VariableDeclaration':
+        case 'TsInterfaceDeclaration':
+        case 'TsTypeAliasDeclaration':
+        case 'TsEnumDeclaration':
+        case 'TsModuleDeclaration':
+        case 'ExpressionStatement':
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
+            break;
+        default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
+    }
+    return storePos;
+}
+
+function finalizeModuleDeclarationOrStatement(storePos) {
+    switch (scratchBuff[storePos]) {
+        case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeModuleDeclaration, 4, 156); break;
+        case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeStatement, 4, 156); break;
+        default: throw new Error('Unexpected enum option ID for ModuleDeclarationOrStatement');
+    }
+}
+
+function serializeVecImportSpecifier(values) {
+    return serializeVec(values, serializeImportSpecifier, finalizeImportSpecifier, 84, 4);
 }
 
 function serializeOptionModuleExportName(value) {
@@ -2985,16 +3033,61 @@ function finalizeOptionModuleExportName(storePos) {
     return finalizeOption(storePos, finalizeModuleExportName, 36, 4);
 }
 
-function serializeVecImportSpecifier(values) {
-    return serializeVec(values, serializeImportSpecifier, finalizeImportSpecifier, 84, 4);
+function serializeOptionJsWord(value) {
+    return serializeOption(value, serializeJsWord);
 }
 
-function serializeOptionSpan(value) {
-    return serializeOption(value, serializeSpan);
+function finalizeOptionJsWord(storePos) {
+    return finalizeOption(storePos, finalizeJsWord, 8, 4);
 }
 
-function finalizeOptionSpan(storePos) {
-    return finalizeOption(storePos, finalizeSpan, 12, 4);
+function serializeOptionObjectExpression(value) {
+    return serializeOption(value, serializeObjectExpression);
+}
+
+function finalizeOptionObjectExpression(storePos) {
+    return finalizeOption(storePos, finalizeObjectExpression, 20, 4);
+}
+
+function serializeVecSpreadElementOrBoxObjectProperty(values) {
+    return serializeVec(values, serializeSpreadElementOrBoxObjectProperty, finalizeSpreadElementOrBoxObjectProperty, 20, 4);
+}
+
+function serializeSpreadElementOrBoxObjectProperty(node) {
+    const storePos = allocScratch(8);
+    switch (node.type) {
+        case 'SpreadElement':
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeSpreadElement(node));
+            break;
+        case 'Identifier':
+        case 'KeyValueProperty':
+        case 'AssignmentProperty':
+        case 'GetterProperty':
+        case 'SetterProperty':
+        case 'MethodProperty':
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
+            break;
+        default: throw new Error('Unexpected enum option type for SpreadElementOrBoxObjectProperty');
+    }
+    return storePos;
+}
+
+function finalizeSpreadElementOrBoxObjectProperty(storePos) {
+    switch (scratchBuff[storePos]) {
+        case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeSpreadElement, 4, 20); break;
+        case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 20); break;
+        default: throw new Error('Unexpected enum option ID for SpreadElementOrBoxObjectProperty');
+    }
+}
+
+function serializeBoxExpression(value) {
+    return serializeBox(value, serializeExpression, finalizeExpression, 136, 8);
+}
+
+function serializeVecOptionExpressionOrSpread(values) {
+    return serializeVec(values, serializeOptionExpressionOrSpread, finalizeOptionExpressionOrSpread, 24, 4);
 }
 
 function serializeOptionExpressionOrSpread(value) {
@@ -3005,8 +3098,12 @@ function finalizeOptionExpressionOrSpread(storePos) {
     return finalizeOption(storePos, finalizeExpressionOrSpread, 20, 4);
 }
 
-function serializeVecOptionExpressionOrSpread(values) {
-    return serializeVec(values, serializeOptionExpressionOrSpread, finalizeOptionExpressionOrSpread, 24, 4);
+function serializeOptionSpan(value) {
+    return serializeOption(value, serializeSpan);
+}
+
+function finalizeOptionSpan(storePos) {
+    return finalizeOption(storePos, finalizeSpan, 12, 4);
 }
 
 function serializeOptionIdentifier(value) {
@@ -3017,12 +3114,12 @@ function finalizeOptionIdentifier(storePos) {
     return finalizeOption(storePos, finalizeIdentifier, 24, 4);
 }
 
-function serializeVecDecorator(values) {
-    return serializeVec(values, serializeDecorator, finalizeDecorator, 16, 4);
+function serializeVecParameter(values) {
+    return serializeVec(values, serializeParameter, finalizeParameter, 72, 4);
 }
 
-function serializeBoxTsType(value) {
-    return serializeBox(value, serializeTsType, finalizeTsType, 12, 4);
+function serializeVecDecorator(values) {
+    return serializeVec(values, serializeDecorator, finalizeDecorator, 16, 4);
 }
 
 function serializeOptionTsTypeAnnotation(value) {
@@ -3033,6 +3130,14 @@ function finalizeOptionTsTypeAnnotation(storePos) {
     return finalizeOption(storePos, finalizeTsTypeAnnotation, 16, 4);
 }
 
+function serializeBoxTsType(value) {
+    return serializeBox(value, serializeTsType, finalizeTsType, 12, 4);
+}
+
+function serializeVecOptionPattern(values) {
+    return serializeVec(values, serializeOptionPattern, finalizeOptionPattern, 56, 4);
+}
+
 function serializeOptionPattern(value) {
     return serializeOption(value, serializePattern);
 }
@@ -3041,12 +3146,12 @@ function finalizeOptionPattern(storePos) {
     return finalizeOption(storePos, finalizePattern, 52, 4);
 }
 
-function serializeVecOptionPattern(values) {
-    return serializeVec(values, serializeOptionPattern, finalizeOptionPattern, 56, 4);
-}
-
 function serializeBoxPattern(value) {
     return serializeBox(value, serializePattern, finalizePattern, 52, 4);
+}
+
+function serializeVecObjectPatternProperty(values) {
+    return serializeVec(values, serializeObjectPatternProperty, finalizeObjectPatternProperty, 56, 8);
 }
 
 function serializeOptionBoxExpression(value) {
@@ -3057,12 +3162,16 @@ function finalizeOptionBoxExpression(storePos) {
     return finalizeOption(storePos, finalizeBox, 4, 4);
 }
 
-function serializeVecObjectPatternProperty(values) {
-    return serializeVec(values, serializeObjectPatternProperty, finalizeObjectPatternProperty, 56, 8);
+function serializeOptionBlockStatement(value) {
+    return serializeOption(value, serializeBlockStatement);
 }
 
-function serializeVecParameter(values) {
-    return serializeVec(values, serializeParameter, finalizeParameter, 72, 4);
+function finalizeOptionBlockStatement(storePos) {
+    return finalizeOption(storePos, finalizeBlockStatement, 20, 4);
+}
+
+function serializeVecStatement(values) {
+    return serializeVec(values, serializeStatement, finalizeStatement, 152, 4);
 }
 
 function serializeBoxStatement(value) {
@@ -3089,8 +3198,12 @@ function finalizeOptionCatchClause(storePos) {
     return finalizeOption(storePos, finalizeCatchClause, 88, 4);
 }
 
-function serializeVecVariableDeclarator(values) {
-    return serializeVec(values, serializeVariableDeclarator, finalizeVariableDeclarator, 76, 4);
+function serializeOptionVariableDeclarationOrBoxExpression(value) {
+    return serializeOption(value, serializeVariableDeclarationOrBoxExpression);
+}
+
+function finalizeOptionVariableDeclarationOrBoxExpression(storePos) {
+    return finalizeOption(storePos, finalizeVariableDeclarationOrBoxExpression, 28, 4);
 }
 
 function serializeVariableDeclarationOrBoxExpression(node) {
@@ -3159,12 +3272,8 @@ function finalizeVariableDeclarationOrBoxExpression(storePos) {
     }
 }
 
-function serializeOptionVariableDeclarationOrBoxExpression(value) {
-    return serializeOption(value, serializeVariableDeclarationOrBoxExpression);
-}
-
-function finalizeOptionVariableDeclarationOrBoxExpression(storePos) {
-    return finalizeOption(storePos, finalizeVariableDeclarationOrBoxExpression, 28, 4);
+function serializeVecVariableDeclarator(values) {
+    return serializeVec(values, serializeVariableDeclarator, finalizeVariableDeclarator, 76, 4);
 }
 
 function serializeVariableDeclarationOrPattern(node) {
@@ -3237,6 +3346,14 @@ function finalizeVariableDeclarationOrPattern(storePos) {
     }
 }
 
+function serializeVecClassMember(values) {
+    return serializeVec(values, serializeClassMember, finalizeClassMember, 168, 8);
+}
+
+function serializeVecTsParamPropOrParameter(values) {
+    return serializeVec(values, serializeTsParamPropOrParameter, finalizeTsParamPropOrParameter, 76, 4);
+}
+
 function serializeTsParamPropOrParameter(node) {
     const storePos = allocScratch(8);
     switch (node.type) {
@@ -3261,20 +3378,12 @@ function finalizeTsParamPropOrParameter(storePos) {
     }
 }
 
-function serializeVecTsParamPropOrParameter(values) {
-    return serializeVec(values, serializeTsParamPropOrParameter, finalizeTsParamPropOrParameter, 76, 4);
-}
-
 function serializeOptionAccessibility(value) {
     return serializeOption(value, serializeAccessibility);
 }
 
 function finalizeOptionAccessibility(storePos) {
     return finalizeOption(storePos, finalizeEnumValue, 1, 1);
-}
-
-function serializeVecTsTypeParameter(values) {
-    return serializeVec(values, serializeTsTypeParameter, finalizeTsTypeParameter, 12, 4);
 }
 
 function serializeOptionTsTypeParamDeclaration(value) {
@@ -3285,12 +3394,8 @@ function finalizeOptionTsTypeParamDeclaration(storePos) {
     return finalizeOption(storePos, finalizeTsTypeParamDeclaration, 20, 4);
 }
 
-function serializeVecClassMember(values) {
-    return serializeVec(values, serializeClassMember, finalizeClassMember, 168, 8);
-}
-
-function serializeVecBoxTsType(values) {
-    return serializeVec(values, serializeBoxTsType, finalizeBox, 4, 4);
+function serializeVecTsTypeParameter(values) {
+    return serializeVec(values, serializeTsTypeParameter, finalizeTsTypeParameter, 12, 4);
 }
 
 function serializeOptionTsTypeParameterInstantiation(value) {
@@ -3299,6 +3404,10 @@ function serializeOptionTsTypeParameterInstantiation(value) {
 
 function finalizeOptionTsTypeParameterInstantiation(storePos) {
     return finalizeOption(storePos, finalizeTsTypeParameterInstantiation, 20, 4);
+}
+
+function serializeVecBoxTsType(values) {
+    return serializeVec(values, serializeBoxTsType, finalizeBox, 4, 4);
 }
 
 function serializeVecTsExpressionWithTypeArg(values) {
@@ -3311,10 +3420,6 @@ function serializeOptionTsTypeParameterDeclaration(value) {
 
 function finalizeOptionTsTypeParameterDeclaration(storePos) {
     return finalizeOption(storePos, finalizeTsTypeParameterDeclaration, 20, 4);
-}
-
-function serializeVecStatement(values) {
-    return serializeVec(values, serializeStatement, finalizeStatement, 152, 4);
 }
 
 function serializeIdentifierOrPrivateNameOrComputed(node) {
@@ -3555,53 +3660,8 @@ function finalizeMemberExpressionOrOptionalChainingCall(storePos) {
     }
 }
 
-function serializeBoxExpression(value) {
-    return serializeBox(value, serializeExpression, finalizeExpression, 136, 8);
-}
-
 function serializeBoxObjectProperty(value) {
     return serializeBox(value, serializeObjectProperty, finalizeObjectProperty, 152, 8);
-}
-
-function serializeSpreadElementOrBoxObjectProperty(node) {
-    const storePos = allocScratch(8);
-    switch (node.type) {
-        case 'SpreadElement':
-            scratchBuff[storePos] = 0;
-            writeScratchUint32((storePos >> 2) + 1, serializeSpreadElement(node));
-            break;
-        case 'Identifier':
-        case 'KeyValueProperty':
-        case 'AssignmentProperty':
-        case 'GetterProperty':
-        case 'SetterProperty':
-        case 'MethodProperty':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
-            break;
-        default: throw new Error('Unexpected enum option type for SpreadElementOrBoxObjectProperty');
-    }
-    return storePos;
-}
-
-function finalizeSpreadElementOrBoxObjectProperty(storePos) {
-    switch (scratchBuff[storePos]) {
-        case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeSpreadElement, 4, 20); break;
-        case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeBox, 4, 20); break;
-        default: throw new Error('Unexpected enum option ID for SpreadElementOrBoxObjectProperty');
-    }
-}
-
-function serializeVecSpreadElementOrBoxObjectProperty(values) {
-    return serializeVec(values, serializeSpreadElementOrBoxObjectProperty, finalizeSpreadElementOrBoxObjectProperty, 20, 4);
-}
-
-function serializeOptionObjectExpression(value) {
-    return serializeOption(value, serializeObjectExpression);
-}
-
-function finalizeOptionObjectExpression(storePos) {
-    return finalizeOption(storePos, finalizeObjectExpression, 20, 4);
 }
 
 function serializeVecExportSpecifier(values) {
@@ -3643,66 +3703,6 @@ function finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(sto
         case 2: finalizeEnum(2, scratchUint32[(storePos >> 2) + 1], finalizeTsInterfaceDeclaration, 4, 132); break;
         default: throw new Error('Unexpected enum option ID for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
     }
-}
-
-function serializeModuleDeclarationOrStatement(node) {
-    const storePos = allocScratch(8);
-    switch (node.type) {
-        case 'ImportDeclaration':
-        case 'ExportDeclaration':
-        case 'ExportNamedDeclaration':
-        case 'ExportDefaultDeclaration':
-        case 'ExportDefaultExpression':
-        case 'ExportAllDeclaration':
-        case 'TsImportEqualsDeclaration':
-        case 'TsExportAssignment':
-        case 'TsNamespaceExportDeclaration':
-            scratchBuff[storePos] = 0;
-            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-            break;
-        case 'BlockStatement':
-        case 'EmptyStatement':
-        case 'DebuggerStatement':
-        case 'WithStatement':
-        case 'ReturnStatement':
-        case 'LabeledStatement':
-        case 'BreakStatement':
-        case 'ContinueStatement':
-        case 'IfStatement':
-        case 'SwitchStatement':
-        case 'ThrowStatement':
-        case 'TryStatement':
-        case 'WhileStatement':
-        case 'DoWhileStatement':
-        case 'ForStatement':
-        case 'ForInStatement':
-        case 'ForOfStatement':
-        case 'ClassDeclaration':
-        case 'FunctionDeclaration':
-        case 'VariableDeclaration':
-        case 'TsInterfaceDeclaration':
-        case 'TsTypeAliasDeclaration':
-        case 'TsEnumDeclaration':
-        case 'TsModuleDeclaration':
-        case 'ExpressionStatement':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-            break;
-        default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-    }
-    return storePos;
-}
-
-function finalizeModuleDeclarationOrStatement(storePos) {
-    switch (scratchBuff[storePos]) {
-        case 0: finalizeEnum(0, scratchUint32[(storePos >> 2) + 1], finalizeModuleDeclaration, 4, 156); break;
-        case 1: finalizeEnum(1, scratchUint32[(storePos >> 2) + 1], finalizeStatement, 4, 156); break;
-        default: throw new Error('Unexpected enum option ID for ModuleDeclarationOrStatement');
-    }
-}
-
-function serializeVecModuleDeclarationOrStatement(values) {
-    return serializeVec(values, serializeModuleDeclarationOrStatement, finalizeModuleDeclarationOrStatement, 156, 4);
 }
 
 function serializeOption(value, serialize) {

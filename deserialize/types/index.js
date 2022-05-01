@@ -5,7 +5,7 @@ const assert = require("assert");
 
 // Exports
 const types = {};
-module.exports = { types, initType, getTypeName };
+module.exports = { types, getType };
 
 // Imports
 const programTypes = require('./program.js'),
@@ -40,40 +40,53 @@ Object.assign(
     primitiveTypes
 );
 
+// Set `name` for all types defined as properties of `type`
 for (const [name, type] of Object.entries(types)) {
     type.name = name;
 }
 
-/**
- * Initialize type.
- * If string provided, looks up type object by name in `types`.
- * @param {string|Object} type - Type name or type object
- * @returns {Object} - Type object
- */
-function initType(type) {
-    if (typeof type === 'string') {
-        assert(types[type], `Type not found: ${type}`);
-        type = types[type];
-    }
+// Link types to each other
+const unnamedTypes = new Set();
+getType('Program');
 
-    if (!type.isInitialized) {
-        type.isInitialized = true;
-        getTypeName(type);
-        type.init();
-        assert(typeof type.name === 'string', 'No type name');
-        types[type.name] = type;
+// Get names for unnamed types and add to `types`
+for (const type of unnamedTypes) {
+    const typeName = type.initName();
+    if (types[typeName]) {
+        assert(types[typeName] === type, `Clashing type definitions for type name ${typeName}`);
+    } else {
+        types[typeName] = type;
     }
+}
 
-    return type;
+// Init `length` and `align` for all types
+for (const type of Object.values(types)) {
+    type.initLengthAndAlign();
 }
 
 /**
- * Get name of type. Calls `type.getName()` to get name.
- * @param {string|Object} type - Type name or type object
- * @returns {string} - Type name
+ * Get type object.
+ * @param {Object|string} typeOrTypeName - Type object or type name
+ * @returns {Object} - Type object
  */
-function getTypeName(type) {
-    if (typeof type === 'string') return type;
-    if (!type.name) type.name = type.getName();
-    return type.name;
+function getType(typeOrTypeName) {
+    let type;
+    if (typeOrTypeName && typeof typeOrTypeName === 'object') {
+        type = typeOrTypeName;
+        if (!type.name) unnamedTypes.add(type);
+    } else {
+        assert(
+            typeof typeOrTypeName === 'string',
+            'getType() must be called with type object or type name'
+        );
+        type = types[typeOrTypeName];
+        assert(type, `${typeOrTypeName} type not found`);
+    }
+
+    if (!type.isLinked) {
+        type.isLinked = true;
+        type.link();
+    }
+
+    return type;
 }

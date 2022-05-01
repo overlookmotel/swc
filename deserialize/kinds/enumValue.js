@@ -21,24 +21,24 @@ const enumValues = new Map();
 class EnumValue extends Kind {
     length = 1;
     align = 1;
-    enumOptions = null;
+    values = null;
 
-    constructor(enumOptions, options) {
-        const enumValue = enumValues.get(JSON.stringify(enumOptions));
+    constructor(values, options) {
+        const enumValue = enumValues.get(JSON.stringify(values));
         if (enumValue) return enumValue;
 
-        assert(enumOptions.length < 256);
+        assert(values.length < 256);
 
         super();
         Object.assign(this, options);
 
-        this.enumOptions = enumOptions;
+        this.values = values;
 
-        enumValues.set(JSON.stringify(enumOptions), this);
+        enumValues.set(JSON.stringify(values), this);
     }
 
     getName() {
-        return this.enumOptions.join('Or');
+        return this.values.join('Or');
     }
 
     init() {
@@ -47,31 +47,31 @@ class EnumValue extends Kind {
     }
 
     generateDeserializer() {
-        const enumOptionCodes = this.enumOptions.map((value, index) => (
+        const caseCodes = this.values.map((value, index) => (
             `case ${index}: return ${typeof value === 'string' ? `'${value}'` : value};`
         ));
 
         return `function deserialize${this.name}(pos) {
             switch (buff[pos]) {
-                ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum value for ${this.name}');
+                ${caseCodes.join(`\n${' '.repeat(16)}`)}
+                default: throw new Error('Unexpected enum value ID for ${this.name}');
             }
         }`;
     }
 
     /**
      * Generate serializer function code for type.
-     * Serializer returns ID of enum value as Uint8.
+     * Serializer returns ID of value type as Uint8.
      * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
-        const enumOptionCodes = this.enumOptions.map((value, index) => (
+        const caseCodes = this.values.map((value, index) => (
             `case ${typeof value === 'string' ? `'${value}'` : value}: return ${index};`
         ));
 
         return `function serialize${this.name}(value) {
             switch (value) {
-                ${enumOptionCodes.join(`\n${' '.repeat(16)}`)}
+                ${caseCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum value for ${this.name}');
             }
         }`;

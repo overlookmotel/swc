@@ -21,33 +21,33 @@ const boxes = new Map();
 class Box extends Kind {
     length = 4;
     align = 4;
-    childType = null;
+    valueType = null;
 
-    constructor(childType, options) {
-        const box = boxes.get(childType);
+    constructor(valueType, options) {
+        const box = boxes.get(valueType);
         if (box) return box;
 
         super();
         Object.assign(this, options);
 
-        this.childType = childType;
+        this.valueType = valueType;
 
-        boxes.set(childType, this);
+        boxes.set(valueType, this);
     }
 
     getName() {
-        return `Box${getTypeName(this.childType)}`;
+        return `Box${getTypeName(this.valueType)}`;
     }
 
     init() {
-        this.childType = initType(this.childType);
+        this.valueType = initType(this.valueType);
         this.setLength(4);
         this.setAlign(4);
     }
 
     generateDeserializer() {
         return `function deserialize${this.name}(pos) {
-            return deserializeBox(pos, deserialize${this.childType.name});
+            return deserializeBox(pos, deserialize${this.valueType.name});
         }`;
     }
 
@@ -58,10 +58,10 @@ class Box extends Kind {
      */
     generateSerializer() {
         const {
-            serializerName, finalizerName, length: childLength, align: childAlign
-        } = this.childType;
+            serializerName, finalizerName, length: valueLength, align: valueAlign
+        } = this.valueType;
         return `function serialize${this.name}(value) {
-            return serializeBox(value, ${serializerName}, ${finalizerName}, ${childLength}, ${childAlign});
+            return serializeBox(value, ${serializerName}, ${finalizerName}, ${valueLength}, ${valueAlign});
         }`;
     }
 

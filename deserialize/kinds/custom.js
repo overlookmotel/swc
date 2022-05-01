@@ -1,7 +1,7 @@
 'use strict';
 
 // Modules
-const assert = require("assert");
+const assert = require('assert');
 
 // Imports
 const Kind = require('./kind.js'),

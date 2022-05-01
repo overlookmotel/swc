@@ -1,5 +1,9 @@
 'use strict';
 
+// Modules
+const { readFileSync } = require('fs'),
+    pathJoin = require('path').join;
+
 // Fill buffers with zeros to allow comparison of buffers
 // without failure due to random uninitialized bytes
 const { allocUnsafeSlow } = Buffer;
@@ -1511,6 +1515,17 @@ describe('Parses and prints correctly', () => {
             '/abc/, /def/, /ghi/'
         ]);
     });
+
+    describe('example files', () => {
+        for (const filename of [
+            'react/cjs/react.production.min.js',
+            'react/cjs/react.development.js',
+            'react/cjs/react-jsx-runtime.production.min.js'
+        ]) {
+            const code = readFileSync(pathJoin(__dirname, '../node_modules', filename), 'utf8');
+            itParsesAndPrintsOne(filename, code, { isModule: false });
+        }
+    });
 });
 
 // Utils
@@ -1531,31 +1546,35 @@ function itParsesAndPrintsImpl(describe, name, options, codes) {
     describe(name, () => {
         for (const code of codes) {
             let testName = code.replace(/\s+/g, ' ');
-            if (options) testName += ` (${JSON.stringify(options).replace(/"/g, '')})`;
-            it(testName, () => {
-                const buff = parseSyncToBuffer(code, options);
-                const ast = deserialize(buff);
-
-                // Test `serialize()` produces identical buffer to what `parseSyncToBuffer()` produced
-                serialize.resetBuffers();
-                const buff2 = serialize(ast);
-                expect(buffToString(buff2)).toEqual(buffToString(buff));
-
-                // Test `printSyncFromBuffer()` produces same output as `printSync()`
-                const astOld = parseSync(code, options);
-                const printedOld = printSync(astOld, { sourceMaps: true });
-                const printed = printSyncFromBuffer(buff2, { sourceMaps: true });
-                expect(printed).toStrictEqual(printedOld);
-
-                // Test ASTs are identical.
-                // Have to test this last as need to conform spans to compare ASTs.
-                // This mutates ASTs and would result in different buffer output
-                // reflecting those changes.
-                expect(conformSpans(ast)).toStrictEqual(conformSpans(astOld));
-                expect(JSON.stringify(ast)).toBe(JSON.stringify(astOld));
-            });
+            itParsesAndPrintsOne(testName, code, options);
         }
     })
+}
+
+function itParsesAndPrintsOne(testName, code, options) {
+    if (options) testName += ` (${JSON.stringify(options).replace(/"/g, '')})`;
+    it(testName, () => {
+        const buff = parseSyncToBuffer(code, options);
+        const ast = deserialize(buff);
+
+        // Test `serialize()` produces identical buffer to what `parseSyncToBuffer()` produced
+        serialize.resetBuffers();
+        const buff2 = serialize(ast);
+        expect(buffToString(buff2)).toEqual(buffToString(buff));
+
+        // Test `printSyncFromBuffer()` produces same output as `printSync()`
+        const astOld = parseSync(code, options);
+        const printedOld = printSync(astOld, { sourceMaps: true });
+        const printed = printSyncFromBuffer(buff2, { sourceMaps: true });
+        expect(printed).toStrictEqual(printedOld);
+
+        // Test ASTs are identical.
+        // Have to test this last as need to conform spans to compare ASTs.
+        // This mutates ASTs and would result in different buffer output
+        // reflecting those changes.
+        expect(conformSpans(ast)).toStrictEqual(conformSpans(astOld));
+        expect(JSON.stringify(ast)).toBe(JSON.stringify(astOld));
+    });
 }
 
 function buffToString(buff) {

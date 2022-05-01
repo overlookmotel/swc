@@ -1,7 +1,7 @@
 'use strict';
 
 // Imports
-const { Node, Enum, EnumValue, Option, Box, Vec } = require('../kinds/index.js'),
+const { Node, Enum, EnumValue, Option, Box, Vec, Custom } = require('../kinds/index.js'),
     { initType } = require('./index.js');
 
 // Exports
@@ -52,6 +52,12 @@ module.exports = {
         '??'
     ]),
 
+    // Assignment expressions need special treatment as left-hand side is treated differently
+    // depending on operator.
+    // When operator is `=`, left-hand side is a `Pattern`, and nodes with `Identifier` type in JS
+    // are `BindingIdentifier` Rust type.
+    // With any other operator, left-hand side is an `Expression`, and nodes with `Identifier`
+    // type in JS are `Identifer` Rust type.
     AssignmentExpression: Node(
         {
             left: 'AssignmentLeft',
@@ -76,22 +82,22 @@ module.exports = {
         }
     ),
     AssignmentLeft: Enum([Box('Expression'), Box('Pattern')]),
-    // TODO This can be made more efficient. The Box(Expression) arm is never visited.
-    AssignmentLeftEquals: Enum(
-        [Box('Expression'), Box('Pattern')],
-        {
-            order: [1, 0], // Interpret nodes as patterns over expressions
-            generateDeserializer() {
-                // No deserializer needed. Only used in serializer.
-                return null;
-            },
-            generateSerializer() {
-                // No finalizer needed. `finalizeAssignmentLeft()` is used.
-                return Enum.prototype.generateSerializer.call(this)
-                    .replace(/\s+function finalizeAssignmentLeftEquals\([\s\S]+$/, '');
-            }
-        }
-    ),
+    AssignmentLeftEquals: Custom({
+        // Use `deserializAssignmentLeft` as deserializer for type
+        deserialize: false,
+        // Shortened serializer as only patterns are valid on left side of `=` assignment expression
+        serialize(node) {
+            const storePos = allocScratch(8);
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
+            return storePos;
+        },
+        // Use `finalizeAssignmentLeft` as finalizer for type
+        finalize: false,
+        dependencies: [Box('Expression'), Box('Pattern')],
+        length: 8,
+        align: 4
+    }),
     AssignmentOperator: EnumValue([
         '=', '+=', '-=', '*=',
         '/=', '%=', '<<=', '>>=',

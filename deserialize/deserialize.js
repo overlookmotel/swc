@@ -1489,13 +1489,30 @@ function deserializeAccessibility(pos) {
 
 function deserializeJsWord(pos) {
     let len = buff[pos + 7];
+    if (len === 0) {
+        return '';
+    }
+    if (len === 1) {
+        return String.fromCharCode(buff[pos]);
+    }
     if (len > 7) {
         const pos32 = pos >> 2;
         len = uint32[pos32];
         pos += int32[pos32 + 1];
+        if (len > 25) return utf8Slice.call(buff, pos, pos + len);
     }
-    return buff.utf8Slice(pos, pos + len);
+    const arr = new Array(len),
+        end = pos + len;
+    let arrPos = 0;
+    do {
+        const c = buff[pos];
+        if (c >= 128) return utf8Slice.call(buff, pos - arrPos, end);
+        arr[arrPos++] = c;
+    } while (++pos < end);
+    return String.fromCharCode(...arr);
 }
+
+const { utf8Slice } = Buffer.prototype;
 
 function deserializeBoolean(pos) {
     switch (buff[pos]) {

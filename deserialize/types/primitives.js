@@ -5,30 +5,84 @@ const { EnumValue, Custom } = require('../kinds/index.js');
 
 // Exports
 
+const { utf8Slice } = Buffer.prototype;
+
 module.exports = {
     JsWord: Custom({
+        /**
+         * Deserialize string.
+         * Strings are serialized by RYKV as follows:
+         *   - 8 bytes length, aligned on 4.
+         *   - If length <= 7, byte 7 contains length, bytes 0-6 contain the string.
+         *   - Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string (i32).
+         *
+         * TODO I don't think this can be quite correct.
+         * How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
+         *
+         * @param {number} pos - Position in buffer
+         * @returns {string} - Decoded string
+         */
         deserialize(pos) {
-            // 8 bytes. Last byte is length.
-            // If length <= 7, bytes 0-6 contain the word.
-            // Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string.
-            // TODO I don't think this can be correct.
-            // How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
             let len = buff[pos + 7];
+
+            // Fast path for empty string
+            if (len === 0) {
+                /* DEBUG_ONLY_START */
+                debugBuff('JsWord content', pos, len);
+                /* DEBUG_ONLY_END */
+
+                return '';
+            }
+
+            // Fast path for single-char strings (common in minified code)
+            if (len === 1) {
+                /* DEBUG_ONLY_START */
+                debugBuff('JsWord content', pos, len);
+                /* DEBUG_ONLY_END */
+
+                return String.fromCharCode(buff[pos]);
+            }
+
             if (len > 7) {
                 const pos32 = pos >> 2;
                 len = uint32[pos32];
                 // Pointer is relative to byte containing length, not byte containing pointer
                 pos += int32[pos32 + 1];
-            }
 
+                /* DEBUG_ONLY_START */
+                debugBuff('JsWord content', pos, len);
+                /* DEBUG_ONLY_END */
+
+                // For longer strings, native method is faster.
+                // Determined that the tipping point is 25 chars on a MacBook Pro 14-inch 2021 M1 Pro.
+                // Tipping point might be a bit different on Intel etc processors as M1 seems
+                // to run JS faster, but it's not going to make a significant difference.
+                // `Buffer.prototype.utf8Slice` is undocumented but used internally by
+                // `Buffer.prototype.toString`. `.utf8Slice` is faster as skips bounds-checking.
+                // Next line is equivalent to `buff.toString('utf8', pos, pos + len)`.
+                if (len > 25) return utf8Slice.call(buff, pos, pos + len);
+            }
             /* DEBUG_ONLY_START */
-            debugBuff('JsWord content', pos, len);
+            else {
+                debugBuff('JsWord content', pos, len);
+            }
             /* DEBUG_ONLY_END */
 
-            // `Buffer.prototype.utf8Slice` is undocumented but used internally by
-            // `Buffer.prototype.toString`. `.utf8Slice` is faster as skips bounds-checking.
-            // This line is equivalent to `buff.toString('utf8', pos, pos + len)`.
-            return buff.utf8Slice(pos, pos + len);
+            // String shorter than 26 chars - JS implementation is faster than call into C++.
+            // Bail out and use `buff.utf8Slice()` if unicode character found (uncommon case).
+            const arr = new Array(len),
+                end = pos + len;
+            let arrPos = 0;
+            do {
+                const c = buff[pos];
+                if (c >= 128) return utf8Slice.call(buff, pos - arrPos, end);
+                arr[arrPos++] = c;
+            } while (++pos < end);
+            return String.fromCharCode(...arr);
+        },
+        generateDeserializer() {
+            return Custom.prototype.generateDeserializer.call(this)
+                + `\n\n${' '.repeat(8)}const { utf8Slice } = Buffer.prototype;`;
         },
         serialize(str) {
             // Handle empty string

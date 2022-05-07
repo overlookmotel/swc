@@ -99,10 +99,11 @@ module.exports = {
                 debugAst('finalize JsWord content');
                 /* DEBUG_ONLY_END */
 
-                // Allocate 4 bytes for every character (in case of Unicode chars).
+                // Allocate 3 bytes for every character (in case of Unicode chars).
+                // https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder/encodeInto#buffer_sizing
                 // Does not matter if over-allocate, as next allocation will start from end pos
                 // of actual string, regardless of how much space has been pre-allocated.
-                alloc(strLen * 4);
+                alloc(strLen * 3);
 
                 // `Buffer.prototype.utf8Write` is undocumented but used internally by
                 // `Buffer.prototype.write`. `.utf8Write` is faster as skips bounds-checking.
@@ -123,9 +124,9 @@ module.exports = {
             // So write to scratch buffer on assumption UTF8-encoded string is 7 chars or less.
             // If it turns out longer than 7 chars, copy to output buffer in 2nd step.
 
-            // Allocate 4 bytes scratch for every character (in case of Unicode chars)
+            // Allocate 3 bytes scratch for every character (in case of Unicode chars)
             // + 4 bytes for length. Ensure allocate scratch in multiple of 8 bytes.
-            const storePos = allocScratchAligned(4 + strLen * 4),
+            const storePos = allocScratchAligned(4 + strLen * 3),
                 storePos32 = storePos >> 2;
             const len = scratchBuff.utf8Write(str, storePos + 4);
             scratchUint32[storePos32] = len;

@@ -88,6 +88,21 @@ impl Serialized {
             })
     }
 
+    pub fn serialize_to_aligned_vec<W>(t: &W) -> Result<rkyv::AlignedVec, Error>
+    where
+        W: rkyv::Serialize<rkyv::ser::serializers::AllocSerializer<512>>,
+    {
+        rkyv::to_bytes::<_, 512>(t).map_err(|err| match err {
+            rkyv::ser::serializers::CompositeSerializerError::SerializerError(e) => e.into(),
+            rkyv::ser::serializers::CompositeSerializerError::ScratchSpaceError(e) => {
+                Error::msg("AllocScratchError")
+            }
+            rkyv::ser::serializers::CompositeSerializerError::SharedError(e) => {
+                Error::msg("SharedSerializeMapError")
+            }
+        })
+    }
+
     pub fn deserialize<W>(bytes: &Serialized) -> Result<W, Error>
     where
         W: rkyv::Archive,

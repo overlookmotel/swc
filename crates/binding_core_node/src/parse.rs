@@ -1,4 +1,5 @@
 use std::{
+    mem,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -272,7 +273,7 @@ pub fn parse_sync_to_buffer_no_return(
     src: String,
     opts: Buffer,
     filename: Option<String>,
-) -> napi::Result<String> {
+) -> napi::Result<Buffer> {
     binding_commons::init_default_trace_subscriber();
     let c = get_compiler();
 
@@ -305,11 +306,21 @@ pub fn parse_sync_to_buffer_no_return(
     })
     .convert_err()?;
 
-    let serialized = Serialized::serialize(&program).convert_err()?;
-    let slice = serialized.as_ref().as_slice();
-    let _buffer = Buffer::from(slice);
+    let mut aligned_vec = Serialized::serialize_to_aligned_vec(&program).convert_err()?;
+    let ptr: *mut u8 = aligned_vec.as_mut_ptr();
+    let len: usize = aligned_vec.len();
+    let capacity: usize = aligned_vec.capacity();
+    mem::forget(aligned_vec);
+    let vec: Vec<u8> = unsafe { Vec::<u8>::from_raw_parts(ptr, len, capacity) };
+    let buffer = Buffer::from(vec);
+    Ok(buffer)
 
-    Ok("".to_string())
+    /*
+    let aligned_vec = Serialized::serialize_to_aligned_vec(&program).convert_err()?;
+    let vec: Vec<u8> = aligned_vec.into_vec();
+    let buffer = Buffer::from(vec);
+    Ok(buffer)
+    */
 }
 
 #[napi]

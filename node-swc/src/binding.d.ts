@@ -10,7 +10,7 @@ export function parse(src: string, options: Buffer, filename?: string | undefine
 export function parseSync(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncToBuffer(src: string, opts: Buffer, filename?: string | undefined | null): Buffer
-export function parseSyncToBufferNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
+export function parseSyncToBufferNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): Buffer
 export function parseSyncToTypedArray(src: string, opts: Buffer, filename?: string | undefined | null): Uint8Array
 export function parseSyncToTypedArrayNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncRkyvVecNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
@@ -32,7 +32,7 @@ export function initCustomTraceSubscriber(traceOutFilePath?: string | undefined 
 /** Hack for `Type Generation` */
 export interface TransformOutput {
   code: string
-  map?: string | undefined | null
+  map?: string
 }
 export type JsCompiler = Compiler
 export class Compiler {

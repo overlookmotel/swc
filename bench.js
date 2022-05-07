@@ -1,5 +1,7 @@
 'use strict';
 
+const { parse } = require('path');
+
 const b = require('benny'),
 	{ readFile } = require('fs/promises'),
 	pathJoin = require('path').join,
@@ -106,35 +108,39 @@ async function run() {
 			parseSyncViaBuffer(code);
 		}),
 
-		/*
 		b.add('SWC parse with buffer serialization but no deserialization', () => {
 			parseSyncToBuffer(code);
 		}),
-	
+
+		b.add('SWC parse with buffer serialization but no deserialization faster', () => {
+			parseSyncToBufferNoReturn(code);
+		}),
+
+		/*
 		b.add('SWC parse with buffer serialization but buffer not returned to JS', () => {
 			parseSyncToBufferNoReturn(code);
 		}),
-	
+
 		b.add('SWC parse with typed array serialization but no deserialization', () => {
 			parseSyncToTypedArray(code);
 		}),
-	
+
 		b.add('SWC parse with typed array serialization but buffer not returned to JS', () => {
 			parseSyncToTypedArrayNoReturn(code);
 		}),
-	
+
 		b.add('SWC parse with RKYV serialization and vec but not returned to JS', () => {
 			parseSyncRkyvVecNoReturn(code);
 		}),
-	
+
 		b.add('SWC parse with RKYV serialization and slice but not returned to JS', () => {
 			parseSyncRkyvSliceNoReturn(code);
 		}),
-	
+		*/
+
 		b.add('SWC parse with RKYV serialization but not returned to JS', () => {
 			parseSyncRkyvNoReturn(code);
 		}),
-		*/
 
 		b.add('SWC parse with no serialization or deserialization', () => {
 			parseSyncNoSerialization(code);
@@ -150,16 +156,17 @@ async function run() {
 		}),
 		*/
 
+		/*
 		b.add('Babel parse', () => {
 			babelParse(code);
 		}),
 
-		/*
 		b.add('Acorn parse', () => {
 			acornParse(code, { ecmaVersion: 2022 });
 		}),
 		*/
 
+		/*
 		// Print
 		b.add('SWC print', () => {
 			printSync(ast, printOptions);
@@ -183,6 +190,7 @@ async function run() {
 			const ast = parseSyncViaBuffer(code, parseOptions);
 			printSyncViaBuffer(ast, printOptions);
 		}),
+		*/
 
 		/*
 		b.add('SWC parse + print with buffer passthrough', () => {
@@ -191,6 +199,7 @@ async function run() {
 		}),
 		*/
 
+		/*
 		b.add('Babel parse + print', () => {
 			const ast = babelParse(code);
 			babelGenerate(ast, { sourceMaps, sourceFileName: 'foo.js' });
@@ -204,6 +213,7 @@ async function run() {
 		b.add('SWC transform with buffer serialization/deserialization', () => {
 			transformSyncViaBuffer(code, transformOptions);
 		}),
+		*/
 
 		/*
 		b.add('SWC transform with buffer passthrough on JS side', () => {
@@ -211,11 +221,13 @@ async function run() {
 		}),
 		*/
 
+		/*
 		b.add('SWC transform without JS roundtrip', () => {
 			const optionsWithoutPlugin = { ...transformOptions };
 			delete optionsWithoutPlugin.plugin;
 			transformSync(code, optionsWithoutPlugin);
 		}),
+		*/
 
 		b.cycle(),
 		b.complete(),

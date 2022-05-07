@@ -2882,7 +2882,7 @@ function serializeJsWord(str) {
         return storePos;
     }
     if (strLen > 7) {
-        alloc(strLen * 4);
+        alloc(strLen * 3);
         const len = buff.utf8Write(str, pos);
         const storePos = allocScratch(8),
             storePos32 = storePos >> 2;
@@ -2891,7 +2891,7 @@ function serializeJsWord(str) {
         pos += len;
         return storePos;
     }
-    const storePos = allocScratchAligned(4 + strLen * 4),
+    const storePos = allocScratchAligned(4 + strLen * 3),
         storePos32 = storePos >> 2;
     const len = scratchBuff.utf8Write(str, storePos + 4);
     scratchUint32[storePos32] = len;

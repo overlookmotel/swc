@@ -132,6 +132,4 @@ function finalizeOption(storePos, finalize, valueLength, offset) {
     };
 }
 
-
-
 module.exports = { Option, deserializeOption, serializeOption, finalizeOption };

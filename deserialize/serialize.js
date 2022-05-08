@@ -2538,7 +2538,7 @@ function serializeNumericLiteral(node) {
     const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeNumber(node.value));
     writeScratchUint32(storePos32 + 1, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.raw));
+    writeScratchUint32(storePos32 + 2, serializeOptionAsciiJsWord(node.raw));
     return storePos32;
 }
 
@@ -2552,7 +2552,7 @@ function serializeBigIntLiteral(node) {
     const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeBigIntValue(node.value));
-    writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.raw));
+    writeScratchUint32(storePos32 + 2, serializeOptionAsciiJsWord(node.raw));
     return storePos32;
 }
 
@@ -2563,21 +2563,21 @@ function finalizeBigIntLiteral(storePos32) {
 }
 
 function serializeBigIntValue(value) {
-    if (value[0] === 0) return serializeJsWord('0');
+    if (value[0] === 0) return serializeAsciiJsWord('0');
     const parts = value[1];
     let num = 0n;
     for (let i = parts.length - 1; i >= 0; i--) {
         num <<= 32n;
         num += BigInt(parts[i]);
     }
-    return serializeJsWord(num.toString());
+    return serializeAsciiJsWord(num.toString());
 }
 
 function serializeRegExpLiteral(node) {
     const storePos32 = allocScratch(16) >> 2;
     writeScratchUint32(storePos32, serializeSpan(node.span));
     writeScratchUint32(storePos32 + 1, serializeJsWord(node.pattern));
-    writeScratchUint32(storePos32 + 2, serializeJsWord(node.flags));
+    writeScratchUint32(storePos32 + 2, serializeAsciiJsWord(node.flags));
     return storePos32;
 }
 
@@ -2883,9 +2883,9 @@ function serializeJsWord(str) {
     }
     if (strLen > 7) {
         alloc(strLen * 3);
-        const len = strLen > 41
-            ? utf8Write.call(buff, str, pos)
-            : writeStringToBuffer(str, buff, strLen, pos);
+        const len = strLen < 42
+            ? writeStringToBuffer(str, buff, strLen, pos)
+            : utf8Write.call(buff, str, pos);
         const storePos = allocScratch(8),
             storePos32 = storePos >> 2;
         scratchUint32[storePos32] = len;
@@ -2928,6 +2928,39 @@ function finalizeJsWord(storePos) {
 }
 
 const { utf8Write } = Buffer.prototype;
+
+function serializeAsciiJsWord(str) {
+    const len = str.length;
+    if (len === 0) {
+        const storePos = allocScratch(8);
+        scratchUint32[storePos >> 2] = 0;
+        return storePos;
+    }
+    if (len > 7) {
+        alloc(len);
+        if (len < 48) {
+            writeAsciiStringToBuffer(str, buff, len, pos);
+        } else {
+            asciiWrite.call(buff, str, pos);
+        }
+        const storePos = allocScratch(8),
+            storePos32 = storePos >> 2;
+        scratchUint32[storePos32] = len;
+        scratchUint32[storePos32 + 1] = pos;
+        pos += len;
+        return storePos;
+    }
+    const storePos = allocScratch(len > 4 ? 16 : 8);
+    writeAsciiStringToBuffer(str, scratchBuff, len, storePos + 4);
+    scratchUint32[storePos >> 2] = len;
+    return storePos;
+}
+
+const { asciiWrite } = Buffer.prototype;
+
+function serializeOptionAsciiJsWord(value) {
+    return serializeOption(value, serializeAsciiJsWord);
+}
 
 function serializeBoolean(value) {
     switch (value) {
@@ -3908,6 +3941,13 @@ function writeStringToBuffer(str, buff, strLen, pos) {
 }
 
 const { charCodeAt } = String.prototype;
+
+function writeAsciiStringToBuffer(str, buff, strLen, pos) {
+    let strPos = 0;
+    do {
+        buff[pos++] = charCodeAt.call(str, strPos);
+    } while (++strPos < strLen);
+}
 
 serialize.resetBuffers = resetBuffers;
 

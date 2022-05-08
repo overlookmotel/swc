@@ -12,6 +12,7 @@ module.exports = {
     writeScratchUint32,
     copyFromScratch,
     writeStringToBuffer,
+    writeAsciiStringToBuffer,
     debugBuff,
     debugAst
 };
@@ -252,6 +253,22 @@ writeStringToBuffer.toString = () => (
     Function.prototype.toString.call(writeStringToBuffer)
     + '\n\nconst { charCodeAt } = String.prototype;'
 );
+
+/**
+ * Write ASCII string to buffer.
+ * String must be at least 1 character long.
+ * @param {string} str - String
+ * @param {Buffer} buff - Buffer to write bytes to
+ * @param {number} strLen - Length of string (in characters, or bytes - equivalent for ASCII strings)
+ * @param {number} pos - Position in buffer to write to
+ * @returns {undefined}
+ */
+function writeAsciiStringToBuffer(str, buff, strLen, pos) {
+    let strPos = 0;
+    do {
+        buff[pos++] = charCodeAt.call(str, strPos);
+    } while (++strPos < strLen);
+}
 
 /**
  * Log contents of section of buffer.

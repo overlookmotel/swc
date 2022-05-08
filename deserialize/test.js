@@ -15,7 +15,7 @@ const { parseSync, parseSyncToBuffer, printSync, printSyncFromBuffer } = require
     serialize = require('./serialize.js');
 
 // Replace `finalizeJsWord()` with a version of function which zeros out unallocated bytes.
-// This allow comparison of buffers without failure due to random uninitialized bytes.
+// This allows comparison of buffers without failure due to random uninitialized bytes.
 serialize.replaceFinalizeJsWord();
 
 // Tests

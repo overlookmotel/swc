@@ -1,7 +1,7 @@
 'use strict';
 
 // Imports
-const { EnumValue, Custom } = require('../kinds/index.js');
+const { EnumValue, Option, Custom } = require('../kinds/index.js');
 
 // Exports
 
@@ -23,9 +23,8 @@ module.exports = {
          * @returns {string} - Decoded string
          */
         deserialize(pos) {
-            let len = buff[pos + 7];
-
             // Fast path for empty string
+            let len = buff[pos + 7];
             if (len === 0) {
                 /* DEBUG_ONLY_START */
                 debugBuff('JsWord content', pos, len);
@@ -54,13 +53,13 @@ module.exports = {
                 /* DEBUG_ONLY_END */
 
                 // For longer strings, native method is faster.
-                // Determined that the tipping point is 25 chars on a MacBook Pro 14-inch 2021 M1 Pro.
+                // Determined that the tipping point is 24 chars on a MacBook Pro 14-inch 2021 M1 Pro.
                 // Tipping point might be a bit different on Intel etc processors as M1 seems
                 // to run JS faster, but it's not going to make a significant difference.
                 // `Buffer.prototype.utf8Slice` is undocumented but used internally by
                 // `Buffer.prototype.toString`. `.utf8Slice` is faster as skips bounds-checking.
                 // Next line is equivalent to `buff.toString('utf8', pos, pos + len)`.
-                if (len > 25) return utf8Slice.call(buff, pos, pos + len);
+                if (len > 24) return utf8Slice.call(buff, pos, pos + len);
             }
             /* DEBUG_ONLY_START */
             else {
@@ -68,7 +67,7 @@ module.exports = {
             }
             /* DEBUG_ONLY_END */
 
-            // String shorter than 26 chars - JS implementation is faster than call into C++.
+            // String 24 chars or shorter - JS implementation is faster than call into C++.
             // Bail out and use `buff.utf8Slice()` if unicode character found (uncommon case).
             const arr = new Array(len),
                 end = pos + len;
@@ -106,15 +105,15 @@ module.exports = {
                 alloc(strLen * 3);
 
                 // For longer strings, native method is faster.
-                // Determined that the tipping point is 41 chars on a MacBook Pro 14-inch 2021 M1 Pro.
+                // Determined that the tipping point is 42 chars on a MacBook Pro 14-inch 2021 M1 Pro.
                 // Tipping point might be a bit different on Intel etc processors as M1 seems
                 // to run JS faster, but it's not going to make a significant difference.
                 // `Buffer.prototype.utf8Write` is undocumented but used internally by
                 // `Buffer.prototype.write`. `.utf8Write` is faster as skips bounds-checking.
                 // `utf8Write.call(buff, str, pos)` is equivalent to `buff.write(str, pos)`.
-                const len = strLen > 41
-                    ? utf8Write.call(buff, str, pos)
-                    : writeStringToBuffer(str, buff, strLen, pos);
+                const len = strLen < 42
+                    ? writeStringToBuffer(str, buff, strLen, pos)
+                    : utf8Write.call(buff, str, pos);
 
                 const storePos = allocScratch(8),
                     storePos32 = storePos >> 2;
@@ -193,6 +192,139 @@ module.exports = {
         },
         length: 8,
         align: 4
+    }),
+
+    AsciiJsWord: Custom({
+        /**
+         * Deserialize string where it's known from context to be ASCII - no Unicode characters.
+         * This requires less overhead as each character is always represented by 1 byte in UTF8.
+         * @param {number} pos - Position in buffer
+         * @returns {string} - Decoded string
+         */
+        deserialize(pos) {
+            // Fast path for empty string
+            let len = buff[pos + 7];
+            if (len === 0) {
+                /* DEBUG_ONLY_START */
+                debugBuff('JsWord content', pos, len);
+                /* DEBUG_ONLY_END */
+
+                return '';
+            }
+
+            // Fast path for single-char strings
+            if (len === 1) {
+                /* DEBUG_ONLY_START */
+                debugBuff('AsciiJsWord content', pos, len);
+                /* DEBUG_ONLY_END */
+
+                return String.fromCharCode(buff[pos]);
+            }
+
+            if (len > 7) {
+                const pos32 = pos >> 2;
+                len = uint32[pos32];
+                // Pointer is relative to byte containing length, not byte containing pointer
+                pos += int32[pos32 + 1];
+
+                /* DEBUG_ONLY_START */
+                debugBuff('AsciiJsWord content', pos, len);
+                /* DEBUG_ONLY_END */
+
+                // For longer strings, native method is faster.
+                // Determined that the tipping point is 28 chars on a MacBook Pro 14-inch 2021 M1 Pro.
+                // Tipping point might be a bit different on Intel etc processors as M1 seems
+                // to run JS faster, but it's not going to make a significant difference.
+                // `Buffer.prototype.asciiSlice` is undocumented but used internally by
+                // `Buffer.prototype.toString`. `.asciiSlice` is faster as skips bounds-checking.
+                // Next line is equivalent to `buff.toString('ascii', pos, pos + len)`.
+                if (len > 28) return asciiSlice.call(buff, pos, pos + len);
+            }
+            /* DEBUG_ONLY_START */
+            else {
+                debugBuff('AsciiJsWord content', pos, len);
+            }
+            /* DEBUG_ONLY_END */
+
+            // String 28 chars or shorter - JS implementation is faster than call into C++
+            const arr = new Array(len),
+                end = pos + len;
+            let arrPos = 0;
+            do {
+                arr[arrPos++] = buff[pos];
+            } while (++pos < end);
+            return String.fromCharCode(...arr);
+        },
+        generateDeserializer() {
+            return Custom.prototype.generateDeserializer.call(this)
+                + `\n\n${' '.repeat(8)}const { asciiSlice } = Buffer.prototype;`;
+        },
+        serialize(str) {
+            // Handle empty string
+            const len = str.length;
+            if (len === 0) {
+                const storePos = allocScratch(8);
+                scratchUint32[storePos >> 2] = 0;
+                return storePos;
+            }
+
+            // If string is longer than 7 chars, write direct to output buffer
+            if (len > 7) {
+                /* DEBUG_ONLY_START */
+                debugAst('finalize AsciiJsWord content');
+                /* DEBUG_ONLY_END */
+
+                // Allocate 1 byte for every character
+                alloc(len);
+
+                // For longer strings, native method is faster.
+                // Determined that the tipping point is 48 chars on a MacBook Pro 14-inch 2021 M1 Pro.
+                // Tipping point might be a bit different on Intel etc processors as M1 seems
+                // to run JS faster, but it's not going to make a significant difference.
+                // `Buffer.prototype.asciiWrite` is undocumented but used internally by
+                // `Buffer.prototype.write`. `.asciiWrite` is faster as skips bounds-checking.
+                // `asciiWrite.call(buff, str, pos)` is equivalent to `buff.write(str, pos, 'ascii')`.
+                // NB `asciiWrite()` cab be passed a `len` argument, but it's 2% faster if omitted.
+                if (len < 48) {
+                    writeAsciiStringToBuffer(str, buff, len, pos);
+                } else {
+                    asciiWrite.call(buff, str, pos);
+                }
+
+                const storePos = allocScratch(8),
+                    storePos32 = storePos >> 2;
+                scratchUint32[storePos32] = len;
+                scratchUint32[storePos32 + 1] = pos;
+                pos += len;
+                return storePos;
+            }
+
+            // String needs to be added to output buffer in `finalize()`, as is 7 chars or less.
+            // Allocate 1 byte scratch for every character + 4 bytes for length.
+            // Ensure allocate scratch in multiple of 8 bytes.
+            const storePos = allocScratch(len > 4 ? 16 : 8);
+            writeAsciiStringToBuffer(str, scratchBuff, len, storePos + 4);
+            scratchUint32[storePos >> 2] = len;
+            return storePos;
+        },
+        generateSerializer() {
+            return Custom.prototype.generateSerializer.call(this)
+                + `\n\n${' '.repeat(8)}const { asciiWrite } = Buffer.prototype;`;
+        },
+        // Use `finalizeJsWord` as finalizer for type
+        finalize: false,
+        finalizerName: 'finalizeJsWord',
+        dependencies: ['JsWord'],
+        length: 8,
+        align: 4
+    }),
+    OptionAsciiJsWord: Option('AsciiJsWord', {
+        // Use `finalizeOptionJsWord` as finalizer for type
+        generateSerializer() {
+            return Option.prototype.generateSerializer.call(this)
+                .replace(/\s+function finalize[\s\S]+$/, '');
+        },
+        finalizerName: 'finalizeOptionJsWord'
     }),
 
     Boolean: EnumValue([false, true]),

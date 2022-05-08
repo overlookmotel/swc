@@ -63,3 +63,4 @@ pkg/
 *.tmp.txt
 
 !bench.js
+!benchAll.js

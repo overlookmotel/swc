@@ -8,25 +8,30 @@ const b = require('benny'),
 
 const {
 	parseSync, parseSyncToBuffer,
-	parseSyncNoReturn, parseSyncToBufferNoReturn,
-	parseSyncToTypedArray, parseSyncToTypedArrayNoReturn,
-	parseSyncRkyvVecNoReturn, parseSyncRkyvSliceNoReturn, parseSyncRkyvNoReturn,
-	parseSyncNoSerialization
+	printSync, printSyncFromBuffer,
+	transformSync, transformSyncFromBuffer
 } = require('./index.js'),
-	parseSyncBinding = require('./binding.js').parseSync,
 	deserialize = require('./deserialize/deserialize.js'),
+	serialize = require('./deserialize/serialize.js'),
 	babelParse = require('@babel/parser').parse,
-	acornParse = require('acorn').parse;
+	babelGenerate = require('@babel/generator').default;
 
 function parseSyncViaBuffer(code, options) {
 	const buff = parseSyncToBuffer(code, options);
 	return deserialize(buff);
 }
 
-function parseSyncRawJson(code, options, filename) {
-	options = options || { syntax: 'ecmascript' };
-	options.syntax = options.syntax || 'ecmascript';
-	return parseSyncBinding(code, Buffer.from(JSON.stringify(options)), filename);
+function printSyncViaBuffer(ast, options) {
+	const buff = serialize(ast);
+	return printSyncFromBuffer(buff, options);
+}
+
+function transformSyncViaBuffer(code, options) {
+	const { plugin, ...newOptions } = options || {};
+	const ast = parseSyncViaBuffer(code, newOptions?.jsc?.parser);
+	const astTransformed = plugin(ast);
+	const buff = serialize(astTransformed);
+	return transformSyncFromBuffer(buff, newOptions);
 }
 
 async function run() {
@@ -35,7 +40,18 @@ async function run() {
 	// const filename = 'react.development.js';
 	const filename = 'react.production.min.js';
 
+	const sourceMaps = false;
 	const parseOptions = { isModule: false };
+	const printOptions = { sourceMaps };
+	const transformOptions = {
+		jsc: {
+			parser: parseOptions
+		},
+		plugin: function noopPlugin(ast) {
+			return ast;
+		},
+		sourceMaps
+	};
 
 	const code = await readFile(pathJoin(__dirname, 'node_modules/react/cjs', filename), 'utf8');
 
@@ -44,74 +60,86 @@ async function run() {
 		astViaBuffer = conformSpans(parseSyncViaBuffer(code, parseOptions));
 	assertEqual(astViaBuffer, astOrig);
 
+	// Check print via buffer produces same result as `printSync()`
+	const ast = parseSync(code, parseOptions),
+		printedOrig = printSync(ast, printOptions),
+		printedViaBuffer = printSyncViaBuffer(ast, printOptions);
+	assertEqual(printedViaBuffer, printedOrig);
+
+	// Check transform via buffer produces same result as `transformSync()`
+	const transformedOrig = transformSync(code, transformOptions),
+		transformedViaBuffer = transformSyncViaBuffer(code, transformOptions);
+	assertEqual(transformedViaBuffer, transformedOrig);
+
+	// Get Babel AST
+	const astBabel = babelParse(code);
+
 	// Run benchmark
 	await b.suite(
-		`${filename} (${filesize(code.length)})`,
+		`${filename} (${filesize(code.length)}) (${sourceMaps ? 'with' : 'without'} sourcemaps)`,
 
 		// Parse
-		b.add('SWC', () => {
-			parseSync(code, parseOptions);
+		b.add('SWC parse', () => {
+			parseSync(code);
 		}),
 
-		b.add('SWC with buffer serialization and deserialization', () => {
-			parseSyncViaBuffer(code, parseOptions);
+		b.add('SWC parse via buffer', () => {
+			parseSyncViaBuffer(code);
 		}),
 
-		b.add('SWC with buffer serialization but no deserialization', () => {
-			parseSyncToBuffer(code, parseOptions);
-		}),
-
-		/*
-		b.add('SWC with buffer serialization but buffer not returned to JS', () => {
-			parseSyncToBufferNoReturn(code, parseOptions);
-		}),
-
-		b.add('SWC with typed array serialization but no deserialization', () => {
-			parseSyncToTypedArray(code, parseOptions);
-		}),
-
-		b.add('SWC with typed array serialization but buffer not returned to JS', () => {
-			parseSyncToTypedArrayNoReturn(code, parseOptions);
-		}),
-
-		b.add('SWC with RKYV serialization and vec but not returned to JS', () => {
-			parseSyncRkyvVecNoReturn(code, parseOptions);
-		}),
-
-		b.add('SWC with RKYV serialization and slice but not returned to JS', () => {
-			parseSyncRkyvSliceNoReturn(code, parseOptions);
-		}),
-		*/
-
-		b.add('SWC with RKYV serialization but not returned to JS', () => {
-			parseSyncRkyvNoReturn(code, parseOptions);
-		}),
-
-		b.add('SWC with no serialization or deserialization', () => {
-			parseSyncNoSerialization(code, parseOptions);
-		}),
-
-		b.add('SWC with JSON serialization but no deserialization', () => {
-			parseSyncRawJson(code, parseOptions);
-		}),
-
-		b.add('SWC with JSON serialization but JSON not returned to JS', () => {
-			parseSyncNoReturn(code, parseOptions);
-		}),
-
-		b.add('Babel', () => {
+		b.add('Babel parse', () => {
 			babelParse(code);
 		}),
 
-		b.add('Acorn', () => {
-			acornParse(code, { ecmaVersion: 2022 });
+		// Print
+		b.add('SWC print', () => {
+			printSync(ast, printOptions);
+		}),
+
+		b.add('SWC print via buffer', () => {
+			printSyncViaBuffer(ast, printOptions);
+		}),
+
+		b.add('Babel print', () => {
+			babelGenerate(astBabel, { sourceMaps, sourceFileName: 'foo.js' });
+		}),
+
+		// Parse and print
+		b.add('SWC parse + print', () => {
+			const ast = parseSync(code, parseOptions);
+			printSync(ast, printOptions);
+		}),
+
+		b.add('SWC parse + print via buffer', () => {
+			const ast = parseSyncViaBuffer(code, parseOptions);
+			printSyncViaBuffer(ast, printOptions);
+		}),
+
+		b.add('Babel parse + print', () => {
+			const ast = babelParse(code);
+			babelGenerate(ast, { sourceMaps, sourceFileName: 'foo.js' });
+		}),
+
+		// Transform
+		b.add('SWC transform', () => {
+			transformSync(code, transformOptions);
+		}),
+
+		b.add('SWC transform via buffer', () => {
+			transformSyncViaBuffer(code, transformOptions);
+		}),
+
+		b.add('SWC transform without JS roundtrip', () => {
+			const optionsWithoutPlugin = { ...transformOptions };
+			delete optionsWithoutPlugin.plugin;
+			transformSync(code, optionsWithoutPlugin);
 		}),
 
 		b.cycle(),
 		b.complete(),
 
 		b.save({
-			file: 'react',
+			file: 'reactAll',
 			folder: __dirname,
 			details: true,
 			format: 'chart.html'

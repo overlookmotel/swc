@@ -2883,7 +2883,9 @@ function serializeJsWord(str) {
     }
     if (strLen > 7) {
         alloc(strLen * 3);
-        const len = buff.utf8Write(str, pos);
+        const len = strLen > 41
+            ? utf8Write.call(buff, str, pos)
+            : writeStringToBuffer(str, buff, strLen, pos);
         const storePos = allocScratch(8),
             storePos32 = storePos >> 2;
         scratchUint32[storePos32] = len;
@@ -2893,18 +2895,17 @@ function serializeJsWord(str) {
     }
     const storePos = allocScratchAligned(4 + strLen * 3),
         storePos32 = storePos >> 2;
-    const len = scratchBuff.utf8Write(str, storePos + 4);
+    const len = writeStringToBuffer(str, scratchBuff, strLen, storePos + 4);
     scratchUint32[storePos32] = len;
     if (len <= 7) {
         scratchPos = storePos + (len <= 4 ? 8 : 16);
         return storePos;
     }
-    const strPos = pos;
     alloc(len);
     copyFromScratch(storePos + 4, len);
-    pos += len;
     scratchPos = storePos + 8;
-    scratchUint32[storePos32 + 1] = strPos;
+    scratchUint32[storePos32 + 1] = pos;
+    pos += len;
     return storePos;
 }
 
@@ -2925,6 +2926,8 @@ function finalizeJsWord(storePos) {
     }
     pos += 8;
 }
+
+const { utf8Write } = Buffer.prototype;
 
 function serializeBoolean(value) {
     switch (value) {
@@ -3893,6 +3896,18 @@ function copyFromScratch(scratchPos, len) {
         }
     }
 }
+
+function writeStringToBuffer(str, buff, strLen, pos) {
+    let strPos = 0;
+    do {
+        const c = charCodeAt.call(str, strPos);
+        if (c >= 128) return utf8Write.call(buff, str, pos - strPos);
+        buff[pos++] = c;
+    } while (++strPos < strLen);
+    return strLen;
+}
+
+const { charCodeAt } = String.prototype;
 
 serialize.resetBuffers = resetBuffers;
 

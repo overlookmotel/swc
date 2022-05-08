@@ -5,7 +5,7 @@ const { EnumValue, Custom } = require('../kinds/index.js');
 
 // Exports
 
-const { utf8Slice } = Buffer.prototype;
+const { utf8Slice, utf8Write } = Buffer.prototype;
 
 module.exports = {
     JsWord: Custom({
@@ -105,10 +105,16 @@ module.exports = {
                 // of actual string, regardless of how much space has been pre-allocated.
                 alloc(strLen * 3);
 
+                // For longer strings, native method is faster.
+                // Determined that the tipping point is 41 chars on a MacBook Pro 14-inch 2021 M1 Pro.
+                // Tipping point might be a bit different on Intel etc processors as M1 seems
+                // to run JS faster, but it's not going to make a significant difference.
                 // `Buffer.prototype.utf8Write` is undocumented but used internally by
                 // `Buffer.prototype.write`. `.utf8Write` is faster as skips bounds-checking.
-                // Next line is equivalent to `buff.write(str, pos)`.
-                const len = buff.utf8Write(str, pos);
+                // `utf8Write.call(buff, str, pos)` is equivalent to `buff.write(str, pos)`.
+                const len = strLen > 41
+                    ? utf8Write.call(buff, str, pos)
+                    : writeStringToBuffer(str, buff, strLen, pos);
 
                 const storePos = allocScratch(8),
                     storePos32 = storePos >> 2;
@@ -128,7 +134,7 @@ module.exports = {
             // + 4 bytes for length. Ensure allocate scratch in multiple of 8 bytes.
             const storePos = allocScratchAligned(4 + strLen * 3),
                 storePos32 = storePos >> 2;
-            const len = scratchBuff.utf8Write(str, storePos + 4);
+            const len = writeStringToBuffer(str, scratchBuff, strLen, storePos + 4);
             scratchUint32[storePos32] = len;
 
             if (len <= 7) {
@@ -138,18 +144,17 @@ module.exports = {
             }
 
             // UTF8-encoded string ended up being longer than 7 chars - move to output buffer
-            const strPos = pos;
-
             /* DEBUG_ONLY_START */
             debugAst('finalize JsWord content');
             /* DEBUG_ONLY_END */
 
             alloc(len);
             copyFromScratch(storePos + 4, len);
-            pos += len;
 
             scratchPos = storePos + 8; // Free scratch which contained string
-            scratchUint32[storePos32 + 1] = strPos;
+            scratchUint32[storePos32 + 1] = pos;
+
+            pos += len;
 
             return storePos;
         },
@@ -181,6 +186,10 @@ module.exports = {
                 int32[pos32 + 1] = scratchUint32[storePos32 + 1] - pos;
             }
             pos += 8;
+        },
+        generateSerializer() {
+            return Custom.prototype.generateSerializer.call(this)
+                + `\n\n${' '.repeat(8)}const { utf8Write } = Buffer.prototype;`;
         },
         length: 8,
         align: 4

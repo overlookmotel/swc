@@ -11,6 +11,7 @@ module.exports = {
     allocScratchAligned,
     writeScratchUint32,
     copyFromScratch,
+    writeStringToBuffer,
     debugBuff,
     debugAst
 };
@@ -224,6 +225,33 @@ function copyFromScratch(scratchPos, len) {
         }
     }
 }
+
+/**
+ * Write string to buffer, encoded as UTF8.
+ * String must be at least 1 character long.
+ * Assume common case that string contains no Unicode characters.
+ * If a Unicode character is encountered, fall back to `Buffer.prototype.utf8Write()`.
+ *
+ * @param {string} str - String
+ * @param {Buffer} buff - Buffer to write bytes to
+ * @param {number} strLen - Length of string (in characters)
+ * @param {number} pos - Position in buffer to write to
+ * @returns {number} - Number of bytes written
+ */
+function writeStringToBuffer(str, buff, strLen, pos) {
+    let strPos = 0;
+    do {
+        const c = charCodeAt.call(str, strPos);
+        if (c >= 128) return utf8Write.call(buff, str, pos - strPos);
+        buff[pos++] = c;
+    } while (++strPos < strLen);
+    return strLen;
+}
+
+writeStringToBuffer.toString = () => (
+    Function.prototype.toString.call(writeStringToBuffer)
+    + '\n\nconst { charCodeAt } = String.prototype;'
+);
 
 /**
  * Log contents of section of buffer.

@@ -15,6 +15,7 @@ const { types } = require('./types/index.js'),
     {
         initBuffer, alloc, alignPos,
         initScratch, allocScratch, allocScratchAligned, writeScratchUint32, copyFromScratch,
+        writeStringToBuffer,
         debugBuff, debugAst
     } = require('./utils.js');
 
@@ -133,7 +134,7 @@ function generateSerializer() {
                 finalizeEnum, finalizeEnumValue, finalizeOption, finalizeBox, finalizeVec,
                 initBuffer, alloc, alignPos,
                 initScratch, allocScratch, allocScratchAligned,
-                writeScratchUint32, copyFromScratch
+                writeScratchUint32, copyFromScratch, writeStringToBuffer
             ],
             debugAst
         ).map(code => code.replace(

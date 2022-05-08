@@ -21,16 +21,16 @@ module.exports = {
         {
             value: 'Number',
             span: 'Span',
-            raw: Option('JsWord')
+            raw: 'OptionAsciiJsWord'
         },
         { keys: ['span', 'value', 'raw'] }
     ),
 
-    BigIntLiteral: Node({ value: 'BigIntValue', raw: Option('JsWord') }),
+    BigIntLiteral: Node({ value: 'BigIntValue', raw: 'OptionAsciiJsWord' }),
     BigIntValue: Custom({
         deserialize(pos) {
             // TODO This implementation could be more efficient
-            const str = deserializeJsWord(pos);
+            const str = deserializeAsciiJsWord(pos);
             if (str === '0') return [0, []];
 
             let current = BigInt(str);
@@ -49,7 +49,7 @@ module.exports = {
             return [1, parts]; // TODO What is the initial 1 for?
         },
         serialize(value) {
-            if (value[0] === 0) return serializeJsWord('0');
+            if (value[0] === 0) return serializeAsciiJsWord('0');
 
             const parts = value[1];
             let num = 0n;
@@ -58,15 +58,15 @@ module.exports = {
                 num += BigInt(parts[i]);
             }
 
-            return serializeJsWord(num.toString());
+            return serializeAsciiJsWord(num.toString());
         },
         // Use `finalizeJsWord` as finalizer for type
         finalize: false,
         finalizerName: 'finalizeJsWord',
-        dependencies: ['JsWord'],
+        dependencies: ['AsciiJsWord', 'JsWord'],
         length: 8,
         align: 4
     }),
 
-    RegExpLiteral: Node({ pattern: 'JsWord', flags: 'JsWord' })
+    RegExpLiteral: Node({ pattern: 'JsWord', flags: 'AsciiJsWord' })
 };

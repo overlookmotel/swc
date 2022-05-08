@@ -1246,7 +1246,7 @@ function deserializeNumericLiteral(pos) {
         type: 'NumericLiteral',
         span: deserializeSpan(pos + 8),
         value: deserializeNumber(pos),
-        raw: deserializeOptionJsWord(pos + 20)
+        raw: deserializeOptionAsciiJsWord(pos + 20)
     };
 }
 
@@ -1255,12 +1255,12 @@ function deserializeBigIntLiteral(pos) {
         type: 'BigIntLiteral',
         span: deserializeSpan(pos),
         value: deserializeBigIntValue(pos + 12),
-        raw: deserializeOptionJsWord(pos + 20)
+        raw: deserializeOptionAsciiJsWord(pos + 20)
     };
 }
 
 function deserializeBigIntValue(pos) {
-    const str = deserializeJsWord(pos);
+    const str = deserializeAsciiJsWord(pos);
     if (str === '0') return [0, []];
     let current = BigInt(str);
     const parts = [];
@@ -1281,7 +1281,7 @@ function deserializeRegExpLiteral(pos) {
         type: 'RegExpLiteral',
         span: deserializeSpan(pos),
         pattern: deserializeJsWord(pos + 12),
-        flags: deserializeJsWord(pos + 20)
+        flags: deserializeAsciiJsWord(pos + 20)
     };
 }
 
@@ -1499,7 +1499,7 @@ function deserializeJsWord(pos) {
         const pos32 = pos >> 2;
         len = uint32[pos32];
         pos += int32[pos32 + 1];
-        if (len > 25) return utf8Slice.call(buff, pos, pos + len);
+        if (len > 24) return utf8Slice.call(buff, pos, pos + len);
     }
     const arr = new Array(len),
         end = pos + len;
@@ -1513,6 +1513,35 @@ function deserializeJsWord(pos) {
 }
 
 const { utf8Slice } = Buffer.prototype;
+
+function deserializeAsciiJsWord(pos) {
+    let len = buff[pos + 7];
+    if (len === 0) {
+        return '';
+    }
+    if (len === 1) {
+        return String.fromCharCode(buff[pos]);
+    }
+    if (len > 7) {
+        const pos32 = pos >> 2;
+        len = uint32[pos32];
+        pos += int32[pos32 + 1];
+        if (len > 28) return asciiSlice.call(buff, pos, pos + len);
+    }
+    const arr = new Array(len),
+        end = pos + len;
+    let arrPos = 0;
+    do {
+        arr[arrPos++] = buff[pos];
+    } while (++pos < end);
+    return String.fromCharCode(...arr);
+}
+
+const { asciiSlice } = Buffer.prototype;
+
+function deserializeOptionAsciiJsWord(pos) {
+    return deserializeOption(pos, deserializeAsciiJsWord, 4);
+}
 
 function deserializeBoolean(pos) {
     switch (buff[pos]) {

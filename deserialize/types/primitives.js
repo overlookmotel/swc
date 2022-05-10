@@ -13,11 +13,13 @@ module.exports = {
          * Deserialize string.
          * Strings are serialized by RYKV as follows:
          *   - 8 bytes length, aligned on 4.
-         *   - If length <= 7, byte 7 contains length, bytes 0-6 contain the string.
+         *   - String stored in UTF8 encoding.
+         *   - If length (in bytes) <= 7, byte 7 contains length, bytes 0-6 contain the string.
          *   - Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string (i32).
-         *
-         * TODO I don't think this can be quite correct.
-         * How would you disambiguate between length <= 7 and a pointer whose last byte is e.g. 01?
+         *   - In latter case, relative pointer is always negative. Rel pointer is stored little-endian,
+         *     regardless of machine architecture, so sign bit is highest bit in byte 7.
+         *     Therefore if byte 7's highest bit is set, it's a string longer than 7 bytes,
+         *     if that bit is not set, it's a string with length <= 7 bytes.
          *
          * @param {number} pos - Position in buffer
          * @returns {string} - Decoded string
@@ -42,8 +44,10 @@ module.exports = {
                 return String.fromCharCode(buff[pos]);
             }
 
-            if (len > 7) {
+            if (len & 128) {
                 const pos32 = pos >> 2;
+                // Length always stored little-endian, regardless of machine architecture
+                // TODO Need to alter next line to read as little-endian on big-endian systems
                 len = uint32[pos32];
                 // Pointer is relative to byte containing length, not byte containing pointer
                 pos += int32[pos32 + 1];
@@ -181,6 +185,8 @@ module.exports = {
                 buff[pos + 7] = len;
             } else {
                 const pos32 = pos >> 2;
+                // Length always stored little-endian, regardless of machine architecture
+                // TODO Need to alter next line to write as little-endian on big-endian systems
                 uint32[pos32] = len;
                 int32[pos32 + 1] = scratchUint32[storePos32 + 1] - pos;
             }
@@ -221,8 +227,10 @@ module.exports = {
                 return String.fromCharCode(buff[pos]);
             }
 
-            if (len > 7) {
+            if (len & 128) {
                 const pos32 = pos >> 2;
+                // Length always stored little-endian, regardless of machine architecture
+                // TODO Need to alter next line to read as little-endian on big-endian systems
                 len = uint32[pos32];
                 // Pointer is relative to byte containing length, not byte containing pointer
                 pos += int32[pos32 + 1];

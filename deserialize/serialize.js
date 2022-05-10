@@ -3977,6 +3977,8 @@ serialize.replaceFinalizeJsWord = () => {
             buff[pos + 7] = len;
         } else {
             const pos32 = pos >> 2;
+            // Length always stored little-endian, regardless of machine architecture
+            // TODO Need to alter next line to write as little-endian on big-endian systems
             uint32[pos32] = len;
             int32[pos32 + 1] = scratchUint32[storePos32 + 1] - pos;
         }

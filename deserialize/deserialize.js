@@ -1495,7 +1495,7 @@ function deserializeJsWord(pos) {
     if (len === 1) {
         return String.fromCharCode(buff[pos]);
     }
-    if (len > 7) {
+    if (len & 128) {
         const pos32 = pos >> 2;
         len = uint32[pos32];
         pos += int32[pos32 + 1];
@@ -1522,7 +1522,7 @@ function deserializeAsciiJsWord(pos) {
     if (len === 1) {
         return String.fromCharCode(buff[pos]);
     }
-    if (len > 7) {
+    if (len & 128) {
         const pos32 = pos >> 2;
         len = uint32[pos32];
         pos += int32[pos32 + 1];

@@ -57,12 +57,13 @@ class EnumValue extends Kind {
 
     /**
      * Generate serializer function code for type.
-     * Serializer returns ID of value type as Uint8.
+     * Serializer returns ID of value + 256.
+     * `+ 256` is to ensure result is never 0. 0 has a special meaning for Options.
      * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
         const caseCodes = this.values.map((value, index) => (
-            `case ${typeof value === 'string' ? `'${value}'` : value}: return ${index};`
+            `case ${typeof value === 'string' ? `'${value}'` : value}: return ${index + 256};`
         ));
 
         return `function ${this.serializerName}(value) {
@@ -85,7 +86,7 @@ class EnumValue extends Kind {
  * @returns {undefined}
  */
 function finalizeEnumValue(id) {
-    buff[pos] = id;
+    buff[pos] = id & 255;
     pos++;
 }
 

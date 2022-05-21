@@ -93,30 +93,27 @@ function deserializeOption(pos, deserialize, offset) {
 /**
  * Serialize Option.
  * If option disabled, return 0;
- * If option enabled, store serialize result in scratch in bytes 0-3 and return scratch position (in bytes).
- * Scratch position is never 0, so 0 can be safely used to denote option disabled.
+ * If option enabled, return finalize data for value.
+ * Finalize data is never 0, so 0 can be safely used to denote option disabled.
+ * (usually finalize data is scratch position, and scratch starts at 8)
+ *
  * @param {*} value - Value or `null`
  * @param {Function} serialize - Serialize function for type
- * @returns {number} - Scratch position (in 4-byte blocks) or 0 if option disabled
+ * @returns {number} - Finalize data for value, or 0 if option disabled
  */
 function serializeOption(value, serialize) {
-    if (value === null) return 0;
-
-    const storePos32 = allocScratch(8) >> 2; // Only need 4 bytes but scratch must be allocated in blocks of 8
-    // Need to use `writeScratchUint32()` - reason explained in that function's definition
-    writeScratchUint32(storePos32, serialize(value));
-    return storePos32;
+    return value === null ? 0 : serialize(value);
 }
 
 /**
  * Finalize option.
- * @param {number} storePos32 - Position of scratch data (in 4-byte blocks)
+ * @param {number} finalizeData - Finalize data for value
  * @param {Function} finalize - Finalize function for value
  * @param {number} offset - Offset of value from start of Option
  * @param {number} length - Length of Option (total inc. value and offset)
  */
-function finalizeOption(storePos32, finalize, offset, length) {
-    if (storePos32 === 0) {
+function finalizeOption(finalizeData, finalize, offset, length) {
+    if (finalizeData === 0) {
         // Option disabled
         buff[pos] = 0;
         pos += length;
@@ -124,7 +121,7 @@ function finalizeOption(storePos32, finalize, offset, length) {
         // Option enabled
         buff[pos] = 1;
         pos += offset;
-        finalize(scratchUint32[storePos32]);
+        finalize(finalizeData);
     };
 }
 

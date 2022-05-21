@@ -78,13 +78,14 @@ function deserializeBox(pos, deserialize) {
 
 /**
  * Serialize boxed value.
- * Return position of boxed value in buffer.
+ * Return position of boxed value in buffer | 0x80000000.
+ * Setting highest bit is to avoid 0 being returned. 0 has special meaning for Options.
  * @param {*} value - Boxed value
  * @param {Function} serialize - Serialize function for type
  * @param {Function} finalize - Finalize function for type
  * @param {number} valueLength - Length of value type
  * @param {number} valueAlign - Alignment of value type
- * @returns {number} - Position of boxed value in buffer
+ * @returns {number} - Position of boxed value in buffer | 0x80000000
  */
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     const scratchPosBefore = scratchPos;
@@ -98,11 +99,11 @@ function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     // Free scratch space
     scratchPos = scratchPosBefore;
 
-    return valuePos;
+    return valuePos | 0x80000000;
 }
 
 function finalizeBox(valuePos) {
-    int32[pos >> 2] = valuePos - pos;
+    int32[pos >> 2] = (valuePos & 0x7FFFFFFF) - pos;
     pos += 4;
 }
 

@@ -70,7 +70,7 @@ class Option extends Kind {
         }
         
         function ${this.finalizerName}(storePos) {
-            return finalizeOption(storePos, ${finalizerName}, ${valueLength}, ${valueAlign});
+            return finalizeOption(storePos, ${finalizerName}, ${valueAlign}, ${valueLength + valueAlign});
         }`;
     }
 }
@@ -112,14 +112,14 @@ function serializeOption(value, serialize) {
  * Finalize option.
  * @param {number} storePos32 - Position of scratch data (in 4-byte blocks)
  * @param {Function} finalize - Finalize function for value
- * @param {number} valueLength - Length of value (NB value not total length of Option)
  * @param {number} offset - Offset of value from start of Option
+ * @param {number} length - Length of Option (total inc. value and offset)
  */
-function finalizeOption(storePos32, finalize, valueLength, offset) {
+function finalizeOption(storePos32, finalize, offset, length) {
     if (storePos32 === 0) {
         // Option disabled
         buff[pos] = 0;
-        pos += offset + valueLength;
+        pos += length;
     } else {
         // Option enabled
         buff[pos] = 1;

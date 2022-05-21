@@ -122,12 +122,12 @@ function allocScratch(bytes) {
  * Allocate scratch space.
  * Same as `allocScratch()` but ensures number of bytes allocated is a multiple of 8,
  * to preserve correct alignment.
- * `bytes` must be a multiple of 4.
  * @param {number} bytes - Number of bytes to allocate
  * @returns {number} - Position of start of reserved scratch space
  */
 function allocScratchAligned(bytes) {
-    return allocScratch((bytes & 4) ? bytes + 4 : bytes);
+    const mod = bytes & 7;
+    return allocScratch(mod === 0 ? bytes : bytes + 8 - mod);
 }
 
 /**

@@ -92,35 +92,31 @@ function deserializeOption(pos, deserialize, offset) {
 
 /**
  * Serialize Option.
- * Store in scratch:
- *   - Byte 0: 0 if option disabled, 1 if enabled
- *   - Bytes 4-7: Serialize result
- * Return scratch position (in bytes).
+ * If option disabled, return 0;
+ * If option enabled, store serialize result in scratch in bytes 0-3 and return scratch position (in bytes).
+ * Scratch position is never 0, so 0 can be safely used to denote option disabled.
  * @param {*} value - Value or `null`
  * @param {Function} serialize - Serialize function for type
- * @returns {number} - Scratch position (in bytes)
+ * @returns {number} - Scratch position (in 4-byte blocks) or 0 if option disabled
  */
 function serializeOption(value, serialize) {
-    const storePos = allocScratch(8);
-    if (value === null) {
-        scratchBuff[storePos] = 0;
-    } else {
-        scratchBuff[storePos] = 1;
-        // Need to use `writeScratchUint32()` - reason explained in that function's definition
-        writeScratchUint32((storePos >> 2) + 1, serialize(value));
-    }
-    return storePos;
+    if (value === null) return 0;
+
+    const storePos32 = allocScratch(8) >> 2; // Only need 4 bytes but scratch must be allocated in blocks of 8
+    // Need to use `writeScratchUint32()` - reason explained in that function's definition
+    writeScratchUint32(storePos32, serialize(value));
+    return storePos32;
 }
 
 /**
  * Finalize option.
- * @param {number} storePos - Position of scratch data (in bytes)
+ * @param {number} storePos32 - Position of scratch data (in 4-byte blocks)
  * @param {Function} finalize - Finalize function for value
  * @param {number} valueLength - Length of value (NB value not total length of Option)
  * @param {number} offset - Offset of value from start of Option
  */
-function finalizeOption(storePos, finalize, valueLength, offset) {
-    if (scratchBuff[storePos] === 0) {
+function finalizeOption(storePos32, finalize, valueLength, offset) {
+    if (storePos32 === 0) {
         // Option disabled
         buff[pos] = 0;
         pos += offset + valueLength;
@@ -128,7 +124,7 @@ function finalizeOption(storePos, finalize, valueLength, offset) {
         // Option enabled
         buff[pos] = 1;
         pos += offset;
-        finalize(scratchUint32[(storePos >> 2) + 1]);
+        finalize(scratchUint32[storePos32]);
     };
 }
 

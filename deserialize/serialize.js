@@ -3866,7 +3866,8 @@ function allocScratch(bytes) {
 }
 
 function allocScratchAligned(bytes) {
-    return allocScratch((bytes & 4) ? bytes + 4 : bytes);
+    const mod = bytes & 7;
+    return allocScratch(mod === 0 ? bytes : bytes + 8 - mod);
 }
 
 function writeScratchUint32(pos32, value) {

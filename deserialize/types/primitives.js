@@ -91,9 +91,9 @@ module.exports = {
             // Handle empty string
             const strLen = str.length;
             if (strLen === 0) {
-                const storePos = allocScratch(8);
-                scratchUint32[storePos >> 2] = 0;
-                return storePos;
+                const storePos32 = allocScratch(8) >> 2;
+                scratchUint32[storePos32] = 0;
+                return storePos32;
             }
 
             // If string is longer than 7 chars, write direct to output buffer
@@ -119,12 +119,11 @@ module.exports = {
                     ? writeStringToBuffer(str, buff, strLen, pos)
                     : utf8Write.call(buff, str, pos);
 
-                const storePos = allocScratch(8),
-                    storePos32 = storePos >> 2;
+                const storePos32 = allocScratch(8) >> 2;
                 scratchUint32[storePos32] = len;
                 scratchUint32[storePos32 + 1] = pos;
                 pos += len;
-                return storePos;
+                return storePos32;
             }
 
             // Likely string needs to be added to output buffer in `finalize()`, as is 7 chars or less.
@@ -143,7 +142,7 @@ module.exports = {
             if (len <= 7) {
                 // Free unused scratch. Scratch must remain aligned to 8-byte chunks.
                 scratchPos = storePos + (len <= 4 ? 8 : 16);
-                return storePos;
+                return storePos32;
             }
 
             // UTF8-encoded string ended up being longer than 7 chars - move to output buffer
@@ -159,11 +158,10 @@ module.exports = {
 
             pos += len;
 
-            return storePos;
+            return storePos32;
         },
-        finalize(storePos) {
-            const storePos32 = storePos >> 2,
-                len = scratchUint32[storePos32];
+        finalize(storePos32) {
+            const len = scratchUint32[storePos32];
             if (len <= 7) {
                 if (len > 0) {
                     const pos32 = pos >> 2;
@@ -271,9 +269,9 @@ module.exports = {
             // Handle empty string
             const len = str.length;
             if (len === 0) {
-                const storePos = allocScratch(8);
-                scratchUint32[storePos >> 2] = 0;
-                return storePos;
+                const storePos32 = allocScratch(8) >> 2;
+                scratchUint32[storePos32] = 0;
+                return storePos32;
             }
 
             // If string is longer than 7 chars, write direct to output buffer
@@ -299,21 +297,21 @@ module.exports = {
                     asciiWrite.call(buff, str, pos);
                 }
 
-                const storePos = allocScratch(8),
-                    storePos32 = storePos >> 2;
+                const storePos32 = allocScratch(8) >> 2;
                 scratchUint32[storePos32] = len;
                 scratchUint32[storePos32 + 1] = pos;
                 pos += len;
-                return storePos;
+                return storePos32;
             }
 
             // String needs to be added to output buffer in `finalize()`, as is 7 chars or less.
             // Allocate 1 byte scratch for every character + 4 bytes for length.
             // Ensure allocate scratch in multiple of 8 bytes.
-            const storePos = allocScratch(len > 4 ? 16 : 8);
+            const storePos = allocScratch(len > 4 ? 16 : 8),
+                storePos32 = storePos >> 2;
             writeAsciiStringToBuffer(str, scratchBuff, len, storePos + 4);
-            scratchUint32[storePos >> 2] = len;
-            return storePos;
+            scratchUint32[storePos32] = len;
+            return storePos32;
         },
         generateSerializer() {
             return Custom.prototype.generateSerializer.call(this)

@@ -12,7 +12,7 @@ resetBuffers();
 
 function serialize(ast) {
     pos = 0;
-    scratchPos = 0;
+    scratchPos = 8;
     const storePos = serializeProgram(ast);
     alignPos(4);
     alloc(36);
@@ -3742,14 +3742,10 @@ function finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(sto
 }
 
 function serializeOption(value, serialize) {
-    const storePos = allocScratch(8);
-    if (value === null) {
-        scratchBuff[storePos] = 0;
-    } else {
-        scratchBuff[storePos] = 1;
-        writeScratchUint32((storePos >> 2) + 1, serialize(value));
-    }
-    return storePos;
+    if (value === null) return 0;
+    const storePos32 = allocScratch(8) >> 2;
+    writeScratchUint32(storePos32, serialize(value));
+    return storePos32;
 }
 
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
@@ -3800,14 +3796,14 @@ function finalizeEnumValue(id) {
     pos++;
 }
 
-function finalizeOption(storePos, finalize, valueLength, offset) {
-    if (scratchBuff[storePos] === 0) {
+function finalizeOption(storePos32, finalize, valueLength, offset) {
+    if (storePos32 === 0) {
         buff[pos] = 0;
         pos += offset + valueLength;
     } else {
         buff[pos] = 1;
         pos += offset;
-        finalize(scratchUint32[(storePos >> 2) + 1]);
+        finalize(scratchUint32[storePos32]);
     };
 }
 

@@ -90,7 +90,9 @@ function generateSerializer() {
         'resetBuffers();',
         conformFunctionCode(`function serialize(ast) {
             pos = 0;
-            scratchPos = 0;
+            // Start scratch at 8 to allow 0 to be used as a special value.
+            // Scratch must be aligned in blocks of 8.
+            scratchPos = 8;
 
             /* DEBUG_ONLY_START */
             resetBuffers();

@@ -73,7 +73,7 @@ class EnumValue extends Kind {
         }`;
     }
 
-    // Use `finalizeEnumValue` as finalizer for all Vec types
+    // Use `finalizeEnumValue` as finalizer for all EnumValue types
     finalizerName = 'finalizeEnumValue';
 }
 

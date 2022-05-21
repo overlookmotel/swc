@@ -847,9 +847,9 @@ function finalizeVariableDeclaration(storePos32) {
 
 function serializeVariableDeclarationKind(value) {
     switch (value) {
-        case 'var': return 0;
-        case 'let': return 1;
-        case 'const': return 2;
+        case 'var': return 256;
+        case 'let': return 257;
+        case 'const': return 258;
         default: throw new Error('Unexpected enum value for VariableDeclarationKind');
     }
 }
@@ -1243,9 +1243,9 @@ function finalizeStaticBlock(storePos32) {
 
 function serializeMethodKind(value) {
     switch (value) {
-        case 'method': return 0;
-        case 'getter': return 1;
-        case 'setter': return 2;
+        case 'method': return 256;
+        case 'getter': return 257;
+        case 'setter': return 258;
         default: throw new Error('Unexpected enum value for MethodKind');
     }
 }
@@ -1747,13 +1747,13 @@ function finalizeUnaryExpression(storePos32) {
 
 function serializeUnaryOperator(value) {
     switch (value) {
-        case '-': return 0;
-        case '+': return 1;
-        case '!': return 2;
-        case '~': return 3;
-        case 'typeof': return 4;
-        case 'void': return 5;
-        case 'delete': return 6;
+        case '-': return 256;
+        case '+': return 257;
+        case '!': return 258;
+        case '~': return 259;
+        case 'typeof': return 260;
+        case 'void': return 261;
+        case 'delete': return 262;
         default: throw new Error('Unexpected enum value for UnaryOperator');
     }
 }
@@ -1777,8 +1777,8 @@ function finalizeUpdateExpression(storePos32) {
 
 function serializeUpdateOperator(value) {
     switch (value) {
-        case '++': return 0;
-        case '--': return 1;
+        case '++': return 256;
+        case '--': return 257;
         default: throw new Error('Unexpected enum value for UpdateOperator');
     }
 }
@@ -1802,31 +1802,31 @@ function finalizeBinaryExpression(storePos32) {
 
 function serializeBinaryOperator(value) {
     switch (value) {
-        case '==': return 0;
-        case '!=': return 1;
-        case '===': return 2;
-        case '!==': return 3;
-        case '<': return 4;
-        case '<=': return 5;
-        case '>': return 6;
-        case '>=': return 7;
-        case '<<': return 8;
-        case '>>': return 9;
-        case '>>>': return 10;
-        case '+': return 11;
-        case '-': return 12;
-        case '*': return 13;
-        case '/': return 14;
-        case '%': return 15;
-        case '|': return 16;
-        case '^': return 17;
-        case '&': return 18;
-        case '||': return 19;
-        case '&&': return 20;
-        case 'in': return 21;
-        case 'instanceof': return 22;
-        case '**': return 23;
-        case '??': return 24;
+        case '==': return 256;
+        case '!=': return 257;
+        case '===': return 258;
+        case '!==': return 259;
+        case '<': return 260;
+        case '<=': return 261;
+        case '>': return 262;
+        case '>=': return 263;
+        case '<<': return 264;
+        case '>>': return 265;
+        case '>>>': return 266;
+        case '+': return 267;
+        case '-': return 268;
+        case '*': return 269;
+        case '/': return 270;
+        case '%': return 271;
+        case '|': return 272;
+        case '^': return 273;
+        case '&': return 274;
+        case '||': return 275;
+        case '&&': return 276;
+        case 'in': return 277;
+        case 'instanceof': return 278;
+        case '**': return 279;
+        case '??': return 280;
         default: throw new Error('Unexpected enum value for BinaryOperator');
     }
 }
@@ -1928,22 +1928,22 @@ function serializeAssignmentLeftEquals(node) {
 
 function serializeAssignmentOperator(value) {
     switch (value) {
-        case '=': return 0;
-        case '+=': return 1;
-        case '-=': return 2;
-        case '*=': return 3;
-        case '/=': return 4;
-        case '%=': return 5;
-        case '<<=': return 6;
-        case '>>=': return 7;
-        case '>>>=': return 8;
-        case '|=': return 9;
-        case '^=': return 10;
-        case '&=': return 11;
-        case '**=': return 12;
-        case '&&=': return 13;
-        case '||=': return 14;
-        case '??=': return 15;
+        case '=': return 256;
+        case '+=': return 257;
+        case '-=': return 258;
+        case '*=': return 259;
+        case '/=': return 260;
+        case '%=': return 261;
+        case '<<=': return 262;
+        case '>>=': return 263;
+        case '>>>=': return 264;
+        case '|=': return 265;
+        case '^=': return 266;
+        case '&=': return 267;
+        case '**=': return 268;
+        case '&&=': return 269;
+        case '||=': return 270;
+        case '??=': return 271;
         default: throw new Error('Unexpected enum value for AssignmentOperator');
     }
 }
@@ -2128,8 +2128,8 @@ function finalizeMetaProperty(storePos32) {
 
 function serializeMetaPropertyKind(value) {
     switch (value) {
-        case 'new.target': return 0;
-        case 'import.meta': return 1;
+        case 'new.target': return 256;
+        case 'import.meta': return 257;
         default: throw new Error('Unexpected enum value for MetaPropertyKind');
     }
 }
@@ -2867,9 +2867,9 @@ function finalizeTsType(storePos32) {
 
 function serializeAccessibility(value) {
     switch (value) {
-        case 'public': return 0;
-        case 'protected': return 1;
-        case 'private': return 2;
+        case 'public': return 256;
+        case 'protected': return 257;
+        case 'private': return 258;
         default: throw new Error('Unexpected enum value for Accessibility');
     }
 }
@@ -2964,8 +2964,8 @@ function serializeOptionAsciiJsWord(value) {
 
 function serializeBoolean(value) {
     switch (value) {
-        case false: return 0;
-        case true: return 1;
+        case false: return 256;
+        case true: return 257;
         default: throw new Error('Unexpected enum value for Boolean');
     }
 }
@@ -3742,10 +3742,7 @@ function finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(sto
 }
 
 function serializeOption(value, serialize) {
-    if (value === null) return 0;
-    const storePos32 = allocScratch(8) >> 2;
-    writeScratchUint32(storePos32, serialize(value));
-    return storePos32;
+    return value === null ? 0 : serialize(value);
 }
 
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
@@ -3756,7 +3753,7 @@ function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     const valuePos = pos;
     finalize(finalizeData);
     scratchPos = scratchPosBefore;
-    return valuePos;
+    return valuePos | 0x80000000;
 }
 
 function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
@@ -3792,23 +3789,23 @@ function finalizeEnum(id, finalizeData, finalize, offset, length) {
 }
 
 function finalizeEnumValue(id) {
-    buff[pos] = id;
+    buff[pos] = id & 255;
     pos++;
 }
 
-function finalizeOption(storePos32, finalize, offset, length) {
-    if (storePos32 === 0) {
+function finalizeOption(finalizeData, finalize, offset, length) {
+    if (finalizeData === 0) {
         buff[pos] = 0;
         pos += length;
     } else {
         buff[pos] = 1;
         pos += offset;
-        finalize(scratchUint32[storePos32]);
+        finalize(finalizeData);
     };
 }
 
 function finalizeBox(valuePos) {
-    int32[pos >> 2] = valuePos - pos;
+    int32[pos >> 2] = (valuePos & 0x7FFFFFFF) - pos;
     pos += 4;
 }
 
@@ -3949,7 +3946,7 @@ serialize.resetBuffers = resetBuffers;
 
 serialize.replaceFinalizeJsWord = () => {
     const original = finalizeJsWord;
-    finalizeJsWord = function(storePos) {
+    finalizeJsWord = function(storePos) { // TODO Take storePos32 instead
         const storePos32 = storePos >> 2,
             len = scratchUint32[storePos32];
         if (len <= 7) {

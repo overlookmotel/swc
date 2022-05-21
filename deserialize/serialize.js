@@ -3066,7 +3066,7 @@ function serializeOptionModuleExportName(value) {
 }
 
 function finalizeOptionModuleExportName(storePos) {
-    return finalizeOption(storePos, finalizeModuleExportName, 36, 4);
+    return finalizeOption(storePos, finalizeModuleExportName, 4, 40);
 }
 
 function serializeOptionJsWord(value) {
@@ -3074,7 +3074,7 @@ function serializeOptionJsWord(value) {
 }
 
 function finalizeOptionJsWord(storePos) {
-    return finalizeOption(storePos, finalizeJsWord, 8, 4);
+    return finalizeOption(storePos, finalizeJsWord, 4, 12);
 }
 
 function serializeOptionObjectExpression(value) {
@@ -3082,7 +3082,7 @@ function serializeOptionObjectExpression(value) {
 }
 
 function finalizeOptionObjectExpression(storePos) {
-    return finalizeOption(storePos, finalizeObjectExpression, 20, 4);
+    return finalizeOption(storePos, finalizeObjectExpression, 4, 24);
 }
 
 function serializeVecSpreadElementOrBoxObjectProperty(values) {
@@ -3131,7 +3131,7 @@ function serializeOptionExpressionOrSpread(value) {
 }
 
 function finalizeOptionExpressionOrSpread(storePos) {
-    return finalizeOption(storePos, finalizeExpressionOrSpread, 20, 4);
+    return finalizeOption(storePos, finalizeExpressionOrSpread, 4, 24);
 }
 
 function serializeOptionSpan(value) {
@@ -3139,7 +3139,7 @@ function serializeOptionSpan(value) {
 }
 
 function finalizeOptionSpan(storePos) {
-    return finalizeOption(storePos, finalizeSpan, 12, 4);
+    return finalizeOption(storePos, finalizeSpan, 4, 16);
 }
 
 function serializeOptionIdentifier(value) {
@@ -3147,7 +3147,7 @@ function serializeOptionIdentifier(value) {
 }
 
 function finalizeOptionIdentifier(storePos) {
-    return finalizeOption(storePos, finalizeIdentifier, 24, 4);
+    return finalizeOption(storePos, finalizeIdentifier, 4, 28);
 }
 
 function serializeVecParameter(values) {
@@ -3163,7 +3163,7 @@ function serializeOptionTsTypeAnnotation(value) {
 }
 
 function finalizeOptionTsTypeAnnotation(storePos) {
-    return finalizeOption(storePos, finalizeTsTypeAnnotation, 16, 4);
+    return finalizeOption(storePos, finalizeTsTypeAnnotation, 4, 20);
 }
 
 function serializeBoxTsType(value) {
@@ -3179,7 +3179,7 @@ function serializeOptionPattern(value) {
 }
 
 function finalizeOptionPattern(storePos) {
-    return finalizeOption(storePos, finalizePattern, 52, 4);
+    return finalizeOption(storePos, finalizePattern, 4, 56);
 }
 
 function serializeBoxPattern(value) {
@@ -3195,7 +3195,7 @@ function serializeOptionBoxExpression(value) {
 }
 
 function finalizeOptionBoxExpression(storePos) {
-    return finalizeOption(storePos, finalizeBox, 4, 4);
+    return finalizeOption(storePos, finalizeBox, 4, 8);
 }
 
 function serializeOptionBlockStatement(value) {
@@ -3203,7 +3203,7 @@ function serializeOptionBlockStatement(value) {
 }
 
 function finalizeOptionBlockStatement(storePos) {
-    return finalizeOption(storePos, finalizeBlockStatement, 20, 4);
+    return finalizeOption(storePos, finalizeBlockStatement, 4, 24);
 }
 
 function serializeVecStatement(values) {
@@ -3219,7 +3219,7 @@ function serializeOptionBoxStatement(value) {
 }
 
 function finalizeOptionBoxStatement(storePos) {
-    return finalizeOption(storePos, finalizeBox, 4, 4);
+    return finalizeOption(storePos, finalizeBox, 4, 8);
 }
 
 function serializeVecSwitchCase(values) {
@@ -3231,7 +3231,7 @@ function serializeOptionCatchClause(value) {
 }
 
 function finalizeOptionCatchClause(storePos) {
-    return finalizeOption(storePos, finalizeCatchClause, 88, 4);
+    return finalizeOption(storePos, finalizeCatchClause, 4, 92);
 }
 
 function serializeOptionVariableDeclarationOrBoxExpression(value) {
@@ -3239,7 +3239,7 @@ function serializeOptionVariableDeclarationOrBoxExpression(value) {
 }
 
 function finalizeOptionVariableDeclarationOrBoxExpression(storePos) {
-    return finalizeOption(storePos, finalizeVariableDeclarationOrBoxExpression, 28, 4);
+    return finalizeOption(storePos, finalizeVariableDeclarationOrBoxExpression, 4, 32);
 }
 
 function serializeVariableDeclarationOrBoxExpression(node) {
@@ -3419,7 +3419,7 @@ function serializeOptionAccessibility(value) {
 }
 
 function finalizeOptionAccessibility(storePos) {
-    return finalizeOption(storePos, finalizeEnumValue, 1, 1);
+    return finalizeOption(storePos, finalizeEnumValue, 1, 2);
 }
 
 function serializeOptionTsTypeParamDeclaration(value) {
@@ -3427,7 +3427,7 @@ function serializeOptionTsTypeParamDeclaration(value) {
 }
 
 function finalizeOptionTsTypeParamDeclaration(storePos) {
-    return finalizeOption(storePos, finalizeTsTypeParamDeclaration, 20, 4);
+    return finalizeOption(storePos, finalizeTsTypeParamDeclaration, 4, 24);
 }
 
 function serializeVecTsTypeParameter(values) {
@@ -3439,7 +3439,7 @@ function serializeOptionTsTypeParameterInstantiation(value) {
 }
 
 function finalizeOptionTsTypeParameterInstantiation(storePos) {
-    return finalizeOption(storePos, finalizeTsTypeParameterInstantiation, 20, 4);
+    return finalizeOption(storePos, finalizeTsTypeParameterInstantiation, 4, 24);
 }
 
 function serializeVecBoxTsType(values) {
@@ -3455,7 +3455,7 @@ function serializeOptionTsTypeParameterDeclaration(value) {
 }
 
 function finalizeOptionTsTypeParameterDeclaration(storePos) {
-    return finalizeOption(storePos, finalizeTsTypeParameterDeclaration, 20, 4);
+    return finalizeOption(storePos, finalizeTsTypeParameterDeclaration, 4, 24);
 }
 
 function serializeIdentifierOrPrivateNameOrComputed(node) {
@@ -3591,7 +3591,7 @@ function serializeOptionVecExpressionOrSpread(value) {
 }
 
 function finalizeOptionVecExpressionOrSpread(storePos) {
-    return finalizeOption(storePos, finalizeVec, 8, 4);
+    return finalizeOption(storePos, finalizeVec, 4, 12);
 }
 
 function serializeVecBoxExpression(values) {
@@ -3709,7 +3709,7 @@ function serializeOptionStringLiteral(value) {
 }
 
 function finalizeOptionStringLiteral(storePos) {
-    return finalizeOption(storePos, finalizeStringLiteral, 32, 4);
+    return finalizeOption(storePos, finalizeStringLiteral, 4, 36);
 }
 
 function serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(node) {
@@ -3796,10 +3796,10 @@ function finalizeEnumValue(id) {
     pos++;
 }
 
-function finalizeOption(storePos32, finalize, valueLength, offset) {
+function finalizeOption(storePos32, finalize, offset, length) {
     if (storePos32 === 0) {
         buff[pos] = 0;
-        pos += offset + valueLength;
+        pos += length;
     } else {
         buff[pos] = 1;
         pos += offset;

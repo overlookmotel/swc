@@ -92,15 +92,12 @@ class Enum extends Kind {
      */
     generateSerializer() {
         // TODO For nested Enums, does `switch (node.type) {}` more than once - inefficient
-        const optionSerializeCodes = [],
-            optionFinalizeCodes = [],
-            usedNodeNames = new Set();
+        const opts = {},
+            optionFinalizeCodes = [];
         this.valueTypes.forEach((type, index) => {
             const addCode = (nodeName) => {
-                if (usedNodeNames.has(nodeName)) return;
-                usedNodeNames.add(nodeName);
-
-                optionSerializeCodes.push(`case '${nodeName}':`);
+                if (opts[nodeName]) return;
+                opts[nodeName] = { type, index };
             };
             (function resolve(thisType) {
                 if (thisType instanceof Node) return addCode(thisType.nodeName);
@@ -109,13 +106,6 @@ class Enum extends Kind {
                 if (thisType instanceof Custom) return addCode(thisType.name);
                 throw new Error(`Unexpected enum option type for ${this.name}, option ${index}`);
             })(type);
-
-            optionSerializeCodes.push(...[
-                `scratchBuff[storePos] = ${index};`,
-                // Need to use `writeScratchUint32()` - reason explained in that function's definition
-                `writeScratchUint32((storePos >> 2) + 1, ${type.serializerName}(node));`,
-                'break;'
-            ].map(line => `${' '.repeat(4)}${line}`));
 
             optionFinalizeCodes.push(
                 `case ${index}: finalizeEnum(`
@@ -126,12 +116,39 @@ class Enum extends Kind {
             );
         });
 
-        return `function ${this.serializerName}(node) {
-            const storePos = allocScratch(8);
-            switch (node.type) {
-                ${optionSerializeCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum option type for ${this.name}');
+        const optsTree = splitOptions(Object.keys(opts));
+
+        const typeName = this.name;
+        const serializerCode = (function generate(tree, indent) {
+            const nodeName = tree.option;
+            if (nodeName) {
+                const { type, index } = opts[nodeName];
+                return [
+                    `/* DEBUG_ONLY_START */`,
+                    `if (type !== '${nodeName}') throw new Error('Unexpected enum option type for ${typeName}');`,
+                    `/* DEBUG_ONLY_END */`,
+                    `scratchBuff[storePos] = ${index};`,
+                    // Need to use `writeScratchUint32()` - reason explained in that function's definition
+                    `writeScratchUint32((storePos >> 2) + 1, ${type.serializerName}(node));`
+                ].join(`\n${' '.repeat(indent)}`);
             }
+
+            return [
+                `switch (type[${tree.charNum}]) {`,
+                ...tree.splits.flatMap(subTree => [
+                    `${' '.repeat(4)}case ${subTree.char ? `'${subTree.char}'` : 'undefined'}:`,
+                    `${' '.repeat(8)}${generate(subTree, indent + 8)}`,
+                    `${' '.repeat(8)}break;`
+                ]),
+                `${' '.repeat(4)}default: throw new Error('Unexpected enum option type for ${typeName}');`,
+                '}'
+            ].join(`\n${' '.repeat(indent)}`);
+        })(optsTree, 12);
+
+        return `function ${this.serializerName}(node) {
+            const storePos = allocScratch(8),
+                {type} = node;
+            ${serializerCode}
             return storePos;
         }
 
@@ -161,4 +178,40 @@ function finalizeEnum(id, finalizeData, finalize, offset, length) {
     pos = startPos + length;
 }
 
-module.exports = { Enum, finalizeEnum };
+function splitOptions(options) {
+    options = [...options].sort();
+    return splitOptionsAtChar(options, 0);
+}
+
+function splitOptionsAtChar(options, charNum) {
+    // If only one option, is leaf node
+    if (options.length === 1) {
+        return { char: undefined, option: options[0], charNum: undefined, splits: undefined };
+    }
+
+    // Split into groups of options with same character at specified position
+    const groups = [];
+    let previousChar = null, group;
+    for (const option of options) {
+        const char = option[charNum];
+        if (char !== previousChar) {
+            group = { char, options: [] };
+            groups.push(group);
+            previousChar = char;
+        }
+        group.options.push(option);
+    }
+
+    // Recursively split groups by next character
+    const splits = groups.map(
+        group => ({ ...splitOptionsAtChar(group.options, charNum + 1), char: group.char })
+    );
+
+    // If only one split group, collapse child into self
+    if (splits.length === 1) return splits[0];
+
+    // Return splits
+    return { char: undefined, option: undefined, charNum, splits };
+}
+
+module.exports = { Enum, finalizeEnum, splitOptions };

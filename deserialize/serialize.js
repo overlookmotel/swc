@@ -28,14 +28,13 @@ function resetBuffers() {
 }
 
 function serializeProgram(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[0]) {
-        case 'M':
+    const storePos = allocScratch(8);
+    switch (node.type) {
+        case 'Module':
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeModule(node));
             break;
-        case 'S':
+        case 'Script':
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeScript(node));
             break;
@@ -83,62 +82,46 @@ function finalizeScript(storePos32) {
 function serializeModuleDeclaration(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'E':
-            switch (type[6]) {
-                case 'A':
-                    scratchBuff[storePos] = 5;
-                    writeScratchUint32((storePos >> 2) + 1, serializeExportAllDeclaration(node));
-                    break;
-                case 'D':
-                    switch (type[8]) {
-                        case 'c':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeExportDeclaration(node));
-                            break;
-                        case 'f':
-                            switch (type[13]) {
-                                case 'D':
-                                    scratchBuff[storePos] = 3;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeExportDefaultDeclaration(node));
-                                    break;
-                                case 'E':
-                                    scratchBuff[storePos] = 4;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeExportDefaultExpression(node));
-                                    break;
-                                default: throw new Error('Unexpected enum option type for ModuleDeclaration');
-                            }
-                            break;
-                        default: throw new Error('Unexpected enum option type for ModuleDeclaration');
-                    }
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeExportNamedDeclaration(node));
-                    break;
+    outer: switch (type.length) {
+        case 17:
+            switch (type) {
+                case 'ImportDeclaration':
+                    scratchBuff[storePos] = 0;
+                    writeScratchUint32((storePos >> 2) + 1, serializeImportDeclaration(node));
+                    break outer;
+                case 'ExportDeclaration':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeExportDeclaration(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for ModuleDeclaration');
             }
+        case 18:
+            scratchBuff[storePos] = 7;
+            writeScratchUint32((storePos >> 2) + 1, serializeTsExportAssignment(node));
             break;
-        case 'I':
-            scratchBuff[storePos] = 0;
-            writeScratchUint32((storePos >> 2) + 1, serializeImportDeclaration(node));
+        case 20:
+            scratchBuff[storePos] = 5;
+            writeScratchUint32((storePos >> 2) + 1, serializeExportAllDeclaration(node));
             break;
-        case 'T':
-            switch (type[2]) {
-                case 'E':
-                    scratchBuff[storePos] = 7;
-                    writeScratchUint32((storePos >> 2) + 1, serializeTsExportAssignment(node));
-                    break;
-                case 'I':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeTsImportEqualsDeclaration(node));
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 8;
-                    writeScratchUint32((storePos >> 2) + 1, serializeTsNamespaceExportDeclaration(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for ModuleDeclaration');
-            }
+        case 22:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeExportNamedDeclaration(node));
+            break;
+        case 23:
+            scratchBuff[storePos] = 4;
+            writeScratchUint32((storePos >> 2) + 1, serializeExportDefaultExpression(node));
+            break;
+        case 24:
+            scratchBuff[storePos] = 3;
+            writeScratchUint32((storePos >> 2) + 1, serializeExportDefaultDeclaration(node));
+            break;
+        case 25:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeTsImportEqualsDeclaration(node));
+            break;
+        case 28:
+            scratchBuff[storePos] = 8;
+            writeScratchUint32((storePos >> 2) + 1, serializeTsNamespaceExportDeclaration(node));
             break;
         default: throw new Error('Unexpected enum option type for ModuleDeclaration');
     }
@@ -180,20 +163,19 @@ function finalizeImportDeclaration(storePos32) {
 }
 
 function serializeImportSpecifier(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[6]) {
-        case 'D':
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 15:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeImportNamedSpecifier(node));
+            break;
+        case 22:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeImportDefaultSpecifier(node));
             break;
-        case 'N':
+        case 24:
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeImportNamespaceSpecifier(node));
-            break;
-        case 'S':
-            scratchBuff[storePos] = 0;
-            writeScratchUint32((storePos >> 2) + 1, serializeImportNamedSpecifier(node));
             break;
         default: throw new Error('Unexpected enum option type for ImportSpecifier');
     }
@@ -282,20 +264,19 @@ function finalizeExportNamedDeclaration(storePos32) {
 }
 
 function serializeExportSpecifier(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[6]) {
-        case 'D':
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 15:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeExportNamedSpecifier(node));
+            break;
+        case 22:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeExportDefaultSpecifier(node));
             break;
-        case 'N':
+        case 24:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeExportNamespaceSpecifier(node));
-            break;
-        case 'S':
-            scratchBuff[storePos] = 2;
-            writeScratchUint32((storePos >> 2) + 1, serializeExportNamedSpecifier(node));
             break;
         default: throw new Error('Unexpected enum option type for ExportSpecifier');
     }
@@ -391,14 +372,13 @@ function finalizeExportAllDeclaration(storePos32) {
 }
 
 function serializeModuleExportName(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[0]) {
-        case 'I':
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 10:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeIdentifier(node));
             break;
-        case 'S':
+        case 13:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeStringLiteral(node));
             break;
@@ -418,151 +398,120 @@ function finalizeModuleExportName(storePos) {
 function serializeStatement(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'B':
-            switch (type[1]) {
-                case 'l':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBlockStatement(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBreakStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Statement');
-            }
-            break;
-        case 'C':
-            switch (type[1]) {
-                case 'l':
-                    scratchBuff[storePos] = 17;
-                    writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 7;
-                    writeScratchUint32((storePos >> 2) + 1, serializeContinueStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Statement');
-            }
-            break;
-        case 'D':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeDebuggerStatement(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 13;
-                    writeScratchUint32((storePos >> 2) + 1, serializeDoWhileStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Statement');
-            }
-            break;
-        case 'E':
-            switch (type[1]) {
-                case 'm':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeEmptyStatement(node));
-                    break;
-                case 'x':
-                    scratchBuff[storePos] = 18;
-                    writeScratchUint32((storePos >> 2) + 1, serializeExpressionStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Statement');
-            }
-            break;
-        case 'F':
-            switch (type[1]) {
-                case 'o':
-                    switch (type[3]) {
-                        case 'I':
-                            scratchBuff[storePos] = 15;
-                            writeScratchUint32((storePos >> 2) + 1, serializeForInStatement(node));
-                            break;
-                        case 'O':
-                            scratchBuff[storePos] = 16;
-                            writeScratchUint32((storePos >> 2) + 1, serializeForOfStatement(node));
-                            break;
-                        case 'S':
-                            scratchBuff[storePos] = 14;
-                            writeScratchUint32((storePos >> 2) + 1, serializeForStatement(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Statement');
-                    }
-                    break;
-                case 'u':
-                    scratchBuff[storePos] = 17;
-                    writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Statement');
-            }
-            break;
-        case 'I':
+    outer: switch (type.length) {
+        case 11:
             scratchBuff[storePos] = 8;
             writeScratchUint32((storePos >> 2) + 1, serializeIfStatement(node));
             break;
-        case 'L':
-            scratchBuff[storePos] = 5;
-            writeScratchUint32((storePos >> 2) + 1, serializeLabeledStatement(node));
-            break;
-        case 'R':
-            scratchBuff[storePos] = 4;
-            writeScratchUint32((storePos >> 2) + 1, serializeReturnStatement(node));
-            break;
-        case 'S':
-            scratchBuff[storePos] = 9;
-            writeScratchUint32((storePos >> 2) + 1, serializeSwitchStatement(node));
-            break;
-        case 'T':
-            switch (type[1]) {
-                case 'h':
-                    scratchBuff[storePos] = 10;
-                    writeScratchUint32((storePos >> 2) + 1, serializeThrowStatement(node));
-                    break;
-                case 'r':
+        case 12:
+            switch (type) {
+                case 'TryStatement':
                     scratchBuff[storePos] = 11;
                     writeScratchUint32((storePos >> 2) + 1, serializeTryStatement(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'E':
-                            scratchBuff[storePos] = 17;
-                            writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
-                            break;
-                        case 'I':
-                            scratchBuff[storePos] = 17;
-                            writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
-                            break;
-                        case 'M':
-                            scratchBuff[storePos] = 17;
-                            writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 17;
-                            writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Statement');
-                    }
-                    break;
+                    break outer;
+                case 'ForStatement':
+                    scratchBuff[storePos] = 14;
+                    writeScratchUint32((storePos >> 2) + 1, serializeForStatement(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Statement');
             }
+        case 13:
+            scratchBuff[storePos] = 3;
+            writeScratchUint32((storePos >> 2) + 1, serializeWithStatement(node));
             break;
-        case 'V':
-            scratchBuff[storePos] = 17;
-            writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
-            break;
-        case 'W':
-            switch (type[1]) {
-                case 'h':
+        case 14:
+            switch (type) {
+                case 'BlockStatement':
+                    scratchBuff[storePos] = 0;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBlockStatement(node));
+                    break outer;
+                case 'EmptyStatement':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeEmptyStatement(node));
+                    break outer;
+                case 'BreakStatement':
+                    scratchBuff[storePos] = 6;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBreakStatement(node));
+                    break outer;
+                case 'ThrowStatement':
+                    scratchBuff[storePos] = 10;
+                    writeScratchUint32((storePos >> 2) + 1, serializeThrowStatement(node));
+                    break outer;
+                case 'WhileStatement':
                     scratchBuff[storePos] = 12;
                     writeScratchUint32((storePos >> 2) + 1, serializeWhileStatement(node));
-                    break;
-                case 'i':
-                    scratchBuff[storePos] = 3;
-                    writeScratchUint32((storePos >> 2) + 1, serializeWithStatement(node));
-                    break;
+                    break outer;
+                case 'ForInStatement':
+                    scratchBuff[storePos] = 15;
+                    writeScratchUint32((storePos >> 2) + 1, serializeForInStatement(node));
+                    break outer;
+                case 'ForOfStatement':
+                    scratchBuff[storePos] = 16;
+                    writeScratchUint32((storePos >> 2) + 1, serializeForOfStatement(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Statement');
             }
+        case 15:
+            switch (type) {
+                case 'ReturnStatement':
+                    scratchBuff[storePos] = 4;
+                    writeScratchUint32((storePos >> 2) + 1, serializeReturnStatement(node));
+                    break outer;
+                case 'SwitchStatement':
+                    scratchBuff[storePos] = 9;
+                    writeScratchUint32((storePos >> 2) + 1, serializeSwitchStatement(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Statement');
+            }
+        case 16:
+            switch (type) {
+                case 'LabeledStatement':
+                    scratchBuff[storePos] = 5;
+                    writeScratchUint32((storePos >> 2) + 1, serializeLabeledStatement(node));
+                    break outer;
+                case 'DoWhileStatement':
+                    scratchBuff[storePos] = 13;
+                    writeScratchUint32((storePos >> 2) + 1, serializeDoWhileStatement(node));
+                    break outer;
+                case 'ClassDeclaration':
+                    scratchBuff[storePos] = 17;
+                    writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Statement');
+            }
+        case 17:
+            switch (type) {
+                case 'DebuggerStatement':
+                    scratchBuff[storePos] = 2;
+                    writeScratchUint32((storePos >> 2) + 1, serializeDebuggerStatement(node));
+                    break outer;
+                case 'ContinueStatement':
+                    scratchBuff[storePos] = 7;
+                    writeScratchUint32((storePos >> 2) + 1, serializeContinueStatement(node));
+                    break outer;
+                case 'TsEnumDeclaration':
+                    scratchBuff[storePos] = 17;
+                    writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Statement');
+            }
+        case 19:
+            switch (type) {
+                case 'FunctionDeclaration':
+                case 'VariableDeclaration':
+                case 'TsModuleDeclaration':
+                    scratchBuff[storePos] = 17;
+                    writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
+                    break outer;
+                case 'ExpressionStatement':
+                    scratchBuff[storePos] = 18;
+                    writeScratchUint32((storePos >> 2) + 1, serializeExpressionStatement(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Statement');
+            }
+        case 22:
+            scratchBuff[storePos] = 17;
+            writeScratchUint32((storePos >> 2) + 1, serializeDeclaration(node));
             break;
         default: throw new Error('Unexpected enum option type for Statement');
     }
@@ -871,40 +820,43 @@ function finalizeExpressionStatement(storePos32) {
 function serializeDeclaration(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'C':
+    outer: switch (type.length) {
+        case 16:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeClassDeclaration(node));
             break;
-        case 'F':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeFunctionDeclaration(node));
+        case 17:
+            scratchBuff[storePos] = 5;
+            writeScratchUint32((storePos >> 2) + 1, serializeTsEnumDeclaration(node));
             break;
-        case 'T':
-            switch (type[2]) {
-                case 'E':
-                    scratchBuff[storePos] = 5;
-                    writeScratchUint32((storePos >> 2) + 1, serializeTsEnumDeclaration(node));
-                    break;
-                case 'I':
-                    scratchBuff[storePos] = 3;
-                    writeScratchUint32((storePos >> 2) + 1, serializeTsInterfaceDeclaration(node));
-                    break;
-                case 'M':
+        case 19:
+            switch (type) {
+                case 'FunctionDeclaration':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeFunctionDeclaration(node));
+                    break outer;
+                case 'VariableDeclaration':
+                    scratchBuff[storePos] = 2;
+                    writeScratchUint32((storePos >> 2) + 1, serializeVariableDeclaration(node));
+                    break outer;
+                case 'TsModuleDeclaration':
                     scratchBuff[storePos] = 6;
                     writeScratchUint32((storePos >> 2) + 1, serializeTsModuleDeclaration(node));
-                    break;
-                case 'T':
-                    scratchBuff[storePos] = 4;
-                    writeScratchUint32((storePos >> 2) + 1, serializeTsTypeAliasDeclaration(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Declaration');
             }
-            break;
-        case 'V':
-            scratchBuff[storePos] = 2;
-            writeScratchUint32((storePos >> 2) + 1, serializeVariableDeclaration(node));
-            break;
+        case 22:
+            switch (type) {
+                case 'TsInterfaceDeclaration':
+                    scratchBuff[storePos] = 3;
+                    writeScratchUint32((storePos >> 2) + 1, serializeTsInterfaceDeclaration(node));
+                    break outer;
+                case 'TsTypeAliasDeclaration':
+                    scratchBuff[storePos] = 4;
+                    writeScratchUint32((storePos >> 2) + 1, serializeTsTypeAliasDeclaration(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Declaration');
+            }
         default: throw new Error('Unexpected enum option type for Declaration');
     }
     return storePos;
@@ -1132,51 +1084,44 @@ function finalizeClassExpression(storePos32) {
 function serializeClassMember(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'C':
-            switch (type[1]) {
-                case 'l':
-                    switch (type[5]) {
-                        case 'M':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeClassMethod(node));
-                            break;
-                        case 'P':
-                            scratchBuff[storePos] = 3;
-                            writeScratchUint32((storePos >> 2) + 1, serializeClassProperty(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for ClassMember');
-                    }
-                    break;
-                case 'o':
+    outer: switch (type.length) {
+        case 11:
+            switch (type) {
+                case 'Constructor':
                     scratchBuff[storePos] = 0;
                     writeScratchUint32((storePos >> 2) + 1, serializeConstructor(node));
-                    break;
+                    break outer;
+                case 'ClassMethod':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeClassMethod(node));
+                    break outer;
+                case 'StaticBlock':
+                    scratchBuff[storePos] = 7;
+                    writeScratchUint32((storePos >> 2) + 1, serializeStaticBlock(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for ClassMember');
             }
-            break;
-        case 'E':
+        case 13:
+            switch (type) {
+                case 'PrivateMethod':
+                    scratchBuff[storePos] = 2;
+                    writeScratchUint32((storePos >> 2) + 1, serializePrivateMethod(node));
+                    break outer;
+                case 'ClassProperty':
+                    scratchBuff[storePos] = 3;
+                    writeScratchUint32((storePos >> 2) + 1, serializeClassProperty(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for ClassMember');
+            }
+        case 14:
             scratchBuff[storePos] = 6;
             writeScratchUint32((storePos >> 2) + 1, serializeEmptyStatement(node));
             break;
-        case 'P':
-            switch (type[7]) {
-                case 'M':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializePrivateMethod(node));
-                    break;
-                case 'P':
-                    scratchBuff[storePos] = 4;
-                    writeScratchUint32((storePos >> 2) + 1, serializePrivateProperty(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for ClassMember');
-            }
+        case 15:
+            scratchBuff[storePos] = 4;
+            writeScratchUint32((storePos >> 2) + 1, serializePrivateProperty(node));
             break;
-        case 'S':
-            scratchBuff[storePos] = 7;
-            writeScratchUint32((storePos >> 2) + 1, serializeStaticBlock(node));
-            break;
-        case 'T':
+        case 16:
             scratchBuff[storePos] = 5;
             writeScratchUint32((storePos >> 2) + 1, serializeTsIndexSignature(node));
             break;
@@ -1389,297 +1334,121 @@ function finalizeFunction(storePos32) {
 function serializePattern(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
-            switch (type[1]) {
-                case 'r':
-                    switch (type[3]) {
-                        case 'a':
-                            switch (type[5]) {
-                                case 'E':
-                                    scratchBuff[storePos] = 6;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                                    break;
-                                case 'P':
-                                    scratchBuff[storePos] = 1;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeArrayPattern(node));
-                                    break;
-                                default: throw new Error('Unexpected enum option type for Pattern');
-                            }
-                            break;
-                        case 'o':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Pattern');
-                    }
-                    break;
-                case 's':
-                    switch (type[10]) {
-                        case 'E':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'P':
-                            scratchBuff[storePos] = 4;
-                            writeScratchUint32((storePos >> 2) + 1, serializeAssignmentPattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Pattern');
-                    }
-                    break;
-                case 'w':
+    outer: switch (type.length) {
+        case 7:
+            switch (type) {
+                case 'Invalid':
+                    scratchBuff[storePos] = 5;
+                    writeScratchUint32((storePos >> 2) + 1, serializeInvalid(node));
+                    break outer;
+                case 'JSXText':
                     scratchBuff[storePos] = 6;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Pattern');
             }
-            break;
-        case 'B':
-            switch (type[1]) {
-                case 'i':
-                    switch (type[2]) {
-                        case 'g':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'n':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Pattern');
-                    }
-                    break;
-                case 'o':
+        case 10:
+            switch (type) {
+                case 'Identifier':
+                    scratchBuff[storePos] = 0;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBindingIdentifier(node));
+                    break outer;
+                case 'JSXElement':
                     scratchBuff[storePos] = 6;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Pattern');
             }
-            break;
-        case 'C':
-            switch (type[1]) {
-                case 'a':
+        case 11:
+            switch (type) {
+                case 'RestElement':
+                    scratchBuff[storePos] = 2;
+                    writeScratchUint32((storePos >> 2) + 1, serializeRestElement(node));
+                    break outer;
+                case 'NullLiteral':
+                case 'JSXFragment':
+                case 'PrivateName':
                     scratchBuff[storePos] = 6;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'l':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Pattern');
             }
-            break;
-        case 'F':
+        case 12:
+            switch (type) {
+                case 'ArrayPattern':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeArrayPattern(node));
+                    break outer;
+                case 'MetaProperty':
+                    scratchBuff[storePos] = 6;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Pattern');
+            }
+        case 13:
+            switch (type) {
+                case 'ObjectPattern':
+                    scratchBuff[storePos] = 3;
+                    writeScratchUint32((storePos >> 2) + 1, serializeObjectPattern(node));
+                    break outer;
+                case 'NewExpression':
+                case 'StringLiteral':
+                case 'BigIntLiteral':
+                case 'RegExpLiteral':
+                    scratchBuff[storePos] = 6;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Pattern');
+            }
+        case 14:
             scratchBuff[storePos] = 6;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'I':
-            switch (type[1]) {
-                case 'd':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBindingIdentifier(node));
-                    break;
-                case 'n':
-                    scratchBuff[storePos] = 5;
-                    writeScratchUint32((storePos >> 2) + 1, serializeInvalid(node));
-                    break;
+        case 15:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 16:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 17:
+            switch (type) {
+                case 'AssignmentPattern':
+                    scratchBuff[storePos] = 4;
+                    writeScratchUint32((storePos >> 2) + 1, serializeAssignmentPattern(node));
+                    break outer;
+                case 'JSXNamespacedName':
+                    scratchBuff[storePos] = 6;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Pattern');
             }
+        case 18:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'J':
-            switch (type[3]) {
-                case 'E':
-                    switch (type[4]) {
-                        case 'l':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Pattern');
-                    }
-                    break;
-                case 'F':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'M':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'T':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
+        case 19:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'M':
-            switch (type[2]) {
-                case 'm':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
+        case 20:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'N':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    switch (type[2]) {
-                        case 'l':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Pattern');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
+        case 21:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'O':
-            switch (type[1]) {
-                case 'b':
-                    switch (type[6]) {
-                        case 'E':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'P':
-                            scratchBuff[storePos] = 3;
-                            writeScratchUint32((storePos >> 2) + 1, serializeObjectPattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Pattern');
-                    }
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
+        case 23:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'P':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
+        case 24:
+            scratchBuff[storePos] = 6;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'R':
-            switch (type[2]) {
-                case 'g':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 's':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeRestElement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
-            break;
-        case 'S':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
-            break;
-        case 'T':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'e':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'h':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'A':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'C':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'I':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'N':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Pattern');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
-            break;
-        case 'U':
-            switch (type[1]) {
-                case 'n':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 6;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Pattern');
-            }
-            break;
-        case 'Y':
+        case 26:
             scratchBuff[storePos] = 6;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
@@ -1769,20 +1538,19 @@ function finalizeObjectPattern(storePos32) {
 }
 
 function serializeObjectPatternProperty(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[0]) {
-        case 'A':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeAssignmentPatternProperty(node));
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 11:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeRestElement(node));
             break;
-        case 'K':
+        case 23:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeKeyValuePatternProperty(node));
             break;
-        case 'R':
-            scratchBuff[storePos] = 2;
-            writeScratchUint32((storePos >> 2) + 1, serializeRestElement(node));
+        case 25:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeAssignmentPatternProperty(node));
             break;
         default: throw new Error('Unexpected enum option type for ObjectPatternProperty');
     }
@@ -1844,263 +1612,209 @@ function finalizeAssignmentPattern(storePos32) {
 function serializeExpression(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
-            switch (type[1]) {
-                case 'r':
-                    switch (type[3]) {
-                        case 'a':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeArrayExpression(node));
-                            break;
-                        case 'o':
-                            scratchBuff[storePos] = 18;
-                            writeScratchUint32((storePos >> 2) + 1, serializeArrowFunctionExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Expression');
-                    }
-                    break;
-                case 's':
-                    scratchBuff[storePos] = 7;
-                    writeScratchUint32((storePos >> 2) + 1, serializeAssignmentExpression(node));
-                    break;
-                case 'w':
-                    scratchBuff[storePos] = 22;
-                    writeScratchUint32((storePos >> 2) + 1, serializeAwaitExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Expression');
-            }
-            break;
-        case 'B':
-            switch (type[1]) {
-                case 'i':
-                    switch (type[2]) {
-                        case 'g':
-                            scratchBuff[storePos] = 15;
-                            writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
-                            break;
-                        case 'n':
-                            scratchBuff[storePos] = 6;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBinaryExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Expression');
-                    }
-                    break;
-                case 'o':
+    outer: switch (type.length) {
+        case 7:
+            switch (type) {
+                case 'JSXText':
                     scratchBuff[storePos] = 15;
                     writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Expression');
-            }
-            break;
-        case 'C':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 11;
-                    writeScratchUint32((storePos >> 2) + 1, serializeCallExpression(node));
-                    break;
-                case 'l':
-                    scratchBuff[storePos] = 19;
-                    writeScratchUint32((storePos >> 2) + 1, serializeClassExpression(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 10;
-                    writeScratchUint32((storePos >> 2) + 1, serializeConditionalExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Expression');
-            }
-            break;
-        case 'F':
-            scratchBuff[storePos] = 3;
-            writeScratchUint32((storePos >> 2) + 1, serializeFunctionExpression(node));
-            break;
-        case 'I':
-            switch (type[1]) {
-                case 'd':
-                    scratchBuff[storePos] = 14;
-                    writeScratchUint32((storePos >> 2) + 1, serializeIdentifier(node));
-                    break;
-                case 'n':
+                    break outer;
+                case 'Invalid':
                     scratchBuff[storePos] = 36;
                     writeScratchUint32((storePos >> 2) + 1, serializeInvalid(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Expression');
             }
-            break;
-        case 'J':
-            switch (type[3]) {
-                case 'E':
-                    switch (type[4]) {
-                        case 'l':
-                            scratchBuff[storePos] = 27;
-                            writeScratchUint32((storePos >> 2) + 1, serializeJSXElement(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 26;
-                            writeScratchUint32((storePos >> 2) + 1, serializeJSXEmptyExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Expression');
-                    }
-                    break;
-                case 'F':
+        case 10:
+            switch (type) {
+                case 'Identifier':
+                    scratchBuff[storePos] = 14;
+                    writeScratchUint32((storePos >> 2) + 1, serializeIdentifier(node));
+                    break outer;
+                case 'JSXElement':
+                    scratchBuff[storePos] = 27;
+                    writeScratchUint32((storePos >> 2) + 1, serializeJSXElement(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Expression');
+            }
+        case 11:
+            switch (type) {
+                case 'NullLiteral':
+                    scratchBuff[storePos] = 15;
+                    writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
+                    break outer;
+                case 'JSXFragment':
                     scratchBuff[storePos] = 28;
                     writeScratchUint32((storePos >> 2) + 1, serializeJSXFragment(node));
-                    break;
-                case 'M':
-                    scratchBuff[storePos] = 24;
-                    writeScratchUint32((storePos >> 2) + 1, serializeJSXMemberExpression(node));
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 25;
-                    writeScratchUint32((storePos >> 2) + 1, serializeJSXNamespacedName(node));
-                    break;
-                case 'T':
-                    scratchBuff[storePos] = 15;
-                    writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Expression');
-            }
-            break;
-        case 'M':
-            switch (type[2]) {
-                case 'm':
-                    scratchBuff[storePos] = 8;
-                    writeScratchUint32((storePos >> 2) + 1, serializeMemberExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 21;
-                    writeScratchUint32((storePos >> 2) + 1, serializeMetaProperty(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Expression');
-            }
-            break;
-        case 'N':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 12;
-                    writeScratchUint32((storePos >> 2) + 1, serializeNewExpression(node));
-                    break;
-                case 'u':
-                    switch (type[2]) {
-                        case 'l':
-                            scratchBuff[storePos] = 15;
-                            writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 15;
-                            writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Expression');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for Expression');
-            }
-            break;
-        case 'O':
-            switch (type[1]) {
-                case 'b':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeObjectExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 35;
-                    writeScratchUint32((storePos >> 2) + 1, serializeOptionalChainingExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Expression');
-            }
-            break;
-        case 'P':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 23;
-                    writeScratchUint32((storePos >> 2) + 1, serializeParenthesisExpression(node));
-                    break;
-                case 'r':
+                    break outer;
+                case 'PrivateName':
                     scratchBuff[storePos] = 34;
                     writeScratchUint32((storePos >> 2) + 1, serializePrivateName(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Expression');
             }
+        case 12:
+            scratchBuff[storePos] = 21;
+            writeScratchUint32((storePos >> 2) + 1, serializeMetaProperty(node));
             break;
-        case 'R':
-            scratchBuff[storePos] = 15;
-            writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
-            break;
-        case 'S':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 13;
-                    writeScratchUint32((storePos >> 2) + 1, serializeSequenceExpression(node));
-                    break;
-                case 't':
+        case 13:
+            switch (type) {
+                case 'NewExpression':
+                    scratchBuff[storePos] = 12;
+                    writeScratchUint32((storePos >> 2) + 1, serializeNewExpression(node));
+                    break outer;
+                case 'StringLiteral':
+                case 'BigIntLiteral':
+                case 'RegExpLiteral':
                     scratchBuff[storePos] = 15;
                     writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
-                    break;
-                case 'u':
-                    scratchBuff[storePos] = 9;
-                    writeScratchUint32((storePos >> 2) + 1, serializeSuperPropExpression(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Expression');
             }
-            break;
-        case 'T':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 17;
-                    writeScratchUint32((storePos >> 2) + 1, serializeTaggedTemplateExpression(node));
-                    break;
-                case 'e':
-                    scratchBuff[storePos] = 16;
-                    writeScratchUint32((storePos >> 2) + 1, serializeTemplateLiteral(node));
-                    break;
-                case 'h':
+        case 14:
+            switch (type) {
+                case 'ThisExpression':
                     scratchBuff[storePos] = 0;
                     writeScratchUint32((storePos >> 2) + 1, serializeThisExpression(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'A':
-                            scratchBuff[storePos] = 32;
-                            writeScratchUint32((storePos >> 2) + 1, serializeTsAsExpression(node));
-                            break;
-                        case 'C':
-                            scratchBuff[storePos] = 30;
-                            writeScratchUint32((storePos >> 2) + 1, serializeTsConstAssertion(node));
-                            break;
-                        case 'I':
-                            scratchBuff[storePos] = 33;
-                            writeScratchUint32((storePos >> 2) + 1, serializeTsInstantiation(node));
-                            break;
-                        case 'N':
-                            scratchBuff[storePos] = 31;
-                            writeScratchUint32((storePos >> 2) + 1, serializeTsNonNullExpression(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 29;
-                            writeScratchUint32((storePos >> 2) + 1, serializeTsTypeAssertion(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for Expression');
-                    }
-                    break;
+                    break outer;
+                case 'CallExpression':
+                    scratchBuff[storePos] = 11;
+                    writeScratchUint32((storePos >> 2) + 1, serializeCallExpression(node));
+                    break outer;
+                case 'BooleanLiteral':
+                case 'NumericLiteral':
+                    scratchBuff[storePos] = 15;
+                    writeScratchUint32((storePos >> 2) + 1, serializeLiteral(node));
+                    break outer;
+                case 'TsAsExpression':
+                    scratchBuff[storePos] = 32;
+                    writeScratchUint32((storePos >> 2) + 1, serializeTsAsExpression(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Expression');
             }
-            break;
-        case 'U':
-            switch (type[1]) {
-                case 'n':
+        case 15:
+            switch (type) {
+                case 'ArrayExpression':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeArrayExpression(node));
+                    break outer;
+                case 'UnaryExpression':
                     scratchBuff[storePos] = 4;
                     writeScratchUint32((storePos >> 2) + 1, serializeUnaryExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 5;
-                    writeScratchUint32((storePos >> 2) + 1, serializeUpdateExpression(node));
-                    break;
+                    break outer;
+                case 'TemplateLiteral':
+                    scratchBuff[storePos] = 16;
+                    writeScratchUint32((storePos >> 2) + 1, serializeTemplateLiteral(node));
+                    break outer;
+                case 'ClassExpression':
+                    scratchBuff[storePos] = 19;
+                    writeScratchUint32((storePos >> 2) + 1, serializeClassExpression(node));
+                    break outer;
+                case 'YieldExpression':
+                    scratchBuff[storePos] = 20;
+                    writeScratchUint32((storePos >> 2) + 1, serializeYieldExpression(node));
+                    break outer;
+                case 'AwaitExpression':
+                    scratchBuff[storePos] = 22;
+                    writeScratchUint32((storePos >> 2) + 1, serializeAwaitExpression(node));
+                    break outer;
+                case 'TsTypeAssertion':
+                    scratchBuff[storePos] = 29;
+                    writeScratchUint32((storePos >> 2) + 1, serializeTsTypeAssertion(node));
+                    break outer;
+                case 'TsInstantiation':
+                    scratchBuff[storePos] = 33;
+                    writeScratchUint32((storePos >> 2) + 1, serializeTsInstantiation(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Expression');
             }
+        case 16:
+            switch (type) {
+                case 'ObjectExpression':
+                    scratchBuff[storePos] = 2;
+                    writeScratchUint32((storePos >> 2) + 1, serializeObjectExpression(node));
+                    break outer;
+                case 'UpdateExpression':
+                    scratchBuff[storePos] = 5;
+                    writeScratchUint32((storePos >> 2) + 1, serializeUpdateExpression(node));
+                    break outer;
+                case 'BinaryExpression':
+                    scratchBuff[storePos] = 6;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBinaryExpression(node));
+                    break outer;
+                case 'MemberExpression':
+                    scratchBuff[storePos] = 8;
+                    writeScratchUint32((storePos >> 2) + 1, serializeMemberExpression(node));
+                    break outer;
+                case 'TsConstAssertion':
+                    scratchBuff[storePos] = 30;
+                    writeScratchUint32((storePos >> 2) + 1, serializeTsConstAssertion(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Expression');
+            }
+        case 17:
+            scratchBuff[storePos] = 25;
+            writeScratchUint32((storePos >> 2) + 1, serializeJSXNamespacedName(node));
             break;
-        case 'Y':
-            scratchBuff[storePos] = 20;
-            writeScratchUint32((storePos >> 2) + 1, serializeYieldExpression(node));
+        case 18:
+            switch (type) {
+                case 'FunctionExpression':
+                    scratchBuff[storePos] = 3;
+                    writeScratchUint32((storePos >> 2) + 1, serializeFunctionExpression(node));
+                    break outer;
+                case 'SequenceExpression':
+                    scratchBuff[storePos] = 13;
+                    writeScratchUint32((storePos >> 2) + 1, serializeSequenceExpression(node));
+                    break outer;
+                case 'JSXEmptyExpression':
+                    scratchBuff[storePos] = 26;
+                    writeScratchUint32((storePos >> 2) + 1, serializeJSXEmptyExpression(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Expression');
+            }
+        case 19:
+            switch (type) {
+                case 'SuperPropExpression':
+                    scratchBuff[storePos] = 9;
+                    writeScratchUint32((storePos >> 2) + 1, serializeSuperPropExpression(node));
+                    break outer;
+                case 'JSXMemberExpression':
+                    scratchBuff[storePos] = 24;
+                    writeScratchUint32((storePos >> 2) + 1, serializeJSXMemberExpression(node));
+                    break outer;
+                case 'TsNonNullExpression':
+                    scratchBuff[storePos] = 31;
+                    writeScratchUint32((storePos >> 2) + 1, serializeTsNonNullExpression(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Expression');
+            }
+        case 20:
+            scratchBuff[storePos] = 7;
+            writeScratchUint32((storePos >> 2) + 1, serializeAssignmentExpression(node));
+            break;
+        case 21:
+            switch (type) {
+                case 'ConditionalExpression':
+                    scratchBuff[storePos] = 10;
+                    writeScratchUint32((storePos >> 2) + 1, serializeConditionalExpression(node));
+                    break outer;
+                case 'ParenthesisExpression':
+                    scratchBuff[storePos] = 23;
+                    writeScratchUint32((storePos >> 2) + 1, serializeParenthesisExpression(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Expression');
+            }
+        case 23:
+            scratchBuff[storePos] = 18;
+            writeScratchUint32((storePos >> 2) + 1, serializeArrowFunctionExpression(node));
+            break;
+        case 24:
+            scratchBuff[storePos] = 17;
+            writeScratchUint32((storePos >> 2) + 1, serializeTaggedTemplateExpression(node));
+            break;
+        case 26:
+            scratchBuff[storePos] = 35;
+            writeScratchUint32((storePos >> 2) + 1, serializeOptionalChainingExpression(node));
             break;
         default: throw new Error('Unexpected enum option type for Expression');
     }
@@ -2295,297 +2009,105 @@ function finalizeAssignmentExpression(storePos32) {
 function serializeAssignmentLeft(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
-            switch (type[1]) {
-                case 'r':
-                    switch (type[3]) {
-                        case 'a':
-                            switch (type[5]) {
-                                case 'E':
-                                    scratchBuff[storePos] = 0;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                                    break;
-                                case 'P':
-                                    scratchBuff[storePos] = 1;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
-                                    break;
-                                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-                            }
-                            break;
-                        case 'o':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for AssignmentLeft');
-                    }
-                    break;
-                case 's':
-                    switch (type[10]) {
-                        case 'E':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'P':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for AssignmentLeft');
-                    }
-                    break;
-                case 'w':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
-            break;
-        case 'B':
-            switch (type[1]) {
-                case 'i':
-                    switch (type[2]) {
-                        case 'g':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'n':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for AssignmentLeft');
-                    }
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
-            break;
-        case 'C':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'l':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
-            break;
-        case 'F':
+    outer: switch (type.length) {
+        case 7:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'I':
-            switch (type[1]) {
-                case 'd':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'n':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
+        case 10:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'J':
-            switch (type[3]) {
-                case 'E':
-                    switch (type[4]) {
-                        case 'l':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for AssignmentLeft');
-                    }
-                    break;
-                case 'F':
+        case 11:
+            switch (type) {
+                case 'NullLiteral':
+                case 'JSXFragment':
+                case 'PrivateName':
                     scratchBuff[storePos] = 0;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'M':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'T':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
-            break;
-        case 'M':
-            switch (type[2]) {
-                case 'm':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
-            break;
-        case 'N':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    switch (type[2]) {
-                        case 'l':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for AssignmentLeft');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
-            break;
-        case 'O':
-            switch (type[1]) {
-                case 'b':
-                    switch (type[6]) {
-                        case 'E':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'P':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for AssignmentLeft');
-                    }
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
-            break;
-        case 'P':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for AssignmentLeft');
-            }
-            break;
-        case 'R':
-            switch (type[2]) {
-                case 'g':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 's':
+                    break outer;
+                case 'RestElement':
                     scratchBuff[storePos] = 1;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for AssignmentLeft');
             }
-            break;
-        case 'S':
-            switch (type[1]) {
-                case 'e':
+        case 12:
+            switch (type) {
+                case 'MetaProperty':
                     scratchBuff[storePos] = 0;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
+                    break outer;
+                case 'ArrayPattern':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for AssignmentLeft');
             }
-            break;
-        case 'T':
-            switch (type[1]) {
-                case 'a':
+        case 13:
+            switch (type) {
+                case 'NewExpression':
+                case 'StringLiteral':
+                case 'BigIntLiteral':
+                case 'RegExpLiteral':
                     scratchBuff[storePos] = 0;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'e':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'h':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'A':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'C':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'I':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'N':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for AssignmentLeft');
-                    }
-                    break;
+                    break outer;
+                case 'ObjectPattern':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for AssignmentLeft');
             }
+        case 14:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'U':
-            switch (type[1]) {
-                case 'n':
+        case 15:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 16:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 17:
+            switch (type) {
+                case 'JSXNamespacedName':
                     scratchBuff[storePos] = 0;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
+                    break outer;
+                case 'AssignmentPattern':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for AssignmentLeft');
             }
+        case 18:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'Y':
+        case 19:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 20:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 21:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 23:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 24:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 26:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
@@ -2964,30 +2486,34 @@ function finalizeSpreadElement(storePos32) {
 function serializeObjectProperty(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
-            scratchBuff[storePos] = 2;
-            writeScratchUint32((storePos >> 2) + 1, serializeAssignmentProperty(node));
-            break;
-        case 'G':
-            scratchBuff[storePos] = 3;
-            writeScratchUint32((storePos >> 2) + 1, serializeGetterProperty(node));
-            break;
-        case 'I':
+    outer: switch (type.length) {
+        case 10:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeIdentifier(node));
             break;
-        case 'K':
+        case 14:
+            switch (type) {
+                case 'GetterProperty':
+                    scratchBuff[storePos] = 3;
+                    writeScratchUint32((storePos >> 2) + 1, serializeGetterProperty(node));
+                    break outer;
+                case 'SetterProperty':
+                    scratchBuff[storePos] = 4;
+                    writeScratchUint32((storePos >> 2) + 1, serializeSetterProperty(node));
+                    break outer;
+                case 'MethodProperty':
+                    scratchBuff[storePos] = 5;
+                    writeScratchUint32((storePos >> 2) + 1, serializeMethodProperty(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for ObjectProperty');
+            }
+        case 16:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeKeyValueProperty(node));
             break;
-        case 'M':
-            scratchBuff[storePos] = 5;
-            writeScratchUint32((storePos >> 2) + 1, serializeMethodProperty(node));
-            break;
-        case 'S':
-            scratchBuff[storePos] = 4;
-            writeScratchUint32((storePos >> 2) + 1, serializeSetterProperty(node));
+        case 18:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeAssignmentProperty(node));
             break;
         default: throw new Error('Unexpected enum option type for ObjectProperty');
     }
@@ -3096,26 +2622,30 @@ function finalizeMethodProperty(storePos32) {
 function serializePropertyName(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'B':
-            scratchBuff[storePos] = 4;
-            writeScratchUint32((storePos >> 2) + 1, serializeBigIntLiteral(node));
-            break;
-        case 'C':
+    outer: switch (type.length) {
+        case 8:
             scratchBuff[storePos] = 3;
             writeScratchUint32((storePos >> 2) + 1, serializeComputed(node));
             break;
-        case 'I':
+        case 10:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeIdentifier(node));
             break;
-        case 'N':
+        case 13:
+            switch (type) {
+                case 'StringLiteral':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeStringLiteral(node));
+                    break outer;
+                case 'BigIntLiteral':
+                    scratchBuff[storePos] = 4;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBigIntLiteral(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for PropertyName');
+            }
+        case 14:
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeNumericLiteral(node));
-            break;
-        case 'S':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeStringLiteral(node));
             break;
         default: throw new Error('Unexpected enum option type for PropertyName');
     }
@@ -3136,45 +2666,43 @@ function finalizePropertyName(storePos) {
 function serializeLiteral(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'B':
-            switch (type[1]) {
-                case 'i':
-                    scratchBuff[storePos] = 4;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBigIntLiteral(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBooleanLiteral(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for Literal');
-            }
-            break;
-        case 'J':
+    outer: switch (type.length) {
+        case 7:
             scratchBuff[storePos] = 6;
             writeScratchUint32((storePos >> 2) + 1, serializeJSXText(node));
             break;
-        case 'N':
-            switch (type[2]) {
-                case 'l':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeNullLiteral(node));
-                    break;
-                case 'm':
-                    scratchBuff[storePos] = 3;
-                    writeScratchUint32((storePos >> 2) + 1, serializeNumericLiteral(node));
-                    break;
+        case 11:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeNullLiteral(node));
+            break;
+        case 13:
+            switch (type) {
+                case 'StringLiteral':
+                    scratchBuff[storePos] = 0;
+                    writeScratchUint32((storePos >> 2) + 1, serializeStringLiteral(node));
+                    break outer;
+                case 'BigIntLiteral':
+                    scratchBuff[storePos] = 4;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBigIntLiteral(node));
+                    break outer;
+                case 'RegExpLiteral':
+                    scratchBuff[storePos] = 5;
+                    writeScratchUint32((storePos >> 2) + 1, serializeRegExpLiteral(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for Literal');
             }
-            break;
-        case 'R':
-            scratchBuff[storePos] = 5;
-            writeScratchUint32((storePos >> 2) + 1, serializeRegExpLiteral(node));
-            break;
-        case 'S':
-            scratchBuff[storePos] = 0;
-            writeScratchUint32((storePos >> 2) + 1, serializeStringLiteral(node));
-            break;
+        case 14:
+            switch (type) {
+                case 'BooleanLiteral':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeBooleanLiteral(node));
+                    break outer;
+                case 'NumericLiteral':
+                    scratchBuff[storePos] = 3;
+                    writeScratchUint32((storePos >> 2) + 1, serializeNumericLiteral(node));
+                    break outer;
+                default: throw new Error('Unexpected enum option type for Literal');
+            }
         default: throw new Error('Unexpected enum option type for Literal');
     }
     return storePos;
@@ -3700,222 +3228,86 @@ function serializeVecModuleDeclarationOrStatement(values) {
 function serializeModuleDeclarationOrStatement(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'B':
-            switch (type[1]) {
-                case 'l':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-            }
+    outer: switch (type.length) {
+        case 11:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
             break;
-        case 'C':
-            switch (type[1]) {
-                case 'l':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-            }
+        case 12:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
             break;
-        case 'D':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-            }
+        case 13:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
             break;
-        case 'E':
-            switch (type[1]) {
-                case 'm':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                case 'x':
-                    switch (type[3]) {
-                        case 'o':
-                            switch (type[6]) {
-                                case 'A':
-                                    scratchBuff[storePos] = 0;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                                    break;
-                                case 'D':
-                                    switch (type[8]) {
-                                        case 'c':
-                                            scratchBuff[storePos] = 0;
-                                            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                                            break;
-                                        case 'f':
-                                            switch (type[13]) {
-                                                case 'D':
-                                                    scratchBuff[storePos] = 0;
-                                                    writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                                                    break;
-                                                case 'E':
-                                                    scratchBuff[storePos] = 0;
-                                                    writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                                                    break;
-                                                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-                                            }
-                                            break;
-                                        default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-                                    }
-                                    break;
-                                case 'N':
-                                    scratchBuff[storePos] = 0;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                                    break;
-                                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-                            }
-                            break;
-                        case 'r':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-            }
+        case 14:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
             break;
-        case 'F':
-            switch (type[1]) {
-                case 'o':
-                    switch (type[3]) {
-                        case 'I':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                            break;
-                        case 'O':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                            break;
-                        case 'S':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-                    }
-                    break;
-                case 'u':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-            }
+        case 15:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
             break;
-        case 'I':
-            switch (type[1]) {
-                case 'f':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                case 'm':
+        case 16:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
+            break;
+        case 17:
+            switch (type) {
+                case 'ImportDeclaration':
+                case 'ExportDeclaration':
                     scratchBuff[storePos] = 0;
                     writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                    break;
+                    break outer;
+                case 'DebuggerStatement':
+                case 'ContinueStatement':
+                case 'TsEnumDeclaration':
+                    scratchBuff[storePos] = 1;
+                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
+                    break outer;
                 default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
             }
+        case 18:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
             break;
-        case 'L':
+        case 19:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
             break;
-        case 'R':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
+        case 20:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
             break;
-        case 'S':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-            break;
-        case 'T':
-            switch (type[1]) {
-                case 'h':
+        case 22:
+            switch (type) {
+                case 'ExportNamedDeclaration':
+                    scratchBuff[storePos] = 0;
+                    writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
+                    break outer;
+                case 'TsInterfaceDeclaration':
+                case 'TsTypeAliasDeclaration':
                     scratchBuff[storePos] = 1;
                     writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'E':
-                            switch (type[3]) {
-                                case 'n':
-                                    scratchBuff[storePos] = 1;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                                    break;
-                                case 'x':
-                                    scratchBuff[storePos] = 0;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                                    break;
-                                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-                            }
-                            break;
-                        case 'I':
-                            switch (type[3]) {
-                                case 'm':
-                                    scratchBuff[storePos] = 0;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                                    break;
-                                case 'n':
-                                    scratchBuff[storePos] = 1;
-                                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                                    break;
-                                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-                            }
-                            break;
-                        case 'M':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                            break;
-                        case 'N':
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-                    }
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
             }
+        case 23:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
             break;
-        case 'V':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
+        case 24:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
             break;
-        case 'W':
-            switch (type[1]) {
-                case 'h':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                case 'i':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeStatement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
-            }
+        case 25:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
+            break;
+        case 28:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeModuleDeclaration(node));
             break;
         default: throw new Error('Unexpected enum option type for ModuleDeclarationOrStatement');
     }
@@ -3965,39 +3357,26 @@ function serializeVecSpreadElementOrBoxObjectProperty(values) {
 function serializeSpreadElementOrBoxObjectProperty(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
+    outer: switch (type.length) {
+        case 10:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
             break;
-        case 'G':
+        case 13:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeSpreadElement(node));
+            break;
+        case 14:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
             break;
-        case 'I':
+        case 16:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
             break;
-        case 'K':
+        case 18:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
-            break;
-        case 'M':
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
-            break;
-        case 'S':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxObjectProperty(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 0;
-                    writeScratchUint32((storePos >> 2) + 1, serializeSpreadElement(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SpreadElementOrBoxObjectProperty');
-            }
             break;
         default: throw new Error('Unexpected enum option type for SpreadElementOrBoxObjectProperty');
     }
@@ -4139,265 +3518,78 @@ function finalizeOptionVariableDeclarationOrBoxExpression(storePos) {
 function serializeVariableDeclarationOrBoxExpression(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
-            switch (type[1]) {
-                case 'r':
-                    switch (type[3]) {
-                        case 'a':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'o':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-                    }
-                    break;
-                case 's':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'w':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'B':
-            switch (type[1]) {
-                case 'i':
-                    switch (type[2]) {
-                        case 'g':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'n':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-                    }
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'C':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'l':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'F':
+    outer: switch (type.length) {
+        case 7:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'I':
-            switch (type[1]) {
-                case 'd':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'n':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'J':
-            switch (type[3]) {
-                case 'E':
-                    switch (type[4]) {
-                        case 'l':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-                    }
-                    break;
-                case 'F':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'M':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'T':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'M':
-            switch (type[2]) {
-                case 'm':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'N':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    switch (type[2]) {
-                        case 'l':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'O':
-            switch (type[1]) {
-                case 'b':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'P':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
-            break;
-        case 'R':
+        case 10:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'S':
-            switch (type[1]) {
-                case 'e':
+        case 11:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 12:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 13:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 14:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 15:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 16:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 17:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 18:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 19:
+            switch (type) {
+                case 'VariableDeclaration':
+                    scratchBuff[storePos] = 0;
+                    writeScratchUint32((storePos >> 2) + 1, serializeVariableDeclaration(node));
+                    break outer;
+                case 'SuperPropExpression':
+                case 'JSXMemberExpression':
+                case 'TsNonNullExpression':
                     scratchBuff[storePos] = 1;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
             }
+        case 20:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'T':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'h':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'A':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'C':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'I':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'N':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
+        case 21:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'U':
-            switch (type[1]) {
-                case 'n':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrBoxExpression');
-            }
+        case 23:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'V':
-            scratchBuff[storePos] = 0;
-            writeScratchUint32((storePos >> 2) + 1, serializeVariableDeclaration(node));
+        case 24:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'Y':
+        case 26:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
@@ -4421,301 +3613,78 @@ function serializeVecVariableDeclarator(values) {
 function serializeVariableDeclarationOrPattern(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
-            switch (type[1]) {
-                case 'r':
-                    switch (type[3]) {
-                        case 'a':
-                            switch (type[5]) {
-                                case 'E':
-                                    scratchBuff[storePos] = 1;
-                                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                                    break;
-                                case 'P':
-                                    scratchBuff[storePos] = 1;
-                                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                                    break;
-                                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-                            }
-                            break;
-                        case 'o':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-                    }
-                    break;
-                case 's':
-                    switch (type[10]) {
-                        case 'E':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'P':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-                    }
-                    break;
-                case 'w':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'B':
-            switch (type[1]) {
-                case 'i':
-                    switch (type[2]) {
-                        case 'g':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'n':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-                    }
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'C':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'l':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'F':
+    outer: switch (type.length) {
+        case 7:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
             break;
-        case 'I':
-            switch (type[1]) {
-                case 'd':
+        case 10:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 11:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 12:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 13:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 14:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 15:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 16:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 17:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 18:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
+            break;
+        case 19:
+            switch (type) {
+                case 'VariableDeclaration':
+                    scratchBuff[storePos] = 0;
+                    writeScratchUint32((storePos >> 2) + 1, serializeVariableDeclaration(node));
+                    break outer;
+                case 'SuperPropExpression':
+                case 'JSXMemberExpression':
+                case 'TsNonNullExpression':
                     scratchBuff[storePos] = 1;
                     writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'n':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
             }
+        case 20:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
             break;
-        case 'J':
-            switch (type[3]) {
-                case 'E':
-                    switch (type[4]) {
-                        case 'l':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-                    }
-                    break;
-                case 'F':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'M':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'T':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
+        case 21:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
             break;
-        case 'M':
-            switch (type[2]) {
-                case 'm':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
+        case 23:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
             break;
-        case 'N':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'u':
-                    switch (type[2]) {
-                        case 'l':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
+        case 24:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
             break;
-        case 'O':
-            switch (type[1]) {
-                case 'b':
-                    switch (type[6]) {
-                        case 'E':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'P':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-                    }
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'P':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'R':
-            switch (type[2]) {
-                case 'g':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 's':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'S':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'u':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'T':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'h':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'A':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'C':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'I':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'N':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'U':
-            switch (type[1]) {
-                case 'n':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for VariableDeclarationOrPattern');
-            }
-            break;
-        case 'V':
-            scratchBuff[storePos] = 0;
-            writeScratchUint32((storePos >> 2) + 1, serializeVariableDeclaration(node));
-            break;
-        case 'Y':
+        case 26:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializePattern(node));
             break;
@@ -4741,14 +3710,13 @@ function serializeVecTsParamPropOrParameter(values) {
 }
 
 function serializeTsParamPropOrParameter(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[0]) {
-        case 'P':
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 9:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeParameter(node));
             break;
-        case 'T':
+        case 11:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeTsParamProp(node));
             break;
@@ -4810,18 +3778,17 @@ function finalizeOptionTsTypeParameterDeclaration(storePos) {
 }
 
 function serializeIdentifierOrPrivateNameOrComputed(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[0]) {
-        case 'C':
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 8:
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeComputed(node));
             break;
-        case 'I':
+        case 10:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeIdentifier(node));
             break;
-        case 'P':
+        case 11:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializePrivateName(node));
             break;
@@ -4840,14 +3807,13 @@ function finalizeIdentifierOrPrivateNameOrComputed(storePos) {
 }
 
 function serializeIdentifierOrComputed(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[0]) {
-        case 'C':
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 8:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeComputed(node));
             break;
-        case 'I':
+        case 10:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeIdentifier(node));
             break;
@@ -4867,274 +3833,76 @@ function finalizeIdentifierOrComputed(storePos) {
 function serializeSuperOrImportOrBoxExpression(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
-            switch (type[1]) {
-                case 'r':
-                    switch (type[3]) {
-                        case 'a':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'o':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-                    }
-                    break;
-                case 's':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'w':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
+    outer: switch (type.length) {
+        case 5:
+            scratchBuff[storePos] = 0;
+            writeScratchUint32((storePos >> 2) + 1, serializeSuper(node));
             break;
-        case 'B':
-            switch (type[1]) {
-                case 'i':
-                    switch (type[2]) {
-                        case 'g':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'n':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-                    }
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
+        case 6:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeImport(node));
             break;
-        case 'C':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'l':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
-            break;
-        case 'F':
+        case 7:
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'I':
-            switch (type[1]) {
-                case 'd':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'm':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeImport(node));
-                    break;
-                case 'n':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
-            break;
-        case 'J':
-            switch (type[3]) {
-                case 'E':
-                    switch (type[4]) {
-                        case 'l':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-                    }
-                    break;
-                case 'F':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'M':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'T':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
-            break;
-        case 'M':
-            switch (type[2]) {
-                case 'm':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
-            break;
-        case 'N':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    switch (type[2]) {
-                        case 'l':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
-            break;
-        case 'O':
-            switch (type[1]) {
-                case 'b':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
-            break;
-        case 'P':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
-            break;
-        case 'R':
+        case 10:
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'S':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    switch (type[5]) {
-                        case undefined:
-                            scratchBuff[storePos] = 0;
-                            writeScratchUint32((storePos >> 2) + 1, serializeSuper(node));
-                            break;
-                        case 'P':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
+        case 11:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'T':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'e':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'h':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'A':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'C':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'I':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'N':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 2;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
+        case 12:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'U':
-            switch (type[1]) {
-                case 'n':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 2;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for SuperOrImportOrBoxExpression');
-            }
+        case 13:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'Y':
+        case 14:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 15:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 16:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 17:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 18:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 19:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 20:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 21:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 23:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 24:
+            scratchBuff[storePos] = 2;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 26:
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
@@ -5179,265 +3947,80 @@ function serializeVecPattern(values) {
 function serializeBlockStatementOrBoxExpression(node) {
     const storePos = allocScratch(8),
         {type} = node;
-    switch (type[0]) {
-        case 'A':
-            switch (type[1]) {
-                case 'r':
-                    switch (type[3]) {
-                        case 'a':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'o':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-                    }
-                    break;
-                case 's':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'w':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
+    outer: switch (type.length) {
+        case 7:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'B':
-            switch (type[1]) {
-                case 'i':
-                    switch (type[2]) {
-                        case 'g':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'n':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-                    }
-                    break;
-                case 'l':
+        case 10:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 11:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 12:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 13:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 14:
+            switch (type) {
+                case 'BlockStatement':
                     scratchBuff[storePos] = 0;
                     writeScratchUint32((storePos >> 2) + 1, serializeBlockStatement(node));
-                    break;
-                case 'o':
+                    break outer;
+                case 'ThisExpression':
+                case 'CallExpression':
+                case 'BooleanLiteral':
+                case 'NumericLiteral':
+                case 'TsAsExpression':
                     scratchBuff[storePos] = 1;
                     writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
+                    break outer;
                 default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
             }
-            break;
-        case 'C':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'l':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'o':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
-            break;
-        case 'F':
+        case 15:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'I':
-            switch (type[1]) {
-                case 'd':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'n':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
-            break;
-        case 'J':
-            switch (type[3]) {
-                case 'E':
-                    switch (type[4]) {
-                        case 'l':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-                    }
-                    break;
-                case 'F':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'M':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'N':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'T':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
-            break;
-        case 'M':
-            switch (type[2]) {
-                case 'm':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
-            break;
-        case 'N':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    switch (type[2]) {
-                        case 'l':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'm':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
-            break;
-        case 'O':
-            switch (type[1]) {
-                case 'b':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
-            break;
-        case 'P':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'r':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
-            break;
-        case 'R':
+        case 16:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'S':
-            switch (type[1]) {
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 't':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'u':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
+        case 17:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'T':
-            switch (type[1]) {
-                case 'a':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'e':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'h':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 's':
-                    switch (type[2]) {
-                        case 'A':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'C':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'I':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'N':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        case 'T':
-                            scratchBuff[storePos] = 1;
-                            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                            break;
-                        default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-                    }
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
+        case 18:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'U':
-            switch (type[1]) {
-                case 'n':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                case 'p':
-                    scratchBuff[storePos] = 1;
-                    writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
-                    break;
-                default: throw new Error('Unexpected enum option type for BlockStatementOrBoxExpression');
-            }
+        case 19:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
-        case 'Y':
+        case 20:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 21:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 23:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 24:
+            scratchBuff[storePos] = 1;
+            writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
+            break;
+        case 26:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeBoxExpression(node));
             break;
@@ -5455,14 +4038,13 @@ function finalizeBlockStatementOrBoxExpression(storePos) {
 }
 
 function serializeMemberExpressionOrOptionalChainingCall(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[0]) {
-        case 'C':
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 14:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeOptionalChainingCall(node));
             break;
-        case 'M':
+        case 16:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeMemberExpression(node));
             break;
@@ -5496,18 +4078,17 @@ function finalizeOptionStringLiteral(storePos) {
 }
 
 function serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(node) {
-    const storePos = allocScratch(8),
-        {type} = node;
-    switch (type[0]) {
-        case 'C':
+    const storePos = allocScratch(8);
+    switch (node.type.length) {
+        case 15:
             scratchBuff[storePos] = 0;
             writeScratchUint32((storePos >> 2) + 1, serializeClassExpression(node));
             break;
-        case 'F':
+        case 18:
             scratchBuff[storePos] = 1;
             writeScratchUint32((storePos >> 2) + 1, serializeFunctionExpression(node));
             break;
-        case 'T':
+        case 22:
             scratchBuff[storePos] = 2;
             writeScratchUint32((storePos >> 2) + 1, serializeTsInterfaceDeclaration(node));
             break;

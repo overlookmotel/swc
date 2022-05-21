@@ -116,38 +116,84 @@ class Enum extends Kind {
             );
         });
 
-        const optsTree = splitOptions(Object.keys(opts));
+        // Group options by length of node name
+        let groupedByLen = new Map();
+        for (const [nodeName, { type, index }] of Object.entries(opts)) {
+            const len = nodeName.length;
+            let group = groupedByLen.get(len);
+            if (!group) groupedByLen.set(len, group = []);
+            group.push({ nodeName, type, index });
+        }
+        groupedByLen = [...groupedByLen.entries()].map(([len, members]) => ({ len, members }))
+            .sort((group1, group2) => group1.len > group2.len ? 1 : -1);
 
-        const typeName = this.name;
-        const serializerCode = (function generate(tree, indent) {
-            const nodeName = tree.option;
-            if (nodeName) {
-                const { type, index } = opts[nodeName];
+        let typeVar;
+        const generateGroup = (members, isNested, indent) => {
+            let groupedByIndex = new Map();
+            for (const member of members) {
+                const { index } = member;
+                let group = groupedByIndex.get(index);
+                if (!group) groupedByIndex.set(index, group = { type: member.type, nodeNames: [] });
+                group.nodeNames.push(member.nodeName);
+            }
+            groupedByIndex = [...groupedByIndex.entries()]
+                .map(([index, { type, nodeNames }]) => ({ index, type, nodeNames }));
+
+            if (groupedByIndex.length === 1) {
+                const nodeNamesTxt = groupedByIndex[0].nodeNames.map(nodeName => `'${nodeName}'`).join(', ');
                 return [
-                    `/* DEBUG_ONLY_START */`,
-                    `if (type !== '${nodeName}') throw new Error('Unexpected enum option type for ${typeName}');`,
-                    `/* DEBUG_ONLY_END */`,
-                    `scratchBuff[storePos] = ${index};`,
-                    // Need to use `writeScratchUint32()` - reason explained in that function's definition
-                    `writeScratchUint32((storePos >> 2) + 1, ${type.serializerName}(node));`
+                    '/* DEBUG_ONLY_START */',
+                    `if (![${nodeNamesTxt}].includes(${typeVar})) {`,
+                    `    throw new Error('Unexpected enum option type for ${this.name}');`,
+                    '}',
+                    '/* DEBUG_ONLY_END */',
+                    generateCase(groupedByIndex[0], isNested, false, indent)
                 ].join(`\n${' '.repeat(indent)}`);
             }
 
             return [
-                `switch (type[${tree.charNum}]) {`,
-                ...tree.splits.flatMap(subTree => [
-                    `${' '.repeat(4)}case ${subTree.char ? `'${subTree.char}'` : 'undefined'}:`,
-                    `${' '.repeat(8)}${generate(subTree, indent + 8)}`,
-                    `${' '.repeat(8)}break;`
-                ]),
-                `${' '.repeat(4)}default: throw new Error('Unexpected enum option type for ${typeName}');`,
+                `switch (${typeVar}) {`,
+                ...groupedByIndex.map((group) => {
+                    return group.nodeNames.map(nodeName => `case '${nodeName}':`)
+                        .join(`\n${' '.repeat(indent + 4)}`)
+                        + `\n${' '.repeat(indent + 8)}` + generateCase(group, true, isNested, indent + 8);
+                }).map(line => `${' '.repeat(4)}${line}`),
+                `${' '.repeat(4)}default: throw new Error('Unexpected enum option type for ${this.name}');`,
                 '}'
             ].join(`\n${' '.repeat(indent)}`);
-        })(optsTree, 12);
+        };
+
+        const generateCase = ({ index, type }, addBreakOnEnd, isNested, indent) => {
+            return [
+                `scratchBuff[storePos] = ${index};`,
+                // Need to use `writeScratchUint32()` - reason explained in that function's definition
+                `writeScratchUint32((storePos >> 2) + 1, ${type.serializerName}(node));`,
+                ...(addBreakOnEnd ? [isNested ? `break outer;` : 'break;'] : [])
+            ].join(`\n${' '.repeat(indent)}`);
+        };
+
+        let serializerCode;
+        if (groupedByLen.length === 1) {
+            typeVar = 'node.type';
+            serializerCode = generateGroup(groupedByLen[0].members, false, 12)
+        } else {
+            const hasNestedSwitches = groupedByLen.some(group => group.members.length > 1);
+            typeVar = hasNestedSwitches ? 'type' : 'node.type';
+            serializerCode = [
+                `${hasNestedSwitches ? 'outer: ' : ''}switch (${typeVar}.length) {`,
+                ...[
+                    ...groupedByLen.map(({ len, members }) => [
+                        `case ${len}:`,
+                        generateGroup(members, true, 20)
+                    ].join(`\n${' '.repeat(20)}`)),
+                    `default: throw new Error('Unexpected enum option type for ${this.name}');`
+                ].map(line => `${' '.repeat(4)}${line}`),
+                '}'
+            ].join(`\n${' '.repeat(12)}`);
+        }
 
         return `function ${this.serializerName}(node) {
-            const storePos = allocScratch(8),
-                {type} = node;
+            const storePos = allocScratch(8)${typeVar === 'type' ? `,\n${' '.repeat(16)}{type} = node` : ''};
             ${serializerCode}
             return storePos;
         }

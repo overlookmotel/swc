@@ -4,9 +4,11 @@
 
 module.exports = serialize;
 
-let pos, buffLen, buffFree, buff, uint16, int32, uint32, float64,
+let pos, buffLen, buff, uint16, int32, uint32, float64,
     scratchPos, scratchLen, scratchFree,
     scratchBuff, scratchUint16, scratchUint32, scratchFloat64;
+
+const {setBuffFree, alloc} = getAsmFunctions(global, {growBuffer});
 
 resetBuffers();
 
@@ -3724,7 +3726,7 @@ function finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(sto
 
 function serialize(ast) {
     pos = 0;
-    buffFree = buffLen;
+    setBuffFree(buffLen);
     freeScratch(8);
     const storePos = serializeProgram(ast);
     alignPos(4);
@@ -3808,6 +3810,25 @@ function finalizeVec(storePos32) {
     pos += 8;
 }
 
+function getAsmFunctions(stdlib, foreign) {
+    'use asm';
+    var growBuffer = foreign.growBuffer;
+    var buffFree = 0;
+    function setBuffFree(free) {
+        free = free | 0;
+        buffFree = free;
+    }
+    function alloc(bytes) {
+        bytes = bytes | 0;
+        buffFree = (buffFree - bytes) | 0;
+        if ((buffFree | 0) < 0) buffFree = growBuffer(bytes | 0) | 0;
+    }
+    return {
+        setBuffFree: setBuffFree,
+        alloc: alloc
+    };
+}
+
 function resetBuffers() {
     buffLen = 65536;
     scratchLen = 8192;
@@ -3824,11 +3845,6 @@ function initBuffer() {
     float64 = new Float64Array(arrayBuffer);
 }
 
-function alloc(bytes) {
-    buffFree -= bytes;
-    if (buffFree < 0) growBuffer(bytes);
-}
-
 function growBuffer(bytes) {
     const minLen = pos + bytes;
     do {
@@ -3837,10 +3853,10 @@ function growBuffer(bytes) {
     if (buffLen > 2147483648) {
         throw new Error('Exceeded maximum serialization buffer size');
     }
-    buffFree = buffLen - minLen;
     const oldBuff = buff;
     initBuffer();
     buff.set(oldBuff);
+    return buffLen - minLen;
 }
 
 function alignPos(align) {

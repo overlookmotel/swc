@@ -13,6 +13,7 @@ const { types } = require('./types/index.js'),
     { deserializeVec, serializeVec, finalizeVec } = require('./kinds/vec.js'),
     {
         deserialize, serialize,
+        getAsmFunctions,
         resetBuffers, initBuffer, alloc, growBuffer, alignPos,
         initScratch, allocScratch, allocScratchAligned, growScratch, freeScratch,
         writeScratchUint32, copyFromScratch,
@@ -75,9 +76,10 @@ function generateSerializer() {
 
         // Serializer entry point
         'module.exports = serialize;',
-        'let pos, buffLen, buffFree, buff, uint16, int32, uint32, float64,\n'
+        'let pos, buffLen, buff, uint16, int32, uint32, float64,\n'
         + '    scratchPos, scratchLen, scratchFree,\n'
         + '    scratchBuff, scratchUint16, scratchUint32, scratchFloat64;',
+        'const {setBuffFree, alloc} = getAsmFunctions(global, {growBuffer});',
         'resetBuffers();',
 
         // Type serialize functions
@@ -102,7 +104,7 @@ function generateSerializer() {
             [
                 serialize, serializeOption, serializeBox, serializeVec,
                 finalizeEnum, finalizeEnumValue, finalizeOption, finalizeBox, finalizeVec,
-                resetBuffers, initBuffer, alloc, growBuffer, alignPos,
+                getAsmFunctions, resetBuffers, initBuffer, growBuffer, alignPos,
                 initScratch, allocScratch, allocScratchAligned, growScratch, freeScratch,
                 writeScratchUint32, copyFromScratch, writeStringToBuffer, writeAsciiStringToBuffer
             ],

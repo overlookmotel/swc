@@ -14,7 +14,7 @@ module.exports = {
     serialize,
     resetBuffers,
     initBuffer,
-    alloc,
+    getAsmFunctions,
     growBuffer,
     alignPos,
     initScratch,
@@ -52,7 +52,7 @@ let buff, int32, uint32, float64;
  */
 function serialize(ast) {
     pos = 0;
-    buffFree = buffLen;
+    setBuffFree(buffLen);
 
     // Start scratch at 8 to allow 0 to be used as a special value.
     // Scratch must be aligned in blocks of 8.
@@ -103,21 +103,33 @@ function initBuffer() {
     float64 = new Float64Array(arrayBuffer);
 }
 
-/**
- * Allocate bytes in output buffer.
- * If buffer is not long enough to hold them, grow buffer.
- * @param {number} bytes - Number of bytes to allocate in output buffer
- * @returns {undefined}
- */
-function alloc(bytes) {
-    buffFree -= bytes;
-    if (buffFree < 0) growBuffer(bytes);
+function getAsmFunctions(stdlib, foreign) {
+    'use asm';
+
+    var growBuffer = foreign.growBuffer;
+
+    var buffFree = 0;
+    function setBuffFree(free) {
+        free = free | 0;
+        buffFree = free;
+    }
+    function alloc(bytes) {
+        bytes = bytes | 0;
+        buffFree = (buffFree - bytes) | 0;
+        if ((buffFree | 0) < 0) buffFree = growBuffer(bytes | 0) | 0;
+    }
+
+    return {
+        setBuffFree: setBuffFree,
+        alloc: alloc
+    };
 }
+const { setBuffFree, alloc } = getAsmFunctions(global, { growBuffer });
 
 /**
  * Grow buffer.
  * @param {number} bytes - Minimum bytes to grow by
- * @returns {undefined}
+ * @returns {number} - Number of bytes now free in buffer
  */
 function growBuffer(bytes) {
     const minLen = pos + bytes;
@@ -129,11 +141,11 @@ function growBuffer(bytes) {
         throw new Error('Exceeded maximum serialization buffer size');
     }
 
-    buffFree = buffLen - minLen;
-
     const oldBuff = buff;
     initBuffer();
     buff.set(oldBuff);
+
+    return buffLen - minLen;
 }
 
 /**

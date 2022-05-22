@@ -3808,7 +3808,7 @@ function finalizeVec(storePos32) {
 }
 
 function resetBuffers() {
-    buffLen = 8192;
+    buffLen = 65536;
     scratchLen = 8192;
     initBuffer();
     initScratch();

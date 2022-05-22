@@ -5,7 +5,7 @@ const assert = require('assert');
 
 // Exports
 
-const SERIALIZE_INITIAL_BUFFER_SIZE = 8 * 1024, // 8 KiB
+const SERIALIZE_INITIAL_BUFFER_SIZE = 64 * 1024, // 64 KiB
     SCRATCH_INITIAL_BUFFER_SIZE = 8 * 1024, // 8 KiB
     SERIALIZE_MAX_BUFFER_SIZE = 2 * 1024 * 1024 * 1024, // 2 GiB
     SCRATCH_MAX_BUFFER_SIZE = 2 * 1024 * 1024 * 1024; // 2 GiB

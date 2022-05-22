@@ -13,8 +13,9 @@ const { types } = require('./types/index.js'),
     { deserializeVec, serializeVec, finalizeVec } = require('./kinds/vec.js'),
     {
         deserialize, serialize,
-        resetBuffers, initBuffer, alloc, alignPos,
-        initScratch, allocScratch, allocScratchAligned, writeScratchUint32, copyFromScratch,
+        resetBuffers, initBuffer, alloc, growBuffer, alignPos,
+        initScratch, allocScratch, allocScratchAligned, growScratch,
+        writeScratchUint32, copyFromScratch,
         writeStringToBuffer, writeAsciiStringToBuffer,
         debugBuff, debugAst
     } = require('./utils.js'),
@@ -100,8 +101,8 @@ function generateSerializer() {
             [
                 serialize, serializeOption, serializeBox, serializeVec,
                 finalizeEnum, finalizeEnumValue, finalizeOption, finalizeBox, finalizeVec,
-                resetBuffers, initBuffer, alloc, alignPos,
-                initScratch, allocScratch, allocScratchAligned,
+                resetBuffers, initBuffer, alloc, growBuffer, alignPos,
+                initScratch, allocScratch, allocScratchAligned, growScratch,
                 writeScratchUint32, copyFromScratch, writeStringToBuffer, writeAsciiStringToBuffer
             ],
             debugAst

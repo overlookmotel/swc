@@ -15,10 +15,12 @@ module.exports = {
     resetBuffers,
     initBuffer,
     alloc,
+    growBuffer,
     alignPos,
     initScratch,
     allocScratch,
     allocScratchAligned,
+    growScratch,
     writeScratchUint32,
     copyFromScratch,
     writeStringToBuffer,
@@ -106,11 +108,18 @@ function initBuffer() {
  */
 function alloc(bytes) {
     const end = pos + bytes;
-    if (end <= buffLen) return;
+    if (end > buffLen) growBuffer(end);
+}
 
+/**
+ * Grow buffer.
+ * @param {number} minLen - Minimum size required
+ * @returns {undefined}
+ */
+function growBuffer(minLen) {
     do {
         buffLen *= 2;
-    } while (buffLen < end);
+    } while (buffLen < minLen);
 
     if (buffLen > SERIALIZE_MAX_BUFFER_SIZE) {
         throw new Error('Exceeded maximum serialization buffer size');
@@ -168,21 +177,7 @@ function allocScratch(bytes) {
 
     const startPos = scratchPos;
     scratchPos += bytes;
-
-    if (scratchPos > scratchLen) {
-        do {
-            scratchLen *= 2;
-        } while (scratchLen < scratchPos);
-
-        if (scratchLen > SCRATCH_MAX_BUFFER_SIZE) {
-            throw new Error('Exceeded maximum scratch buffer size');
-        }
-
-        const oldScratchBuff = scratchBuff;
-        initScratch();
-        scratchBuff.set(oldScratchBuff);
-    }
-
+    if (scratchPos > scratchLen) growScratch();
     return startPos;
 }
 
@@ -196,6 +191,24 @@ function allocScratch(bytes) {
 function allocScratchAligned(bytes) {
     const mod = bytes & 7;
     return allocScratch(mod === 0 ? bytes : bytes + 8 - mod);
+}
+
+/**
+ * Grow scratch buffer.
+ * @returns {undefined}
+ */
+function growScratch() {
+    do {
+        scratchLen *= 2;
+    } while (scratchLen < scratchPos);
+
+    if (scratchLen > SCRATCH_MAX_BUFFER_SIZE) {
+        throw new Error('Exceeded maximum scratch buffer size');
+    }
+
+    const oldScratchBuff = scratchBuff;
+    initScratch();
+    scratchBuff.set(oldScratchBuff);
 }
 
 /**

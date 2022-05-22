@@ -3825,10 +3825,13 @@ function initBuffer() {
 
 function alloc(bytes) {
     const end = pos + bytes;
-    if (end <= buffLen) return;
+    if (end > buffLen) growBuffer(end);
+}
+
+function growBuffer(minLen) {
     do {
         buffLen *= 2;
-    } while (buffLen < end);
+    } while (buffLen < minLen);
     if (buffLen > 2147483648) {
         throw new Error('Exceeded maximum serialization buffer size');
     }
@@ -3855,23 +3858,25 @@ function initScratch() {
 function allocScratch(bytes) {
     const startPos = scratchPos;
     scratchPos += bytes;
-    if (scratchPos > scratchLen) {
-        do {
-            scratchLen *= 2;
-        } while (scratchLen < scratchPos);
-        if (scratchLen > 2147483648) {
-            throw new Error('Exceeded maximum scratch buffer size');
-        }
-        const oldScratchBuff = scratchBuff;
-        initScratch();
-        scratchBuff.set(oldScratchBuff);
-    }
+    if (scratchPos > scratchLen) growScratch();
     return startPos;
 }
 
 function allocScratchAligned(bytes) {
     const mod = bytes & 7;
     return allocScratch(mod === 0 ? bytes : bytes + 8 - mod);
+}
+
+function growScratch() {
+    do {
+        scratchLen *= 2;
+    } while (scratchLen < scratchPos);
+    if (scratchLen > 2147483648) {
+        throw new Error('Exceeded maximum scratch buffer size');
+    }
+    const oldScratchBuff = scratchBuff;
+    initScratch();
+    scratchBuff.set(oldScratchBuff);
 }
 
 function writeScratchUint32(pos32, value) {

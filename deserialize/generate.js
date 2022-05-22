@@ -2,8 +2,7 @@
 
 // Modules
 const { writeFileSync } = require('fs'),
-    pathJoin = require('path').join,
-    assert = require('assert');
+    pathJoin = require('path').join;
 
 // Imports
 const { types } = require('./types/index.js'),
@@ -17,18 +16,12 @@ const { types } = require('./types/index.js'),
         initScratch, allocScratch, allocScratchAligned, writeScratchUint32, copyFromScratch,
         writeStringToBuffer, writeAsciiStringToBuffer,
         debugBuff, debugAst
-    } = require('./utils.js');
-
-// Constants
-const SERIALIZE_INITIAL_BUFFER_SIZE = 8 * 1024, // 8 KB
-    SCRATCH_INITIAL_BUFFER_SIZE = 8 * 1024; // 8 KB
+    } = require('./utils.js'),
+    { SERIALIZE_INITIAL_BUFFER_SIZE, SCRATCH_INITIAL_BUFFER_SIZE } = require('./constants.js');
 
 // Generate deserializer code
 
 const DEBUG = !!process.env.DEBUG;
-
-assert(SERIALIZE_INITIAL_BUFFER_SIZE % 8 === 0);
-assert(SCRATCH_INITIAL_BUFFER_SIZE % 8 === 0);
 
 writeFileSync(pathJoin(__dirname, 'deserialize.js'), generateDeserializer());
 writeFileSync(pathJoin(__dirname, 'serialize.js'), generateSerializer());

@@ -21,6 +21,7 @@ module.exports = {
     allocScratch,
     allocScratchAligned,
     growScratch,
+    freeScratch,
     writeScratchUint32,
     copyFromScratch,
     writeStringToBuffer,
@@ -51,9 +52,11 @@ let buff, int32, uint32, float64;
  */
 function serialize(ast) {
     pos = 0;
+    buffFree = buffLen;
+
     // Start scratch at 8 to allow 0 to be used as a special value.
     // Scratch must be aligned in blocks of 8.
-    scratchPos = 8;
+    freeScratch(8);
 
     /* DEBUG_ONLY_START */
     resetBuffers();
@@ -66,7 +69,7 @@ function serialize(ast) {
 
     return buff.subarray(0, pos);
 }
-let pos, scratchPos;
+let pos, scratchPos, scratchFree;
 
 /**
  * Reset serialization buffers.
@@ -107,16 +110,17 @@ function initBuffer() {
  * @returns {undefined}
  */
 function alloc(bytes) {
-    const end = pos + bytes;
-    if (end > buffLen) growBuffer(end);
+    buffFree -= bytes;
+    if (buffFree < 0) growBuffer(bytes);
 }
 
 /**
  * Grow buffer.
- * @param {number} minLen - Minimum size required
+ * @param {number} bytes - Minimum bytes to grow by
  * @returns {undefined}
  */
-function growBuffer(minLen) {
+function growBuffer(bytes) {
+    const minLen = pos + bytes;
     do {
         buffLen *= 2;
     } while (buffLen < minLen);
@@ -124,6 +128,8 @@ function growBuffer(minLen) {
     if (buffLen > SERIALIZE_MAX_BUFFER_SIZE) {
         throw new Error('Exceeded maximum serialization buffer size');
     }
+
+    buffFree = buffLen - minLen;
 
     const oldBuff = buff;
     initBuffer();
@@ -177,7 +183,8 @@ function allocScratch(bytes) {
 
     const startPos = scratchPos;
     scratchPos += bytes;
-    if (scratchPos > scratchLen) growScratch();
+    scratchFree -= bytes;
+    if (scratchFree < 0) growScratch();
     return startPos;
 }
 
@@ -206,9 +213,21 @@ function growScratch() {
         throw new Error('Exceeded maximum scratch buffer size');
     }
 
+    scratchFree = scratchLen - scratchPos;
+
     const oldScratchBuff = scratchBuff;
     initScratch();
     scratchBuff.set(oldScratchBuff);
+}
+
+/**
+ * Free scratch space.
+ * @param {number} freePos - Position in scratch to free after
+ * @returns {undefined}
+ */
+function freeScratch(freePos) {
+    scratchPos = freePos;
+    scratchFree = scratchLen - freePos;
 }
 
 /**

@@ -141,7 +141,7 @@ module.exports = {
 
             if (len <= 7) {
                 // Free unused scratch. Scratch must remain aligned to 8-byte chunks.
-                scratchPos = storePos + (len <= 4 ? 8 : 16);
+                freeScratch(storePos + (len <= 4 ? 8 : 16));
                 return storePos32;
             }
 
@@ -153,7 +153,7 @@ module.exports = {
             alloc(len);
             copyFromScratch(storePos + 4, len);
 
-            scratchPos = storePos + 8; // Free scratch which contained string
+            freeScratch(storePos + 8); // Free scratch which contained string
             scratchUint32[storePos32 + 1] = pos;
 
             pos += len;

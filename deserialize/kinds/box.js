@@ -97,7 +97,7 @@ function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     finalize(finalizeData);
 
     // Free scratch space
-    scratchPos = scratchPosBefore;
+    freeScratch(scratchPosBefore);
 
     return valuePos | 0x80000000;
 }

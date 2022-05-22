@@ -4,9 +4,9 @@
 
 module.exports = serialize;
 
-let pos, buffLen, buff, uint16, int32, uint32, float64;
-
-let scratchPos, scratchLen, scratchBuff, scratchUint16, scratchUint32, scratchFloat64;
+let pos, buffLen, buffFree, buff, uint16, int32, uint32, float64,
+    scratchPos, scratchLen, scratchFree,
+    scratchBuff, scratchUint16, scratchUint32, scratchFloat64;
 
 resetBuffers();
 
@@ -2880,12 +2880,12 @@ function serializeJsWord(str) {
     const len = writeStringToBuffer(str, scratchBuff, strLen, storePos + 4);
     scratchUint32[storePos32] = len;
     if (len <= 7) {
-        scratchPos = storePos + (len <= 4 ? 8 : 16);
+        freeScratch(storePos + (len <= 4 ? 8 : 16));
         return storePos32;
     }
     alloc(len);
     copyFromScratch(storePos + 4, len);
-    scratchPos = storePos + 8;
+    freeScratch(storePos + 8);
     scratchUint32[storePos32 + 1] = pos;
     pos += len;
     return storePos32;
@@ -3724,7 +3724,8 @@ function finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(sto
 
 function serialize(ast) {
     pos = 0;
-    scratchPos = 8;
+    buffFree = buffLen;
+    freeScratch(8);
     const storePos = serializeProgram(ast);
     alignPos(4);
     alloc(36);
@@ -3743,7 +3744,7 @@ function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     alloc(valueLength);
     const valuePos = pos;
     finalize(finalizeData);
-    scratchPos = scratchPosBefore;
+    freeScratch(scratchPosBefore);
     return valuePos | 0x80000000;
 }
 
@@ -3767,7 +3768,7 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     for (let i = 0; i < numValues; i++) {
         finalize(finalizeData[i]);
     }
-    scratchPos = scratchPosBefore;
+    freeScratch(scratchPosBefore);
     return storePos32;
 }
 
@@ -3824,17 +3825,19 @@ function initBuffer() {
 }
 
 function alloc(bytes) {
-    const end = pos + bytes;
-    if (end > buffLen) growBuffer(end);
+    buffFree -= bytes;
+    if (buffFree < 0) growBuffer(bytes);
 }
 
-function growBuffer(minLen) {
+function growBuffer(bytes) {
+    const minLen = pos + bytes;
     do {
         buffLen *= 2;
     } while (buffLen < minLen);
     if (buffLen > 2147483648) {
         throw new Error('Exceeded maximum serialization buffer size');
     }
+    buffFree = buffLen - minLen;
     const oldBuff = buff;
     initBuffer();
     buff.set(oldBuff);
@@ -3858,7 +3861,8 @@ function initScratch() {
 function allocScratch(bytes) {
     const startPos = scratchPos;
     scratchPos += bytes;
-    if (scratchPos > scratchLen) growScratch();
+    scratchFree -= bytes;
+    if (scratchFree < 0) growScratch();
     return startPos;
 }
 
@@ -3874,9 +3878,15 @@ function growScratch() {
     if (scratchLen > 2147483648) {
         throw new Error('Exceeded maximum scratch buffer size');
     }
+    scratchFree = scratchLen - scratchPos;
     const oldScratchBuff = scratchBuff;
     initScratch();
     scratchBuff.set(oldScratchBuff);
+}
+
+function freeScratch(freePos) {
+    scratchPos = freePos;
+    scratchFree = scratchLen - freePos;
 }
 
 function writeScratchUint32(pos32, value) {

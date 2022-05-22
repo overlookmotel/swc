@@ -139,7 +139,7 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     }
 
     // Free scratch space
-    scratchPos = scratchPosBefore;
+    freeScratch(scratchPosBefore);
 
     // Return Uint32 position in scratch store
     return storePos32;

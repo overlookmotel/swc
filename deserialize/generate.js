@@ -14,7 +14,7 @@ const { types } = require('./types/index.js'),
     {
         deserialize, serialize,
         resetBuffers, initBuffer, alloc, growBuffer, alignPos,
-        initScratch, allocScratch, allocScratchAligned, growScratch,
+        initScratch, allocScratch, allocScratchAligned, growScratch, freeScratch,
         writeScratchUint32, copyFromScratch,
         writeStringToBuffer, writeAsciiStringToBuffer,
         debugBuff, debugAst
@@ -75,8 +75,9 @@ function generateSerializer() {
 
         // Serializer entry point
         'module.exports = serialize;',
-        'let pos, buffLen, buff, uint16, int32, uint32, float64;',
-        'let scratchPos, scratchLen, scratchBuff, scratchUint16, scratchUint32, scratchFloat64;',
+        'let pos, buffLen, buffFree, buff, uint16, int32, uint32, float64,\n'
+        + '    scratchPos, scratchLen, scratchFree,\n'
+        + '    scratchBuff, scratchUint16, scratchUint32, scratchFloat64;',
         'resetBuffers();',
 
         // Type serialize functions
@@ -102,7 +103,7 @@ function generateSerializer() {
                 serialize, serializeOption, serializeBox, serializeVec,
                 finalizeEnum, finalizeEnumValue, finalizeOption, finalizeBox, finalizeVec,
                 resetBuffers, initBuffer, alloc, growBuffer, alignPos,
-                initScratch, allocScratch, allocScratchAligned, growScratch,
+                initScratch, allocScratch, allocScratchAligned, growScratch, freeScratch,
                 writeScratchUint32, copyFromScratch, writeStringToBuffer, writeAsciiStringToBuffer
             ],
             debugAst

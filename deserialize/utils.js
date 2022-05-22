@@ -1,8 +1,17 @@
 'use strict';
 
+// Imports
+const {
+    PROGRAM_LENGTH, PROGRAM_ALIGN,
+    SERIALIZE_INITIAL_BUFFER_SIZE, SCRATCH_INITIAL_BUFFER_SIZE
+} = require('./constants.js');
+
 // Exports
 
 module.exports = {
+    deserialize,
+    serialize,
+    resetBuffers,
     initBuffer,
     alloc,
     alignPos,
@@ -16,6 +25,56 @@ module.exports = {
     debugBuff,
     debugAst
 };
+
+/**
+ * Deserialize AST buffer.
+ * @param {Buffer} buffIn - Buffer
+ * @returns {Object} - AST
+ */
+function deserialize(buffIn) {
+    const arrayBuffer = buffIn.buffer;
+    buff = Buffer.from(arrayBuffer);
+    int32 = new Int32Array(arrayBuffer);
+    uint32 = new Uint32Array(arrayBuffer);
+    float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
+    return deserializeProgram(buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH);
+}
+let buff, int32, uint32, float64;
+
+/**
+ * Serialize AST to buffer.
+ * @param {Object} ast - AST
+ * @returns {Buffer} - Serialized buffer
+ */
+function serialize(ast) {
+    pos = 0;
+    // Start scratch at 8 to allow 0 to be used as a special value.
+    // Scratch must be aligned in blocks of 8.
+    scratchPos = 8;
+
+    /* DEBUG_ONLY_START */
+    resetBuffers();
+    /* DEBUG_ONLY_END */
+
+    const storePos = serializeProgram(ast);
+    alignPos(PROGRAM_ALIGN);
+    alloc(PROGRAM_LENGTH);
+    finalizeProgram(storePos);
+
+    return buff.subarray(0, pos);
+}
+let pos, scratchPos;
+
+/**
+ * Reset serialization buffers.
+ * @returns {undefined}
+ */
+function resetBuffers() {
+    buffLen = SERIALIZE_INITIAL_BUFFER_SIZE;
+    scratchLen = SCRATCH_INITIAL_BUFFER_SIZE;
+    initBuffer();
+    initScratch();
+}
 
 /**
  * Init output buffer for serializer.

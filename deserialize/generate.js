@@ -12,16 +12,20 @@ const { types } = require('./types/index.js'),
     { deserializeBox, serializeBox, finalizeBox } = require('./kinds/box.js'),
     { deserializeVec, serializeVec, finalizeVec } = require('./kinds/vec.js'),
     {
-        initBuffer, alloc, alignPos,
+        deserialize, serialize,
+        resetBuffers, initBuffer, alloc, alignPos,
         initScratch, allocScratch, allocScratchAligned, writeScratchUint32, copyFromScratch,
         writeStringToBuffer, writeAsciiStringToBuffer,
         debugBuff, debugAst
     } = require('./utils.js'),
-    { SERIALIZE_INITIAL_BUFFER_SIZE, SCRATCH_INITIAL_BUFFER_SIZE } = require('./constants.js');
+    { ...constants } = require('./constants.js');
 
 // Generate deserializer code
 
 const DEBUG = !!process.env.DEBUG;
+
+constants.PROGRAM_LENGTH = types.Program.length;
+constants.PROGRAM_ALIGN = types.Program.align;
 
 writeFileSync(pathJoin(__dirname, 'deserialize.js'), generateDeserializer());
 writeFileSync(pathJoin(__dirname, 'serialize.js'), generateSerializer());
@@ -38,14 +42,6 @@ function generateDeserializer() {
         // Deserializer entry point
         'module.exports = deserialize;',
         'let buff, int32, uint32, float64;',
-        conformFunctionCode(`function deserialize(buffIn) {
-            const arrayBuffer = buffIn.buffer;
-            buff = Buffer.from(arrayBuffer);
-            int32 = new Int32Array(arrayBuffer);
-            uint32 = new Uint32Array(arrayBuffer);
-            float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
-            return deserializeProgram(buffIn.byteOffset + buffIn.length - ${types.Program.length});
-        }`),
 
         // Type deserializer functions
         ...Object.values(types).flatMap((type) => {
@@ -61,7 +57,7 @@ function generateDeserializer() {
 
         // Utility functions
         ...getUtilitiesCode(
-            [deserializeOption, deserializeBox, deserializeVec],
+            [deserialize, deserializeOption, deserializeBox, deserializeVec],
             debugBuff
         )
     ].join('\n\n') + '\n';
@@ -81,29 +77,6 @@ function generateSerializer() {
         'let pos, buffLen, buff, uint16, int32, uint32, float64;',
         'let scratchPos, scratchLen, scratchBuff, scratchUint16, scratchUint32, scratchFloat64;',
         'resetBuffers();',
-        conformFunctionCode(`function serialize(ast) {
-            pos = 0;
-            // Start scratch at 8 to allow 0 to be used as a special value.
-            // Scratch must be aligned in blocks of 8.
-            scratchPos = 8;
-
-            /* DEBUG_ONLY_START */
-            resetBuffers();
-            /* DEBUG_ONLY_END */
-
-            const storePos = serializeProgram(ast);
-            alignPos(${types.Program.align});
-            alloc(${types.Program.length});
-            finalizeProgram(storePos);
-
-            return buff.subarray(0, pos);
-        }`),
-        conformFunctionCode(`function resetBuffers() {
-            buffLen = ${SERIALIZE_INITIAL_BUFFER_SIZE};
-            scratchLen = ${SCRATCH_INITIAL_BUFFER_SIZE};
-            initBuffer();
-            initScratch();
-        }`),
 
         // Type serialize functions
         ...Object.values(types).flatMap((type) => {
@@ -125,9 +98,9 @@ function generateSerializer() {
         // Utility functions
         ...getUtilitiesCode(
             [
-                serializeOption, serializeBox, serializeVec,
+                serialize, serializeOption, serializeBox, serializeVec,
                 finalizeEnum, finalizeEnumValue, finalizeOption, finalizeBox, finalizeVec,
-                initBuffer, alloc, alignPos,
+                resetBuffers, initBuffer, alloc, alignPos,
                 initScratch, allocScratch, allocScratchAligned,
                 writeScratchUint32, copyFromScratch, writeStringToBuffer, writeAsciiStringToBuffer
             ],
@@ -153,7 +126,7 @@ function generateSerializer() {
 function getUtilitiesCode(utilFns, debugFn) {
     if (DEBUG) utilFns = [...utilFns, debugFn];
     return utilFns.map(
-        fn => removeLineBreaks(removeComments(removeDebugOnlyCode(fn.toString())))
+        fn => removeLineBreaks(removeComments(removeDebugOnlyCode(replaceConstants(fn.toString()))))
     );
 }
 
@@ -163,7 +136,16 @@ function getUtilitiesCode(utilFns, debugFn) {
  * @returns {string} - Conformed code
  */
 function conformFunctionCode(code) {
-    return removeLineBreaks(removeComments(removeDebugOnlyCode(removeIndent(code))));
+    return removeLineBreaks(removeComments(removeDebugOnlyCode(removeIndent(replaceConstants(code)))));
+}
+
+/**
+ * Replace constants with their values.
+ * @param {string} code - Function code
+ * @returns {string} - Function code with constants replaced
+ */
+function replaceConstants(code) {
+    return code.replace(/[A-Z]+(?:_[A-Z]+)+/g, constName => constants[constName] || constName);
 }
 
 /**

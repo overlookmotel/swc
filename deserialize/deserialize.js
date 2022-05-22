@@ -6,15 +6,6 @@ module.exports = deserialize;
 
 let buff, int32, uint32, float64;
 
-function deserialize(buffIn) {
-    const arrayBuffer = buffIn.buffer;
-    buff = Buffer.from(arrayBuffer);
-    int32 = new Int32Array(arrayBuffer);
-    uint32 = new Uint32Array(arrayBuffer);
-    float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
-    return deserializeProgram(buffIn.byteOffset + buffIn.length - 36);
-}
-
 function deserializeProgram(pos) {
     switch (buff[pos]) {
         case 0: return deserializeModule(pos + 4);
@@ -1833,6 +1824,15 @@ function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
         case 2: return deserializeTsInterfaceDeclaration(pos + 4);
         default: throw new Error('Unexpected enum option ID for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration');
     }
+}
+
+function deserialize(buffIn) {
+    const arrayBuffer = buffIn.buffer;
+    buff = Buffer.from(arrayBuffer);
+    int32 = new Int32Array(arrayBuffer);
+    uint32 = new Uint32Array(arrayBuffer);
+    float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
+    return deserializeProgram(buffIn.byteOffset + buffIn.length - 36);
 }
 
 function deserializeOption(pos, deserialize, offset) {

@@ -10,23 +10,6 @@ let scratchPos, scratchLen, scratchBuff, scratchUint16, scratchUint32, scratchFl
 
 resetBuffers();
 
-function serialize(ast) {
-    pos = 0;
-    scratchPos = 8;
-    const storePos = serializeProgram(ast);
-    alignPos(4);
-    alloc(36);
-    finalizeProgram(storePos);
-    return buff.subarray(0, pos);
-}
-
-function resetBuffers() {
-    buffLen = 8192;
-    scratchLen = 8192;
-    initBuffer();
-    initScratch();
-}
-
 function serializeProgram(node) {
     const storePos = allocScratch(8);
     switch (node.type) {
@@ -3739,6 +3722,16 @@ function finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(sto
     }
 }
 
+function serialize(ast) {
+    pos = 0;
+    scratchPos = 8;
+    const storePos = serializeProgram(ast);
+    alignPos(4);
+    alloc(36);
+    finalizeProgram(storePos);
+    return buff.subarray(0, pos);
+}
+
 function serializeOption(value, serialize) {
     return value === null ? 0 : serialize(value);
 }
@@ -3812,6 +3805,13 @@ function finalizeVec(storePos32) {
     int32[pos32] = scratchUint32[storePos32] - pos;
     uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
     pos += 8;
+}
+
+function resetBuffers() {
+    buffLen = 8192;
+    scratchLen = 8192;
+    initBuffer();
+    initScratch();
 }
 
 function initBuffer() {

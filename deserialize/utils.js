@@ -3,7 +3,8 @@
 // Imports
 const {
     PROGRAM_LENGTH, PROGRAM_ALIGN,
-    SERIALIZE_INITIAL_BUFFER_SIZE, SCRATCH_INITIAL_BUFFER_SIZE
+    SERIALIZE_INITIAL_BUFFER_SIZE, SCRATCH_INITIAL_BUFFER_SIZE,
+    SERIALIZE_MAX_BUFFER_SIZE, SCRATCH_MAX_BUFFER_SIZE
 } = require('./constants.js');
 
 // Exports
@@ -111,6 +112,10 @@ function alloc(bytes) {
         buffLen *= 2;
     } while (buffLen < end);
 
+    if (buffLen > SERIALIZE_MAX_BUFFER_SIZE) {
+        throw new Error('Exceeded maximum serialization buffer size');
+    }
+
     const oldBuff = buff;
     initBuffer();
     buff.set(oldBuff);
@@ -168,6 +173,10 @@ function allocScratch(bytes) {
         do {
             scratchLen *= 2;
         } while (scratchLen < scratchPos);
+
+        if (scratchLen > SCRATCH_MAX_BUFFER_SIZE) {
+            throw new Error('Exceeded maximum scratch buffer size');
+        }
 
         const oldScratchBuff = scratchBuff;
         initScratch();

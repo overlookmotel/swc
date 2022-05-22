@@ -3829,6 +3829,9 @@ function alloc(bytes) {
     do {
         buffLen *= 2;
     } while (buffLen < end);
+    if (buffLen > 2147483648) {
+        throw new Error('Exceeded maximum serialization buffer size');
+    }
     const oldBuff = buff;
     initBuffer();
     buff.set(oldBuff);
@@ -3856,6 +3859,9 @@ function allocScratch(bytes) {
         do {
             scratchLen *= 2;
         } while (scratchLen < scratchPos);
+        if (scratchLen > 2147483648) {
+            throw new Error('Exceeded maximum scratch buffer size');
+        }
         const oldScratchBuff = scratchBuff;
         initScratch();
         scratchBuff.set(oldScratchBuff);

@@ -112,10 +112,10 @@ class Node extends Kind {
             finalizeCodes = [];
         let endPos = 0;
         propsOrdered.forEach(({ key, prop, pos }, index) => {
-            const storePosStr = `storePos32${index > 0 ? ` + ${index}` : ''}`;
+            const storePos32Str = `storePos32${index > 0 ? ` + ${index}` : ''}`;
             // Need to use `writeScratchUint32()` - reason explained in that function's definition
             serializeCodes.push(
-                `writeScratchUint32(${storePosStr}, ${prop.serializerName}(node.${key}));`
+                `writeScratchUint32(${storePos32Str}, ${prop.serializerName}(node.${key}));`
             );
 
             if (pos > endPos) {
@@ -123,7 +123,7 @@ class Node extends Kind {
             } else if (pos < endPos) {
                 finalizeCodes.push(`pos -= ${endPos - pos};`);
             }
-            finalizeCodes.push(`${prop.finalizerName}(scratchUint32[${storePosStr}]);`);
+            finalizeCodes.push(`${prop.finalizerName}(scratchUint32[${storePos32Str}]);`);
 
             endPos = pos + prop.length;
         });
@@ -132,7 +132,7 @@ class Node extends Kind {
 
         // NB Scratch must be allocated in 8-byte blocks
         return `function ${this.serializerName}(node) {
-            const storePos32 = allocScratch(${getAligned(propsOrdered.length * 4, 8)}) >> 2;
+            const storePos32 = allocScratch(${getAligned(propsOrdered.length * 4, 8) >> 2});
             ${serializeCodes.join(`\n${' '.repeat(12)}`)}
             return storePos32;
         }

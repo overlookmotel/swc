@@ -107,7 +107,7 @@ function deserializeVec(pos, deserialize, length) {
  */
 function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     // Allocate 8 bytes scratch
-    const storePos32 = allocScratch(8) >> 2;
+    const storePos32 = allocScratch(2);
 
     // Store number of values in scratch bytes 4-7
     const numValues = values.length;
@@ -121,7 +121,7 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
         return storePos32;
     }
 
-    const scratchPosBefore = scratchPos;
+    const scratchPos32Before = scratchPos32;
 
     // Serialize values
     const finalizeData = new Array(numValues);
@@ -139,7 +139,7 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     }
 
     // Free scratch space
-    scratchPos = scratchPosBefore;
+    scratchPos32 = scratchPos32Before;
 
     // Return Uint32 position in scratch store
     return storePos32;

@@ -111,15 +111,15 @@ class Enum extends Kind {
             })(type);
 
             optionSerializeCodes.push(...[
-                `scratchBuff[storePos] = ${index};`,
+                `scratchBuff[storePos32 << 2] = ${index};`,
                 // Need to use `writeScratchUint32()` - reason explained in that function's definition
-                `writeScratchUint32((storePos >> 2) + 1, ${type.serializerName}(node));`,
+                `writeScratchUint32(storePos32 + 1, ${type.serializerName}(node));`,
                 'break;'
             ].map(line => `${' '.repeat(4)}${line}`));
 
             optionFinalizeCodes.push(
                 `case ${index}: finalizeEnum(`
-                + `${index}, scratchUint32[(storePos >> 2) + 1], ${type.finalizerName}, `
+                + `${index}, scratchUint32[storePos32 + 1], ${type.finalizerName}, `
                 + `${type.align}, ${this.length}`
                 + '); '
                 + 'break;'
@@ -127,16 +127,16 @@ class Enum extends Kind {
         });
 
         return `function ${this.serializerName}(node) {
-            const storePos = allocScratch(8);
+            const storePos32 = allocScratch(2);
             switch (node.type) {
                 ${optionSerializeCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum option type for ${this.name}');
             }
-            return storePos;
+            return storePos32;
         }
 
-        function ${this.finalizerName}(storePos) {
-            switch (scratchBuff[storePos]) {
+        function ${this.finalizerName}(storePos32) {
+            switch (scratchBuff[storePos32 << 2]) {
                 ${optionFinalizeCodes.join(`\n${' '.repeat(16)}`)}
                 default: throw new Error('Unexpected enum option ID for ${this.name}');
             }

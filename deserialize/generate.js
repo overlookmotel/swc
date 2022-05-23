@@ -188,7 +188,7 @@ function removeLineBreaks(code) {
  */
 function removeDebugOnlyCode(code) {
     if (DEBUG) return code;
-    return code.replace(/\s*\/\* DEBUG_ONLY_START \*\/[\s\S]+?\/\* DEBUG_ONLY_END \*\/\n?/g, '');
+    return code.replace(/\s*\/\* DEBUG_ONLY_START \*\/[\s\S]+?\/\* DEBUG_ONLY_END \*\//g, '');
 }
 
 /**

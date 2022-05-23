@@ -76,7 +76,7 @@ function generateSerializer() {
         // Serializer entry point
         'module.exports = serialize;',
         'let pos, buffLen, buff, uint16, int32, uint32, float64;',
-        'let scratchPos, scratchLen, scratchBuff, scratchUint16, scratchUint32, scratchFloat64;',
+        'let scratchPos32, scratchLen32, scratchBuff, scratchUint16, scratchUint32, scratchFloat64;',
         'resetBuffers();',
 
         // Type serialize functions
@@ -146,7 +146,7 @@ function conformFunctionCode(code) {
  * @returns {string} - Function code with constants replaced
  */
 function replaceConstants(code) {
-    return code.replace(/[A-Z]+(?:_[A-Z]+)+/g, constName => constants[constName] || constName);
+    return code.replace(/[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+/g, constName => constants[constName] || constName);
 }
 
 /**

@@ -87,10 +87,10 @@ module.exports = {
         deserialize: false,
         // Shortened serializer as only patterns are valid on left side of `=` assignment expression
         serialize(node) {
-            const storePos = allocScratch(8);
-            scratchBuff[storePos] = 1;
-            writeScratchUint32((storePos >> 2) + 1, serializeBoxPattern(node));
-            return storePos;
+            const storePos32 = allocScratch(2);
+            scratchBuff[storePos32 << 2] = 1;
+            writeScratchUint32(storePos32 + 1, serializeBoxPattern(node));
+            return storePos32;
         },
         // Use `finalizeAssignmentLeft` as finalizer for type
         finalize: false,

@@ -88,7 +88,7 @@ function deserializeBox(pos, deserialize) {
  * @returns {number} - Position of boxed value in buffer | 0x80000000
  */
 function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
-    const scratchPosBefore = scratchPos;
+    const scratchPos32Before = scratchPos32;
 
     const finalizeData = serialize(value);
     alignPos(valueAlign);
@@ -97,7 +97,7 @@ function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
     finalize(finalizeData);
 
     // Free scratch space
-    scratchPos = scratchPosBefore;
+    scratchPos32 = scratchPos32Before;
 
     return valuePos | 0x80000000;
 }

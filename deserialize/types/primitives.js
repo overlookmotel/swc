@@ -91,7 +91,7 @@ module.exports = {
             // Handle empty string
             const strLen = str.length;
             if (strLen === 0) {
-                const storePos32 = allocScratch(8) >> 2;
+                const storePos32 = allocScratch(2);
                 scratchUint32[storePos32] = 0;
                 return storePos32;
             }
@@ -119,7 +119,7 @@ module.exports = {
                     ? writeStringToBuffer(str, buff, strLen, pos)
                     : utf8Write.call(buff, str, pos);
 
-                const storePos32 = allocScratch(8) >> 2;
+                const storePos32 = allocScratch(2);
                 scratchUint32[storePos32] = len;
                 scratchUint32[storePos32 + 1] = pos;
                 pos += len;
@@ -134,14 +134,13 @@ module.exports = {
 
             // Allocate 3 bytes scratch for every character (in case of Unicode chars)
             // + 4 bytes for length. Ensure allocate scratch in multiple of 8 bytes.
-            const storePos = allocScratchAligned(4 + strLen * 3),
-                storePos32 = storePos >> 2;
-            const len = writeStringToBuffer(str, scratchBuff, strLen, storePos + 4);
+            const storePos32 = allocScratchAligned(4 + strLen * 3);
+            const len = writeStringToBuffer(str, scratchBuff, strLen, (storePos32 + 1) << 2);
             scratchUint32[storePos32] = len;
 
             if (len <= 7) {
                 // Free unused scratch. Scratch must remain aligned to 8-byte chunks.
-                scratchPos = storePos + (len <= 4 ? 8 : 16);
+                scratchPos32 = storePos32 + (len > 4 ? 4 : 2);
                 return storePos32;
             }
 
@@ -151,10 +150,10 @@ module.exports = {
             /* DEBUG_ONLY_END */
 
             alloc(len);
-            copyFromScratch(storePos + 4, len);
+            copyFromScratch(storePos32 + 1, len);
 
-            scratchPos = storePos + 8; // Free scratch which contained string
             scratchUint32[storePos32 + 1] = pos;
+            scratchPos32 = storePos32 + 2; // Free scratch which contained string
 
             pos += len;
 
@@ -269,7 +268,7 @@ module.exports = {
             // Handle empty string
             const len = str.length;
             if (len === 0) {
-                const storePos32 = allocScratch(8) >> 2;
+                const storePos32 = allocScratch(2);
                 scratchUint32[storePos32] = 0;
                 return storePos32;
             }
@@ -297,7 +296,7 @@ module.exports = {
                     asciiWrite.call(buff, str, pos);
                 }
 
-                const storePos32 = allocScratch(8) >> 2;
+                const storePos32 = allocScratch(2);
                 scratchUint32[storePos32] = len;
                 scratchUint32[storePos32 + 1] = pos;
                 pos += len;
@@ -307,9 +306,8 @@ module.exports = {
             // String needs to be added to output buffer in `finalize()`, as is 7 chars or less.
             // Allocate 1 byte scratch for every character + 4 bytes for length.
             // Ensure allocate scratch in multiple of 8 bytes.
-            const storePos = allocScratch(len > 4 ? 16 : 8),
-                storePos32 = storePos >> 2;
-            writeAsciiStringToBuffer(str, scratchBuff, len, storePos + 4);
+            const storePos32 = allocScratch(len > 4 ? 4 : 2);
+            writeAsciiStringToBuffer(str, scratchBuff, len, (storePos32 + 1) << 2);
             scratchUint32[storePos32] = len;
             return storePos32;
         },
@@ -340,7 +338,7 @@ module.exports = {
             return float64[pos >> 3];
         },
         serialize(num) {
-            const storePos64 = allocScratch(8) >> 3;
+            const storePos64 = allocScratch(2) >> 1;
             scratchFloat64[storePos64] = num;
             return storePos64;
         },
@@ -363,7 +361,7 @@ module.exports = {
         },
         serialize(span) {
             // Only need 12 bytes scratch, but scratch must be allocated in 8-byte blocks
-            const storePos32 = allocScratch(16) >> 2;
+            const storePos32 = allocScratch(4);
             scratchUint32[storePos32] = span.start;
             scratchUint32[storePos32 + 1] = span.end;
             scratchUint32[storePos32 + 2] = span.ctxt;

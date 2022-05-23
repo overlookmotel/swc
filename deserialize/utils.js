@@ -3,8 +3,8 @@
 // Imports
 const {
     PROGRAM_LENGTH, PROGRAM_ALIGN,
-    SERIALIZE_INITIAL_BUFFER_SIZE, SCRATCH_INITIAL_BUFFER_SIZE,
-    SERIALIZE_MAX_BUFFER_SIZE, SCRATCH_MAX_BUFFER_SIZE
+    SERIALIZE_INITIAL_BUFFER_SIZE, SCRATCH_INITIAL_BUFFER_SIZE32,
+    SERIALIZE_MAX_BUFFER_SIZE, SCRATCH_MAX_BUFFER_SIZE32
 } = require('./constants.js');
 
 // Exports
@@ -53,16 +53,16 @@ function serialize(ast) {
     pos = 0;
     // Start scratch at 8 to allow 0 to be used as a special value.
     // Scratch must be aligned in blocks of 8.
-    scratchPos = 8;
+    scratchPos32 = 2;
 
     /* DEBUG_ONLY_START */
     resetBuffers();
     /* DEBUG_ONLY_END */
 
-    const storePos = serializeProgram(ast);
+    const storePos32 = serializeProgram(ast);
     alignPos(PROGRAM_ALIGN);
     alloc(PROGRAM_LENGTH);
-    finalizeProgram(storePos);
+    finalizeProgram(storePos32);
 
     return buff.subarray(0, pos);
 }
@@ -74,7 +74,7 @@ let pos, scratchPos;
  */
 function resetBuffers() {
     buffLen = SERIALIZE_INITIAL_BUFFER_SIZE;
-    scratchLen = SCRATCH_INITIAL_BUFFER_SIZE;
+    scratchLen32 = SCRATCH_INITIAL_BUFFER_SIZE32;
     initBuffer();
     initScratch();
 }
@@ -152,7 +152,7 @@ function alignPos(align) {
  * @returns {undefined}
  */
 function initScratch() {
-    scratchBuff = Buffer.allocUnsafeSlow(scratchLen);
+    scratchBuff = Buffer.allocUnsafeSlow(scratchLen32 << 2);
     const arrayBuffer = scratchBuff.buffer;
     scratchUint16 = new Uint16Array(arrayBuffer);
     scratchUint32 = new Uint32Array(arrayBuffer);
@@ -162,23 +162,23 @@ function initScratch() {
 /**
  * Allocate scratch space of specified number of bytes.
  * Advance position for next allocation.
- * Return position of start of scratch space allocated.
+ * Return position of start of scratch space allocated in 4-bytes multiple.
  * 
  * Scratch must be allocated in multiples of 8 bytes.
  * This is to support writing `Float64`s to scratch.
  * 
- * @param {number} bytes - Number of bytes to allocate
- * @returns {number} - Position of start of reserved scratch space
+ * @param {number} bytes32 - Number of bytes to allocate in multiples of 4
+ * @returns {number} - Position of start of reserved scratch space in multiples of 4 bytes
  */
-function allocScratch(bytes) {
+function allocScratch(bytes32) {
     /* DEBUG_ONLY_START */
-    if (bytes % 8 !== 0) throw new Error('Scratch must be allocated in multiples of 8 bytes');
+    if (bytes32 % 2 !== 0) throw new Error('Scratch must be allocated in multiples of 8 bytes');
     /* DEBUG_ONLY_END */
 
-    const startPos = scratchPos;
-    scratchPos += bytes;
-    if (scratchPos > scratchLen) growScratch();
-    return startPos;
+    const startPos32 = scratchPos32;
+    scratchPos32 += bytes32;
+    if (scratchPos32 > scratchLen32) growScratch();
+    return startPos32;
 }
 
 /**
@@ -186,11 +186,11 @@ function allocScratch(bytes) {
  * Same as `allocScratch()` but ensures number of bytes allocated is a multiple of 8,
  * to preserve correct alignment.
  * @param {number} bytes - Number of bytes to allocate
- * @returns {number} - Position of start of reserved scratch space
+ * @returns {number} - Position of start of reserved scratch space in multiples of 4 bytes
  */
 function allocScratchAligned(bytes) {
     const mod = bytes & 7;
-    return allocScratch(mod === 0 ? bytes : bytes + 8 - mod);
+    return allocScratch(mod === 0 ? bytes : (bytes + 8 - mod) >> 2);
 }
 
 /**
@@ -199,10 +199,10 @@ function allocScratchAligned(bytes) {
  */
 function growScratch() {
     do {
-        scratchLen *= 2;
-    } while (scratchLen < scratchPos);
+        scratchLen32 *= 2;
+    } while (scratchLen32 < scratchPos32);
 
-    if (scratchLen > SCRATCH_MAX_BUFFER_SIZE) {
+    if (scratchLen32 > SCRATCH_MAX_BUFFER_SIZE32) {
         throw new Error('Exceeded maximum scratch buffer size');
     }
 
@@ -245,16 +245,15 @@ function writeScratchUint32(pos32, value) {
  * Scratch buffer position must be aligned to 4 bytes.
  * Both of these conditions are satisfied when copying `JsWord` content.
  *
- * @param {number} scratchPos - Starting position in scratch buffer
+ * @param {number} scratchPos32 - Starting position in scratch buffer in multiples of 4 bytes
  * @param {number} len - Number of bytes to copy (minimum 8)
  * @returns {undefined}
  */
-function copyFromScratch(scratchPos, len) {
+function copyFromScratch(scratchPos32, len) {
     if ((pos & 3) === 0) {
         // Output position is aligned to 4 bytes.
         // Copy bulk as Uint32s.
-        let pos32 = pos >> 2,
-            scratchPos32 = scratchPos >> 2;
+        let pos32 = pos >> 2;
         const last32 = pos32 + (len >> 2) - 1;
         uint32[pos32] = scratchUint32[scratchPos32];
         uint32[++pos32] = scratchUint32[++scratchPos32];
@@ -277,7 +276,7 @@ function copyFromScratch(scratchPos, len) {
         // Output position is aligned to 2 bytes.
         // Copy bulk as Uint16s.
         let pos16 = pos >> 1,
-            scratchPos16 = scratchPos >> 1;
+            scratchPos16 = scratchPos32 << 1;
         const last16 = pos16 + (len >> 1) - 1;
         uint16[pos16] = scratchUint16[scratchPos16];
         uint16[++pos16] = scratchUint16[++scratchPos16];
@@ -292,7 +291,7 @@ function copyFromScratch(scratchPos, len) {
     } else {
         // Target position not aligned. Copy all as Uint8s.
         let pos8 = pos,
-            scratchPos8 = scratchPos;
+            scratchPos8 = scratchPos32 << 2;
         const last8 = pos + len - 1;
         buff[pos8] = scratchBuff[scratchPos8];
         buff[++pos8] = scratchBuff[++scratchPos8];

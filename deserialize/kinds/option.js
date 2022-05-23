@@ -69,8 +69,8 @@ class Option extends Kind {
             return serializeOption(value, ${valueType.serializerName});
         }
         
-        function ${this.finalizerName}(storePos) {
-            return finalizeOption(storePos, ${finalizerName}, ${valueAlign}, ${valueLength + valueAlign});
+        function ${this.finalizerName}(finalizeData) {
+            return finalizeOption(finalizeData, ${finalizerName}, ${valueAlign}, ${valueLength + valueAlign});
         }`;
     }
 }

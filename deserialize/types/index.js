@@ -40,7 +40,7 @@ Object.assign(
     primitiveTypes
 );
 
-// Set `name` for all types defined as properties of `type`
+// Set `name` for all types defined as properties of `types`
 for (const [name, type] of Object.entries(types)) {
     type.name = name;
 }

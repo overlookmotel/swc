@@ -8,7 +8,7 @@ use swc::{
     config::{Options, SourceMapsConfig},
     Compiler, TransformOutput,
 };
-use swc_common::plugin::Serialized;
+use swc_common::plugin::deserialize_from_ptr;
 use swc_ecma_ast::{EsVersion, Program};
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
 
@@ -113,7 +113,7 @@ pub fn print_sync(program: String, options: Buffer) -> napi::Result<TransformOut
 
 #[napi]
 pub fn print_sync_from_buffer(buff: Buffer, options: Buffer) -> napi::Result<TransformOutput> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
 
     let c = get_compiler();
 
@@ -124,7 +124,7 @@ pub fn print_sync_from_buffer(buff: Buffer, options: Buffer) -> napi::Result<Tra
         .try_into()
         .expect("Should able to convert ptr length");
     let program: Program =
-        unsafe { Serialized::deserialize_from_ptr(ptr, len).expect("Should able to deserialize") };
+        unsafe { deserialize_from_ptr(ptr, len).expect("Should able to deserialize") };
 
     let options: Options = get_deserialized(&options)?;
 
@@ -143,8 +143,10 @@ pub fn print_sync_from_buffer(buff: Buffer, options: Buffer) -> napi::Result<Tra
             .unwrap_or(SourceMapsConfig::Bool(false)),
         &Default::default(),
         None,
-        options.config.minify,
+        options.config.minify.into_bool(),
         None,
+        options.config.emit_source_map_columns.into_bool(),
+        false,
     )
     .convert_err()
 }

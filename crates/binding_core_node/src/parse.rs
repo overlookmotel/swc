@@ -12,10 +12,8 @@ use swc::{
     config::{ErrorFormat, ParseOptions},
     Compiler,
 };
-use swc_common::{comments::Comments, FileName};
+use swc_common::{comments::Comments, plugin::PluginSerializedBytes, FileName};
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
-use swc::{config::ParseOptions, Compiler};
-use swc_common::{comments::Comments, plugin::Serialized, FileName};
 
 use crate::{get_compiler, util::try_with};
 
@@ -190,7 +188,7 @@ pub fn parse_sync_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -200,7 +198,7 @@ pub fn parse_sync_no_return(
         FileName::Anon
     };
 
-    let program = try_with(c.cm.clone(), false, |handler| {
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 
@@ -233,7 +231,7 @@ pub fn parse_sync_to_buffer(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<Buffer> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -243,7 +241,7 @@ pub fn parse_sync_to_buffer(
         FileName::Anon
     };
 
-    let program = try_with(c.cm.clone(), false, |handler| {
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 
@@ -265,8 +263,8 @@ pub fn parse_sync_to_buffer(
     })
     .convert_err()?;
 
-    let serialized = Serialized::serialize(&program).convert_err()?;
-    let slice = serialized.as_ref().as_slice();
+    let serialized = PluginSerializedBytes::try_serialize(&program).convert_err()?;
+    let slice = serialized.as_slice();
     let buffer = Buffer::from(slice);
 
     Ok(buffer)
@@ -278,7 +276,7 @@ pub fn parse_sync_to_buffer_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -288,7 +286,7 @@ pub fn parse_sync_to_buffer_no_return(
         FileName::Anon
     };
 
-    let program = try_with(c.cm.clone(), false, |handler| {
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 
@@ -310,8 +308,8 @@ pub fn parse_sync_to_buffer_no_return(
     })
     .convert_err()?;
 
-    let serialized = Serialized::serialize(&program).convert_err()?;
-    let slice = serialized.as_ref().as_slice();
+    let serialized = PluginSerializedBytes::try_serialize(&program).convert_err()?;
+    let slice = serialized.as_slice();
     let _buffer = Buffer::from(slice);
 
     Ok("".to_string())
@@ -323,7 +321,7 @@ pub fn parse_sync_to_typed_array(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<Uint8Array> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -333,7 +331,7 @@ pub fn parse_sync_to_typed_array(
         FileName::Anon
     };
 
-    let program = try_with(c.cm.clone(), false, |handler| {
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 
@@ -355,8 +353,8 @@ pub fn parse_sync_to_typed_array(
     })
     .convert_err()?;
 
-    let serialized = Serialized::serialize(&program).convert_err()?;
-    let slice = serialized.as_ref().as_slice();
+    let serialized = PluginSerializedBytes::try_serialize(&program).convert_err()?;
+    let slice = serialized.as_slice();
     let vec = slice.to_vec();
     let buffer = Uint8Array::new(vec);
 
@@ -369,7 +367,7 @@ pub fn parse_sync_to_typed_array_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -379,7 +377,7 @@ pub fn parse_sync_to_typed_array_no_return(
         FileName::Anon
     };
 
-    let program = try_with(c.cm.clone(), false, |handler| {
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 
@@ -401,8 +399,8 @@ pub fn parse_sync_to_typed_array_no_return(
     })
     .convert_err()?;
 
-    let serialized = Serialized::serialize(&program).convert_err()?;
-    let slice = serialized.as_ref().as_slice();
+    let serialized = PluginSerializedBytes::try_serialize(&program).convert_err()?;
+    let slice = serialized.as_slice();
     let vec = slice.to_vec();
     let _buffer = Uint8Array::new(vec);
 
@@ -415,7 +413,7 @@ pub fn parse_sync_rkyv_vec_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -425,7 +423,7 @@ pub fn parse_sync_rkyv_vec_no_return(
         FileName::Anon
     };
 
-    let program = try_with(c.cm.clone(), false, |handler| {
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 
@@ -447,8 +445,8 @@ pub fn parse_sync_rkyv_vec_no_return(
     })
     .convert_err()?;
 
-    let serialized = Serialized::serialize(&program).convert_err()?;
-    let slice = serialized.as_ref().as_slice();
+    let serialized = PluginSerializedBytes::try_serialize(&program).convert_err()?;
+    let slice = serialized.as_slice();
     let _vec = slice.to_vec();
 
     Ok("".to_string())
@@ -460,7 +458,7 @@ pub fn parse_sync_rkyv_slice_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -470,7 +468,7 @@ pub fn parse_sync_rkyv_slice_no_return(
         FileName::Anon
     };
 
-    let program = try_with(c.cm.clone(), false, |handler| {
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 
@@ -492,8 +490,8 @@ pub fn parse_sync_rkyv_slice_no_return(
     })
     .convert_err()?;
 
-    let serialized = Serialized::serialize(&program).convert_err()?;
-    let _slice = serialized.as_ref().as_slice();
+    let serialized = PluginSerializedBytes::try_serialize(&program).convert_err()?;
+    let _slice = serialized.as_slice();
 
     Ok("".to_string())
 }
@@ -504,7 +502,7 @@ pub fn parse_sync_rkyv_no_return(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -514,7 +512,7 @@ pub fn parse_sync_rkyv_no_return(
         FileName::Anon
     };
 
-    let program = try_with(c.cm.clone(), false, |handler| {
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 
@@ -536,7 +534,7 @@ pub fn parse_sync_rkyv_no_return(
     })
     .convert_err()?;
 
-    let _serialized = Serialized::serialize(&program).convert_err()?;
+    let _serialized = PluginSerializedBytes::try_serialize(&program).convert_err()?;
 
     Ok("".to_string())
 }
@@ -547,7 +545,7 @@ pub fn parse_sync_no_serialization(
     opts: Buffer,
     filename: Option<String>,
 ) -> napi::Result<String> {
-    binding_commons::init_default_trace_subscriber();
+    swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
     let options: ParseOptions = get_deserialized(&opts)?;
@@ -557,7 +555,7 @@ pub fn parse_sync_no_serialization(
         FileName::Anon
     };
 
-    let _program = try_with(c.cm.clone(), false, |handler| {
+    let _program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
 

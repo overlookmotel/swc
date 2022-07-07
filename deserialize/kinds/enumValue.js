@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
 // Modules
-const assert = require('assert');
+const assert = require("assert");
 
 // Imports
-const Kind = require('./kind.js');
+const Kind = require("./kind.js");
 
 // Exports
 
@@ -13,14 +13,14 @@ const enumValues = new Map();
 /**
  * Enum value class.
  * e.g. `Boolean` - which is either `true` or `false`.
- * 
+ *
  * Enum values are are serialized by RYKV as follows:
  *   - 1 byte for the ID of the value.
- *   - Aligned on 1.
+ *   - Aligned on 4 (`repr(u32)` included in `ast_node` proc macro).
  */
 class EnumValue extends Kind {
-    length = 1;
-    align = 1;
+    length = 4;
+    align = 4;
     values = null;
 
     constructor(values, options) {
@@ -36,21 +36,26 @@ class EnumValue extends Kind {
         enumValues.set(JSON.stringify(values), this);
     }
 
-    link() { }
+    link() {}
 
     getName() {
-        return this.values.join('Or');
+        return this.values.join("Or");
     }
 
     generateDeserializer() {
-        const caseCodes = this.values.map((value, index) => (
-            `case ${index}: return ${typeof value === 'string' ? `'${value}'` : value};`
-        ));
+        const caseCodes = this.values.map(
+            (value, index) =>
+                `case ${index}: return ${
+                    typeof value === "string" ? `'${value}'` : value
+                };`
+        );
 
         return `function ${this.deserializerName}(pos) {
             switch (buff[pos]) {
-                ${caseCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum value ID for ${this.name}');
+                ${caseCodes.join(`\n${" ".repeat(16)}`)}
+                default: throw new Error('Unexpected enum value ID for ${
+                    this.name
+                }');
             }
         }`;
     }
@@ -62,20 +67,25 @@ class EnumValue extends Kind {
      * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
-        const caseCodes = this.values.map((value, index) => (
-            `case ${typeof value === 'string' ? `'${value}'` : value}: return ${index + 256};`
-        ));
+        const caseCodes = this.values.map(
+            (value, index) =>
+                `case ${
+                    typeof value === "string" ? `'${value}'` : value
+                }: return ${index + 256};`
+        );
 
         return `function ${this.serializerName}(value) {
             switch (value) {
-                ${caseCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum value for ${this.name}');
+                ${caseCodes.join(`\n${" ".repeat(16)}`)}
+                default: throw new Error('Unexpected enum value for ${
+                    this.name
+                }');
             }
         }`;
     }
 
     // Use `finalizeEnumValue` as finalizer for all EnumValue types
-    finalizerName = 'finalizeEnumValue';
+    finalizerName = "finalizeEnumValue";
 }
 
 /**
@@ -87,7 +97,7 @@ class EnumValue extends Kind {
  */
 function finalizeEnumValue(id) {
     buff[pos] = id & 255;
-    pos++;
+    pos += 4;
 }
 
 module.exports = { EnumValue, finalizeEnumValue };

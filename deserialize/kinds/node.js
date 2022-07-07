@@ -1,15 +1,15 @@
-'use strict';
+"use strict";
 
 // Imports
-const Kind = require('./kind.js'),
-    { getAligned } = require('./utils.js'),
-    { getType } = require('../types/index.js');
+const Kind = require("./kind.js"),
+    { getAligned } = require("./utils.js"),
+    { getType } = require("../types/index.js");
 
 // Exports
 
 /**
  * AST node class.
- * 
+ *
  * Nodes are serialized by RYKV as follows:
  *   - Property values are added to buffer one after another.
  *   - Each property takes up the number of bytes that type requires.
@@ -18,18 +18,11 @@ const Kind = require('./kind.js'),
  *     of highest alignment property type.
  *   - Alignment of Node is highest alignment of its property types.
  *     i.e. if alignment of properties is 1, 1, 8, 1, 4 -> Node's alignment is 8
- * 
- * Order properties is serialized is sometimes different from order they appear
- * in Rust struct definition. Presumably this is to create a more compact representation.
- * In such cases, the order of properties in Node definition should be order the properties
- * appear in JSON.
- * The order of properties as they appear in RKYV serialized buffer should be specified
- * with `options.keys`.
- * 
+ *
  * Most (but not all) Node types contain a `span` property with type `Span` as first property.
  * By default, a `span` property will be added unless there is already `span` property
  * defined in a different position, or `options.noSpan === true`.
- * 
+ *
  * Almost all Node objects in JS also contain a `type` property as first property,
  * containing name of the type. This is added automatically unless `options.noType === true`.
  * The value of `node.type` can be overridden with `options.nodeName`.
@@ -37,7 +30,6 @@ const Kind = require('./kind.js'),
 class Node extends Kind {
     props = null;
     nodeName = null;
-    keys = null;
     noSpan = false;
     noType = false;
     propsWithPos = null;
@@ -47,10 +39,8 @@ class Node extends Kind {
         this.setOptions(options);
 
         // Add `span` as first property unless already included in properties
-        if (!props.span && !options.noSpan) props = { span: 'Span', ...props };
+        if (!props.span && !options.noSpan) props = { span: "Span", ...props };
         this.props = props;
-
-        if (!this.keys) this.keys = Object.keys(props);
     }
 
     link() {
@@ -62,32 +52,32 @@ class Node extends Kind {
     }
 
     getLengthAndAlign() {
-        const propsWithPosMap = {};
         let pos = 0,
             align = 0;
-        for (let [key, prop] of Object.entries(this.props)) {
+        this.propsWithPos = Object.entries(this.props).map(([key, prop]) => {
             prop.initLengthAndAlign();
             pos = getAligned(pos, prop.align);
             if (prop.align > align) align = prop.align;
-            propsWithPosMap[key] = { key, prop, pos };
+            const propWithPos = { key, prop, pos };
             pos += prop.length;
-        }
-
-        this.propsWithPos = this.keys.map(key => propsWithPosMap[key]);
+            return propWithPos;
+        });
 
         return { length: getAligned(pos, align), align };
     }
 
     generateDeserializer() {
         const propsCodes = this.propsWithPos.map(({ key, prop, pos }) => {
-            return `${key}: ${prop.deserializerName}(pos${pos === 0 ? '' : ` + ${pos}`})`;
+            return `${key}: ${prop.deserializerName}(pos${
+                pos === 0 ? "" : ` + ${pos}`
+            })`;
         });
 
         if (!this.noType) propsCodes.unshift(`type: '${this.nodeName}'`);
 
         return `function ${this.deserializerName}(pos) {
             return {
-                ${propsCodes.join(`,\n${' '.repeat(16)}`)}
+                ${propsCodes.join(`,\n${" ".repeat(16)}`)}
             };
         }`;
     }
@@ -104,15 +94,15 @@ class Node extends Kind {
      * @returns {string} - Code for `serialize` + `finalize` functions
      */
     generateSerializer() {
-        const propsOrdered = [...this.propsWithPos].sort(
-            (prop1, prop2) => prop1.pos < prop2.pos ? -1 : 1
+        const propsOrdered = [...this.propsWithPos].sort((prop1, prop2) =>
+            prop1.pos < prop2.pos ? -1 : 1
         );
 
         const serializeCodes = [],
             finalizeCodes = [];
         let endPos = 0;
         propsOrdered.forEach(({ key, prop, pos }, index) => {
-            const storePos32Str = `storePos32${index > 0 ? ` + ${index}` : ''}`;
+            const storePos32Str = `storePos32${index > 0 ? ` + ${index}` : ""}`;
             // Need to use `writeScratchUint32()` - reason explained in that function's definition
             serializeCodes.push(
                 `writeScratchUint32(${storePos32Str}, ${prop.serializerName}(node.${key}));`
@@ -123,22 +113,27 @@ class Node extends Kind {
             } else if (pos < endPos) {
                 finalizeCodes.push(`pos -= ${endPos - pos};`);
             }
-            finalizeCodes.push(`${prop.finalizerName}(scratchUint32[${storePos32Str}]);`);
+            finalizeCodes.push(
+                `${prop.finalizerName}(scratchUint32[${storePos32Str}]);`
+            );
 
             endPos = pos + prop.length;
         });
 
-        if (endPos !== this.length) finalizeCodes.push(`pos += ${this.length - endPos};`);
+        if (endPos !== this.length)
+            finalizeCodes.push(`pos += ${this.length - endPos};`);
 
         // NB Scratch must be allocated in 8-byte blocks
         return `function ${this.serializerName}(node) {
-            const storePos32 = allocScratch(${getAligned(propsOrdered.length * 4, 8) >> 2});
-            ${serializeCodes.join(`\n${' '.repeat(12)}`)}
+            const storePos32 = allocScratch(${
+                getAligned(propsOrdered.length * 4, 8) >> 2
+            });
+            ${serializeCodes.join(`\n${" ".repeat(12)}`)}
             return storePos32;
         }
         
         function ${this.finalizerName}(storePos32) {
-            ${finalizeCodes.join(`\n${' '.repeat(12)}`)}
+            ${finalizeCodes.join(`\n${" ".repeat(12)}`)}
         }`;
     }
 }

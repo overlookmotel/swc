@@ -126,11 +126,15 @@ class Enum extends Kind {
             );
 
             optionFinalizeCodes.push(
-                `case ${index}: finalizeEnum(` +
-                    `${index}, scratchUint32[storePos32 + 1], ${type.finalizerName}, ` +
-                    `${type.align}, ${this.length}` +
-                    "); " +
-                    "break;"
+                `case ${index}:
+                    finalizeEnum(
+                        ${index},
+                        scratchUint32[storePos32 + 1],
+                        ${type.finalizerName},
+                        ${type.align},
+                        ${this.length}
+                    );
+                    break;`
             );
         });
 

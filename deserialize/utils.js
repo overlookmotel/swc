@@ -1,11 +1,14 @@
-'use strict';
+"use strict";
 
 // Imports
 const {
-    PROGRAM_LENGTH, PROGRAM_ALIGN,
-    SERIALIZE_INITIAL_BUFFER_SIZE, SCRATCH_INITIAL_BUFFER_SIZE32,
-    SERIALIZE_MAX_BUFFER_SIZE, SCRATCH_MAX_BUFFER_SIZE32
-} = require('./constants.js');
+    PROGRAM_LENGTH,
+    PROGRAM_ALIGN,
+    SERIALIZE_INITIAL_BUFFER_SIZE,
+    SCRATCH_INITIAL_BUFFER_SIZE32,
+    SERIALIZE_MAX_BUFFER_SIZE,
+    SCRATCH_MAX_BUFFER_SIZE32,
+} = require("./constants.js");
 
 // Exports
 
@@ -26,7 +29,7 @@ module.exports = {
     writeStringToBuffer,
     writeAsciiStringToBuffer,
     debugBuff,
-    debugAst
+    debugAst,
 };
 
 /**
@@ -40,7 +43,9 @@ function deserialize(buffIn) {
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
-    return deserializeProgram(buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH);
+    return deserializeProgram(
+        buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH
+    );
 }
 let buff, int32, uint32, float64;
 
@@ -122,7 +127,7 @@ function growBuffer(minLen) {
     } while (buffLen < minLen);
 
     if (buffLen > SERIALIZE_MAX_BUFFER_SIZE) {
-        throw new Error('Exceeded maximum serialization buffer size');
+        throw new Error("Exceeded maximum serialization buffer size");
     }
 
     const oldBuff = buff;
@@ -163,16 +168,17 @@ function initScratch() {
  * Allocate scratch space of specified number of bytes.
  * Advance position for next allocation.
  * Return position of start of scratch space allocated in 4-bytes multiple.
- * 
+ *
  * Scratch must be allocated in multiples of 8 bytes.
  * This is to support writing `Float64`s to scratch.
- * 
+ *
  * @param {number} bytes32 - Number of bytes to allocate in multiples of 4
  * @returns {number} - Position of start of reserved scratch space in multiples of 4 bytes
  */
 function allocScratch(bytes32) {
     /* DEBUG_ONLY_START */
-    if (bytes32 % 2 !== 0) throw new Error('Scratch must be allocated in multiples of 8 bytes');
+    if (bytes32 % 2 !== 0)
+        throw new Error("Scratch must be allocated in multiples of 8 bytes");
     /* DEBUG_ONLY_END */
 
     const startPos32 = scratchPos32;
@@ -203,7 +209,7 @@ function growScratch() {
     } while (scratchLen32 < scratchPos32);
 
     if (scratchLen32 > SCRATCH_MAX_BUFFER_SIZE32) {
-        throw new Error('Exceeded maximum scratch buffer size');
+        throw new Error("Exceeded maximum scratch buffer size");
     }
 
     const oldScratchBuff = scratchBuff;
@@ -267,7 +273,9 @@ function copyFromScratch(scratchPos32, len) {
                 pos32++;
                 scratchPos32++;
                 uint16[pos32 << 1] = scratchUint16[scratchPos32 << 1];
-                if (len & 1) buff[(pos32 << 2) + 2] = scratchBuff[(scratchPos32 << 2) + 2];
+                if (len & 1)
+                    buff[(pos32 << 2) + 2] =
+                        scratchBuff[(scratchPos32 << 2) + 2];
             } else {
                 buff[(pos32 + 1) << 2] = scratchBuff[(scratchPos32 + 1) << 2];
             }
@@ -287,7 +295,8 @@ function copyFromScratch(scratchPos32, len) {
         }
 
         // Copy final byte as Uint8
-        if (len & 1) buff[(pos16 + 1) << 1] = scratchBuff[(scratchPos16 + 1) << 1];
+        if (len & 1)
+            buff[(pos16 + 1) << 1] = scratchBuff[(scratchPos16 + 1) << 1];
     } else {
         // Target position not aligned. Copy all as Uint8s.
         let pos8 = pos,
@@ -329,10 +338,9 @@ function writeStringToBuffer(str, buff, strLen, pos) {
     return strLen;
 }
 
-writeStringToBuffer.toString = () => (
-    Function.prototype.toString.call(writeStringToBuffer)
-    + '\n\nconst { charCodeAt } = String.prototype;'
-);
+writeStringToBuffer.toString = () =>
+    Function.prototype.toString.call(writeStringToBuffer) +
+    "\n\nconst { charCodeAt } = String.prototype;";
 
 /**
  * Write ASCII string to buffer.
@@ -363,15 +371,19 @@ function debugBuff(typeName, pos, length) {
     console.log(`\x1b[36m${typeName}\x1b[0m:`, pos, pos % 16);
 
     if (length === undefined) length = 128;
-    const str = buff.toString('hex', pos, pos + length);
+    const str = buff.toString("hex", pos, pos + length);
     const mod = (pos % 16) * 2;
-    let out = `\x1b[31m[${`${pos - mod / 2}`.padStart(5, '0')}]\x1b[0m`
-        + ' '.repeat(mod + Math.ceil(mod / 8));
+    let out =
+        `\x1b[31m[${`${pos - mod / 2}`.padStart(5, "0")}]\x1b[0m` +
+        " ".repeat(mod + Math.ceil(mod / 8));
     for (let offset = 0; offset < str.length; offset += 2) {
         if ((offset + mod) % 32 === 0 && offset !== 0) {
-            out += `\n\x1b[31m[${`${pos + offset / 2}`.padStart(5, '0')}]\x1b[0m`;
+            out += `\n\x1b[31m[${`${pos + offset / 2}`.padStart(
+                5,
+                "0"
+            )}]\x1b[0m`;
         }
-        if ((offset + mod) % 8 === 0) out += ' ';
+        if ((offset + mod) % 8 === 0) out += " ";
         out += str.slice(offset, offset + 2);
     }
     console.log(out);

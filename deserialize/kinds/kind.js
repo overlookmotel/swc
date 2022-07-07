@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
 // Modules
-const assert = require('assert');
+const assert = require("assert");
 
 // Imports
-const { isPositiveInteger } = require('./utils.js');
+const { isPositiveInteger } = require("./utils.js");
 
 // Exports
 
@@ -22,13 +22,16 @@ class Kind {
     setOptions(options) {
         if (!options) return;
         // Set options with define not assign so getters can be overridden
-        Object.defineProperties(this, Object.getOwnPropertyDescriptors(options));
+        Object.defineProperties(
+            this,
+            Object.getOwnPropertyDescriptors(options)
+        );
     }
 
     initName() {
         if (!this.name) {
             this.name = this.getName();
-            assert(typeof this.name === 'string', 'Failed to get type name');
+            assert(typeof this.name === "string", "Failed to get type name");
         }
         return this.name;
     }
@@ -43,8 +46,14 @@ class Kind {
             this.align = align;
         }
 
-        assert(isPositiveInteger(this.length), `Type ${this.name} has invalid length`);
-        assert(isPositiveInteger(this.align), `Type ${this.name} has invalid align`);
+        assert(
+            isPositiveInteger(this.length),
+            `Type ${this.name} has invalid length`
+        );
+        assert(
+            isPositiveInteger(this.align),
+            `Type ${this.name} has invalid align`
+        );
     }
 
     get deserializerName() {

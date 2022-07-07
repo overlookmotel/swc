@@ -1732,7 +1732,6 @@ function deserializeJsWord(pos) {
     } while (++pos < end);
     return String.fromCharCode(...arr);
 }
-
 const { utf8Slice } = Buffer.prototype;
 
 function deserializeAsciiJsWord(pos) {
@@ -1757,7 +1756,6 @@ function deserializeAsciiJsWord(pos) {
     } while (++pos < end);
     return String.fromCharCode(...arr);
 }
-
 const { asciiSlice } = Buffer.prototype;
 
 function deserializeOptionAsciiJsWord(pos) {

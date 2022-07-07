@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
 // Imports
-const Kind = require('./kind.js'),
-    { getType } = require('../types/index.js');
+const Kind = require("./kind.js"),
+    { getType } = require("../types/index.js");
 
 // Exports
 
@@ -10,7 +10,7 @@ const optionals = new Map();
 
 /**
  * Option class.
- * 
+ *
  * Options are serialized by RYKV as follows:
  *   - 1 byte for whether value is present or not.
  *     - `0` for no value (becomes `null` is JS object)
@@ -48,7 +48,7 @@ class Option extends Kind {
         this.valueType.initLengthAndAlign();
         return {
             length: this.valueType.align + this.valueType.length,
-            align: this.valueType.align
+            align: this.valueType.align,
         };
     }
 
@@ -64,13 +64,19 @@ class Option extends Kind {
      */
     generateSerializer() {
         const { valueType } = this,
-            { finalizerName, length: valueLength, align: valueAlign } = valueType;
+            {
+                finalizerName,
+                length: valueLength,
+                align: valueAlign,
+            } = valueType;
         return `function ${this.serializerName}(value) {
             return serializeOption(value, ${valueType.serializerName});
         }
         
         function ${this.finalizerName}(finalizeData) {
-            return finalizeOption(finalizeData, ${finalizerName}, ${valueAlign}, ${valueLength + valueAlign});
+            return finalizeOption(finalizeData, ${finalizerName}, ${valueAlign}, ${
+            valueLength + valueAlign
+        });
         }`;
     }
 }
@@ -84,9 +90,12 @@ class Option extends Kind {
  */
 function deserializeOption(pos, deserialize, offset) {
     switch (buff[pos]) {
-        case 0: return null;
-        case 1: return deserialize(pos + offset);
-        default: throw new Error('Unexpected option value');
+        case 0:
+            return null;
+        case 1:
+            return deserialize(pos + offset);
+        default:
+            throw new Error("Unexpected option value");
     }
 }
 
@@ -122,7 +131,7 @@ function finalizeOption(finalizeData, finalize, offset, length) {
         buff[pos] = 1;
         pos += offset;
         finalize(finalizeData);
-    };
+    }
 }
 
 module.exports = { Option, deserializeOption, serializeOption, finalizeOption };

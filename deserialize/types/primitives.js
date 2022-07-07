@@ -44,7 +44,9 @@ module.exports = {
                 return String.fromCharCode(buff[pos]);
             }
 
-            if (len & 128) {
+            if (
+                len & 128
+            ) {
                 const pos32 = pos >> 2;
                 // Length always stored little-endian, regardless of machine architecture
                 // TODO Need to alter next line to read as little-endian on big-endian systems
@@ -62,10 +64,12 @@ module.exports = {
                 // to run JS faster, but it's not going to make a significant difference.
                 // `Buffer.prototype.utf8Slice` is undocumented but used internally by
                 // `Buffer.prototype.toString`. `.utf8Slice` is faster as skips bounds-checking.
-                // Next line is equivalent to `buff.toString('utf8', pos, pos + len)`.
+                // Next line is equivalent to `buff.toString("utf8", pos, pos + len)`.
                 if (len > 24) return utf8Slice.call(buff, pos, pos + len);
-            } else {
+            }
+            // prettier-ignore
             /* DEBUG_ONLY_START */
+            else {
                 debugBuff("JsWord content", pos, len);
             }
             /* DEBUG_ONLY_END */
@@ -85,7 +89,7 @@ module.exports = {
         generateDeserializer() {
             return (
                 Custom.prototype.generateDeserializer.call(this) +
-                `\n\n${" ".repeat(8)}const { utf8Slice } = Buffer.prototype;`
+                "\n\nconst { utf8Slice } = Buffer.prototype;"
             );
         },
         serialize(str) {
@@ -204,7 +208,7 @@ module.exports = {
         generateSerializer() {
             return (
                 Custom.prototype.generateSerializer.call(this) +
-                `\n\n${" ".repeat(8)}const { utf8Write } = Buffer.prototype;`
+                "\n\nconst { utf8Write } = Buffer.prototype;"
             );
         },
         length: 8,
@@ -238,7 +242,9 @@ module.exports = {
                 return String.fromCharCode(buff[pos]);
             }
 
-            if (len & 128) {
+            if (
+                len & 128
+            ) {
                 const pos32 = pos >> 2;
                 // Length always stored little-endian, regardless of machine architecture
                 // TODO Need to alter next line to read as little-endian on big-endian systems
@@ -256,10 +262,12 @@ module.exports = {
                 // to run JS faster, but it's not going to make a significant difference.
                 // `Buffer.prototype.asciiSlice` is undocumented but used internally by
                 // `Buffer.prototype.toString`. `.asciiSlice` is faster as skips bounds-checking.
-                // Next line is equivalent to `buff.toString('ascii', pos, pos + len)`.
+                // Next line is equivalent to `buff.toString("ascii", pos, pos + len)`.
                 if (len > 28) return asciiSlice.call(buff, pos, pos + len);
-            } else {
+            }
+            // prettier-ignore
             /* DEBUG_ONLY_START */
+            else {
                 debugBuff("AsciiJsWord content", pos, len);
             }
             /* DEBUG_ONLY_END */
@@ -276,7 +284,7 @@ module.exports = {
         generateDeserializer() {
             return (
                 Custom.prototype.generateDeserializer.call(this) +
-                `\n\n${" ".repeat(8)}const { asciiSlice } = Buffer.prototype;`
+                "\n\nconst { asciiSlice } = Buffer.prototype;"
             );
         },
         serialize(str) {
@@ -334,7 +342,7 @@ module.exports = {
         generateSerializer() {
             return (
                 Custom.prototype.generateSerializer.call(this) +
-                `\n\n${" ".repeat(8)}const { asciiWrite } = Buffer.prototype;`
+                "\n\nconst { asciiWrite } = Buffer.prototype;"
             );
         },
         // Use `finalizeJsWord` as finalizer for type

@@ -125,9 +125,9 @@ module.exports = {
             generateSerializer() {
                 return Node.prototype.generateSerializer.call(this).replace(
                     "serializeAssignmentLeft(",
-                    `node.operator === '=' 
-                ? serializeAssignmentLeftEquals(node.left)
-                : serializeAssignmentLeft(`
+                    `node.operator === "="
+                        ? serializeAssignmentLeftEquals(node.left)
+                        : serializeAssignmentLeft(`
                 );
             },
         }

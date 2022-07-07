@@ -271,6 +271,51 @@ pub fn parse_sync_to_buffer(
 }
 
 #[napi]
+pub fn parse_sync_to_buffer_custom(
+    src: String,
+    opts: Buffer,
+    filename: Option<String>,
+) -> napi::Result<Buffer> {
+    swc_nodejs_common::init_default_trace_subscriber();
+    let c = get_compiler();
+
+    let options: ParseOptions = get_deserialized(&opts)?;
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+
+            let comments = if options.comments {
+                Some(c.comments() as &dyn Comments)
+            } else {
+                None
+            };
+
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    let serialized = PluginSerializedBytes::try_serialize_custom(&program).convert_err()?;
+    let slice = serialized.as_slice();
+    let buffer = Buffer::from(slice);
+
+    Ok(buffer)
+}
+
+#[napi]
 pub fn parse_sync_to_buffer_no_return(
     src: String,
     opts: Buffer,

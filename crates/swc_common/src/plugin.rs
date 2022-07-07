@@ -8,7 +8,17 @@ use std::{any::type_name, mem};
 
 use anyhow::Error;
 use bytecheck::CheckBytes;
-use rkyv::{with::AsBox, Archive, Deserialize, Serialize};
+use rkyv::{
+    ser::{
+        serializers::{
+            AlignedSerializer, AllocScratch, BufferScratch, CompositeSerializer,
+            CompositeSerializerError, FallbackScratch,
+        },
+        Serializer,
+    },
+    with::AsBox,
+    AlignedVec, Archive, Deserialize, Infallible, Serialize,
+};
 
 use crate::{syntax_pos::Mark, SyntaxContext};
 
@@ -49,6 +59,12 @@ pub struct PluginSerializedBytes {
     pub(crate) field: rkyv::AlignedVec,
 }
 
+pub type CustomSerializer<'a> = CompositeSerializer<
+    AlignedSerializer<&'a mut AlignedVec>,
+    FallbackScratch<BufferScratch<&'a mut AlignedVec>, AllocScratch>,
+    Infallible,
+>;
+
 #[cfg(feature = "plugin-base")]
 impl PluginSerializedBytes {
     /**
@@ -82,6 +98,35 @@ impl PluginSerializedBytes {
                     Error::msg("SharedSerializeMapError")
                 }
             })
+    }
+
+    pub fn try_serialize_custom<W>(t: &W) -> Result<Self, Error>
+    where
+        W: Archive + for<'a> Serialize<CustomSerializer<'a>>,
+    {
+        const BUFFER_LEN: usize = 10_000_000;
+        const SCRATCH_LEN: usize = 512_000;
+
+        let mut serialize_buffer = AlignedVec::with_capacity(BUFFER_LEN);
+        let mut serialize_scratch = AlignedVec::with_capacity(SCRATCH_LEN);
+        unsafe {
+            serialize_scratch.set_len(SCRATCH_LEN);
+        }
+
+        let mut serializer = CompositeSerializer::new(
+            AlignedSerializer::new(&mut serialize_buffer),
+            FallbackScratch::new(
+                BufferScratch::new(&mut serialize_scratch),
+                AllocScratch::default(),
+            ),
+            Infallible,
+        );
+        serializer.serialize_value(t)?;
+
+        let field = serializer.into_serializer().into_inner();
+        Ok(PluginSerializedBytes {
+            field: field.to_owned(),
+        })
     }
 
     /*

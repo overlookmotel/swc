@@ -56,7 +56,7 @@ class Enum extends Kind {
 
     getLengthAndAlign() {
         let length = 0,
-            align = 0;
+            align = 4;
         for (const valueType of this.valueTypes) {
             valueType.initLengthAndAlign();
             const optionLength = valueType.length + valueType.align;
@@ -168,7 +168,7 @@ class Enum extends Kind {
  */
 function finalizeEnum(id, finalizeData, finalize, offset, length) {
     const startPos = pos;
-    buff[pos] = id;
+    uint32[pos >> 2] = id;
     pos += offset;
     finalize(finalizeData);
     pos = startPos + length;

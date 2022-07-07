@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
 // Exports
 
 module.exports = {
     getAligned,
-    isPositiveInteger
+    isPositiveInteger,
 };
 
 /**
@@ -26,5 +26,5 @@ function getAligned(pos, align) {
  * @returns {boolean} - `true` if input is a positive integer
  */
 function isPositiveInteger(num) {
-    return typeof num === 'number' && num !== 0 && !isNaN(num) && num % 1 === 0;
+    return typeof num === "number" && num !== 0 && !isNaN(num) && num % 1 === 0;
 }

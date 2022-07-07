@@ -67,17 +67,18 @@ class Node extends Kind {
     }
 
     generateDeserializer() {
-        const propsCodes = this.propsWithPos.map(({ key, prop, pos }) => {
-            return `${key}: ${prop.deserializerName}(pos${
-                pos === 0 ? "" : ` + ${pos}`
-            })`;
-        });
+        const propsCodes = this.propsWithPos.map(
+            ({ key, prop, pos }) =>
+                `${key}: ${prop.deserializerName}(pos${
+                    pos === 0 ? "" : ` + ${pos}`
+                })`
+        );
 
-        if (!this.noType) propsCodes.unshift(`type: '${this.nodeName}'`);
+        if (!this.noType) propsCodes.unshift(`type: "${this.nodeName}"`);
 
         return `function ${this.deserializerName}(pos) {
             return {
-                ${propsCodes.join(`,\n${" ".repeat(16)}`)}
+                ${propsCodes.join(",\n")}
             };
         }`;
     }
@@ -128,12 +129,12 @@ class Node extends Kind {
             const storePos32 = allocScratch(${
                 getAligned(propsOrdered.length * 4, 8) >> 2
             });
-            ${serializeCodes.join(`\n${" ".repeat(12)}`)}
+            ${serializeCodes.join("\n")}
             return storePos32;
         }
         
         function ${this.finalizerName}(storePos32) {
-            ${finalizeCodes.join(`\n${" ".repeat(12)}`)}
+            ${finalizeCodes.join("\n")}
         }`;
     }
 }

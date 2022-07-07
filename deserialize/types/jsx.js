@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
 // Imports
-const { Node } = require('../kinds/index.js');
+const { Node } = require("../kinds/index.js");
 
 // Exports
 
@@ -11,5 +11,5 @@ module.exports = {
     JSXNamespacedName: Node({}), // TODO
     JSXEmptyExpression: Node({}), // TODO
     JSXElement: Node({}), // TODO
-    JSXFragment: Node({}) // TODO
+    JSXFragment: Node({}), // TODO
 };

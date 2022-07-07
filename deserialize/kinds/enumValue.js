@@ -46,16 +46,16 @@ class EnumValue extends Kind {
         const caseCodes = this.values.map(
             (value, index) =>
                 `case ${index}: return ${
-                    typeof value === "string" ? `'${value}'` : value
+                    typeof value === "string" ? `"${value}"` : value
                 };`
         );
 
         return `function ${this.deserializerName}(pos) {
             switch (buff[pos]) {
-                ${caseCodes.join(`\n${" ".repeat(16)}`)}
-                default: throw new Error('Unexpected enum value ID for ${
+                ${caseCodes.join("\n")}
+                default: throw new Error("Unexpected enum value ID for ${
                     this.name
-                }');
+                }");
             }
         }`;
     }
@@ -70,16 +70,16 @@ class EnumValue extends Kind {
         const caseCodes = this.values.map(
             (value, index) =>
                 `case ${
-                    typeof value === "string" ? `'${value}'` : value
+                    typeof value === "string" ? `"${value}"` : value
                 }: return ${index + 256};`
         );
 
         return `function ${this.serializerName}(value) {
             switch (value) {
-                ${caseCodes.join(`\n${" ".repeat(16)}`)}
-                default: throw new Error('Unexpected enum value for ${
+                ${caseCodes.join("\n")}
+                default: throw new Error("Unexpected enum value for ${
                     this.name
-                }');
+                }");
             }
         }`;
     }

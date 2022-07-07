@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
 // Imports
-const Kind = require('./kind.js'),
-    { getType } = require('../types/index.js');
+const Kind = require("./kind.js"),
+    { getType } = require("../types/index.js");
 
 // Exports
 
@@ -55,7 +55,10 @@ class Box extends Kind {
      */
     generateSerializer() {
         const {
-            serializerName, finalizerName, length: valueLength, align: valueAlign
+            serializerName,
+            finalizerName,
+            length: valueLength,
+            align: valueAlign,
         } = this.valueType;
         return `function ${this.serializerName}(value) {
             return serializeBox(value, ${serializerName}, ${finalizerName}, ${valueLength}, ${valueAlign});
@@ -63,7 +66,7 @@ class Box extends Kind {
     }
 
     // Use `finalizeBox` as finalizer for all Box types
-    finalizerName = 'finalizeBox';
+    finalizerName = "finalizeBox";
 }
 
 /**
@@ -103,7 +106,7 @@ function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
 }
 
 function finalizeBox(valuePos) {
-    int32[pos >> 2] = (valuePos & 0x7FFFFFFF) - pos;
+    int32[pos >> 2] = (valuePos & 0x7fffffff) - pos;
     pos += 4;
 }
 

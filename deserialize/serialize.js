@@ -4431,7 +4431,6 @@ function finalizeJsWord(storePos32) {
     }
     pos += 8;
 }
-
 const { utf8Write } = Buffer.prototype;
 
 function serializeAsciiJsWord(str) {
@@ -4459,7 +4458,6 @@ function serializeAsciiJsWord(str) {
     scratchUint32[storePos32] = len;
     return storePos32;
 }
-
 const { asciiWrite } = Buffer.prototype;
 
 function serializeOptionAsciiJsWord(value) {
@@ -5840,7 +5838,6 @@ function writeStringToBuffer(str, buff, strLen, pos) {
     } while (++strPos < strLen);
     return strLen;
 }
-
 const { charCodeAt } = String.prototype;
 
 function writeAsciiStringToBuffer(str, buff, strLen, pos) {

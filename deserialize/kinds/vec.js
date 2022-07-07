@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
 // Imports
-const Kind = require('./kind.js'),
-    { getType } = require('../types/index.js');
+const Kind = require("./kind.js"),
+    { getType } = require("../types/index.js");
 
 // Exports
 
@@ -10,7 +10,7 @@ const vecs = new Map();
 
 /**
  * Vec class.
- * 
+ *
  * Vecs are serialized by RYKV as follows:
  *   - The values are added to buffer.
  *     Alignment as per the value's type.
@@ -55,7 +55,10 @@ class Vec extends Kind {
      */
     generateSerializer() {
         const {
-            serializerName, finalizerName, length: valueLength, align: valueAlign
+            serializerName,
+            finalizerName,
+            length: valueLength,
+            align: valueAlign,
         } = this.valueType;
         return `function ${this.serializerName}(values) {
             return serializeVec(values, ${serializerName}, ${finalizerName}, ${valueLength}, ${valueAlign});
@@ -63,7 +66,7 @@ class Vec extends Kind {
     }
 
     // Use `finalizeVec` as finalizer for all Vec types
-    finalizerName = 'finalizeVec';
+    finalizerName = "finalizeVec";
 }
 
 /**
@@ -77,7 +80,7 @@ function deserializeVec(pos, deserialize, length) {
     const pos32 = pos >> 2;
 
     /* DEBUG_ONLY_START */
-    console.log('Vec pointer target:', pos + int32[pos32]);
+    console.log("Vec pointer target:", pos + int32[pos32]);
     /* DEBUG_ONLY_END */
 
     const numEntries = uint32[pos32 + 1];
@@ -151,7 +154,7 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
  * Write to output buffer:
  *   - Bytes 0-3: Relative pointer to location of values as Int32
  *   - Bytes 4-7: Number of values as Uint32
- * 
+ *
  * @param {number} storePos32 - Position of scratch data (in multiple of 4 bytes)
  * @returns {undefined}
  */

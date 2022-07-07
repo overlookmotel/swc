@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
 // Modules
-const assert = require('assert');
+const assert = require("assert");
 
 // Exports
 
@@ -25,5 +25,5 @@ module.exports = {
     SERIALIZE_MAX_BUFFER_SIZE,
     SCRATCH_MAX_BUFFER_SIZE32: SCRATCH_MAX_BUFFER_SIZE / 4,
     PROGRAM_LENGTH: 0, // Will be set based on types
-    PROGRAM_ALIGN: 0 // Will be set based on types
+    PROGRAM_ALIGN: 0, // Will be set based on types
 };

@@ -1,13 +1,13 @@
-'use strict';
+"use strict";
 
 // Imports
-const Node = require('./node.js'),
-    { Enum } = require('./enum.js'),
-    { EnumValue } = require('./enumValue.js'),
-    { Option } = require('./option.js'),
-    { Box } = require('./box.js'),
-    { Vec } = require('./vec.js'),
-    Custom = require('./custom.js');
+const Node = require("./node.js"),
+    { Enum } = require("./enum.js"),
+    { EnumValue } = require("./enumValue.js"),
+    { Option } = require("./option.js"),
+    { Box } = require("./box.js"),
+    { Vec } = require("./vec.js"),
+    Custom = require("./custom.js");
 
 // Exports
 
@@ -18,7 +18,7 @@ module.exports = {
     Option: callableClass(Option),
     Box: callableClass(Box),
     Vec: callableClass(Vec),
-    Custom: callableClass(Custom)
+    Custom: callableClass(Custom),
 };
 
 /**
@@ -31,6 +31,6 @@ function callableClass(Class) {
     return new Proxy(Class, {
         apply(Class, _thisArg, args) {
             return new Class(...args);
-        }
+        },
     });
 }

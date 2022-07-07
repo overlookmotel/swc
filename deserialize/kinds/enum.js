@@ -1,15 +1,15 @@
-'use strict';
+"use strict";
 
 // Modules
-const assert = require('assert');
+const assert = require("assert");
 
 // Imports
-const Kind = require('./kind.js'),
-    Node = require('./node.js'),
-    { Box } = require('./box.js'),
-    Custom = require('./custom.js'),
-    { getAligned } = require('./utils.js'),
-    { getType } = require('../types/index.js');
+const Kind = require("./kind.js"),
+    Node = require("./node.js"),
+    { Box } = require("./box.js"),
+    Custom = require("./custom.js"),
+    { getAligned } = require("./utils.js"),
+    { getType } = require("../types/index.js");
 
 // Exports
 
@@ -49,7 +49,9 @@ class Enum extends Kind {
     }
 
     getName() {
-        return this.valueTypes.map(valueType => valueType.initName()).join('Or');
+        return this.valueTypes
+            .map((valueType) => valueType.initName())
+            .join("Or");
     }
 
     getLengthAndAlign() {
@@ -66,14 +68,17 @@ class Enum extends Kind {
     }
 
     generateDeserializer() {
-        const caseCodes = this.valueTypes.map(({ deserializerName, align }, index) => (
-            `case ${index}: return ${deserializerName}(pos + ${align});`
-        ));
+        const caseCodes = this.valueTypes.map(
+            ({ deserializerName, align }, index) =>
+                `case ${index}: return ${deserializerName}(pos + ${align});`
+        );
 
         return `function ${this.deserializerName}(pos) {
             switch (buff[pos]) {
-                ${caseCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum option ID for ${this.name}');
+                ${caseCodes.join("\n")}
+                default: throw new Error("Unexpected enum option ID for ${
+                    this.name
+                }");
             }
         }`;
     }
@@ -84,10 +89,10 @@ class Enum extends Kind {
      *   - Byte 0: ID of selected value type.
      *   - Bytes 4-7: Finalizer data from value type's `serialize` function
      * It returns position of this data in scratch as Uint32.
-     * 
+     *
      * Finalizer retrieves this data from scratch, uses first byte to determine selected type,
      * and passes bytes 4-7 to finalizer for the selected type (via `finalizeEnum()`).
-     * 
+     *
      * @returns {string} - Code for `serialize` + `finalize` functions
      */
     generateSerializer() {
@@ -100,45 +105,53 @@ class Enum extends Kind {
                 if (usedNodeNames.has(nodeName)) return;
                 usedNodeNames.add(nodeName);
 
-                optionSerializeCodes.push(`case '${nodeName}':`);
+                optionSerializeCodes.push(`case "${nodeName}":`);
             };
             (function resolve(thisType) {
                 if (thisType instanceof Node) return addCode(thisType.nodeName);
-                if (thisType instanceof Enum) return thisType.valueTypes.forEach(resolve);
+                if (thisType instanceof Enum)
+                    return thisType.valueTypes.forEach(resolve);
                 if (thisType instanceof Box) return resolve(thisType.valueType);
                 if (thisType instanceof Custom) return addCode(thisType.name);
-                throw new Error(`Unexpected enum option type for ${this.name}, option ${index}`);
+                throw new Error(
+                    `Unexpected enum option type for ${this.name}, option ${index}`
+                );
             })(type);
 
-            optionSerializeCodes.push(...[
+            optionSerializeCodes.push(
                 `scratchBuff[storePos32 << 2] = ${index};`,
                 // Need to use `writeScratchUint32()` - reason explained in that function's definition
                 `writeScratchUint32(storePos32 + 1, ${type.serializerName}(node));`,
-                'break;'
-            ].map(line => `${' '.repeat(4)}${line}`));
+                "break;"
+            );
 
             optionFinalizeCodes.push(
-                `case ${index}: finalizeEnum(`
-                + `${index}, scratchUint32[storePos32 + 1], ${type.finalizerName}, `
-                + `${type.align}, ${this.length}`
-                + '); '
-                + 'break;'
+                `case ${index}: finalizeEnum(` +
+                    `${index}, scratchUint32[storePos32 + 1], ${type.finalizerName}, ` +
+                    `${type.align}, ${this.length}` +
+                    "); " +
+                    "break;"
             );
         });
 
         return `function ${this.serializerName}(node) {
             const storePos32 = allocScratch(2);
             switch (node.type) {
-                ${optionSerializeCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum option type for ${this.name}');
+                ${optionSerializeCodes.join("\n")}
+                default: throw new Error("Unexpected enum option type for ${
+                    this.name
+                }");
             }
             return storePos32;
         }
 
         function ${this.finalizerName}(storePos32) {
             switch (scratchBuff[storePos32 << 2]) {
-                ${optionFinalizeCodes.join(`\n${' '.repeat(16)}`)}
-                default: throw new Error('Unexpected enum option ID for ${this.name}');
+                ${optionFinalizeCodes.join("\n")}
+                default:
+                    throw new Error("Unexpected enum option ID for ${
+                        this.name
+                    }");
             }
         }`;
     }

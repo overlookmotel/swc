@@ -1,26 +1,26 @@
-'use strict';
+"use strict";
 
 // Modules
-const assert = require('assert');
+const assert = require("assert");
 
 // Exports
 const types = {};
 module.exports = { types, getType };
 
 // Imports
-const programTypes = require('./program.js'),
-    moduleTypes = require('./modules.js'),
-    statementTypes = require('./statements.js'),
-    declarationTypes = require('./declarations.js'),
-    functionTypes = require('./functions.js'),
-    classTypes = require('./classes.js'),
-    patternTypes = require('./patterns.js'),
-    expressionTypes = require('./expressions.js'),
-    objectTypes = require('./objects.js'),
-    literalTypes = require('./literals.js'),
-    jsxTypes = require('./jsx.js'),
-    typescriptTypes = require('./typescript.js'),
-    primitiveTypes = require('./primitives.js');
+const programTypes = require("./program.js"),
+    moduleTypes = require("./modules.js"),
+    statementTypes = require("./statements.js"),
+    declarationTypes = require("./declarations.js"),
+    functionTypes = require("./functions.js"),
+    classTypes = require("./classes.js"),
+    patternTypes = require("./patterns.js"),
+    expressionTypes = require("./expressions.js"),
+    objectTypes = require("./objects.js"),
+    literalTypes = require("./literals.js"),
+    jsxTypes = require("./jsx.js"),
+    typescriptTypes = require("./typescript.js"),
+    primitiveTypes = require("./primitives.js");
 
 // Assemble types
 Object.assign(
@@ -47,13 +47,16 @@ for (const [name, type] of Object.entries(types)) {
 
 // Link types to each other
 const unnamedTypes = new Set();
-getType('Program');
+getType("Program");
 
 // Get names for unnamed types and add to `types`
 for (const type of unnamedTypes) {
     const typeName = type.initName();
     if (types[typeName]) {
-        assert(types[typeName] === type, `Clashing type definitions for type name ${typeName}`);
+        assert(
+            types[typeName] === type,
+            `Clashing type definitions for type name ${typeName}`
+        );
     } else {
         types[typeName] = type;
     }
@@ -71,13 +74,13 @@ for (const type of Object.values(types)) {
  */
 function getType(typeOrTypeName) {
     let type;
-    if (typeOrTypeName && typeof typeOrTypeName === 'object') {
+    if (typeOrTypeName && typeof typeOrTypeName === "object") {
         type = typeOrTypeName;
         if (!type.name) unnamedTypes.add(type);
     } else {
         assert(
-            typeof typeOrTypeName === 'string',
-            'getType() must be called with type object or type name'
+            typeof typeOrTypeName === "string",
+            "getType() must be called with type object or type name"
         );
         type = types[typeOrTypeName];
         assert(type, `${typeOrTypeName} type not found`);

@@ -367,6 +367,8 @@ module.exports = {
             return buff[pos] === 1;
         },
         serialize(value) {
+            // 0 has special meaning for Options, but is safe to use as finalizer data here
+            // as `Option<Boolean>` is never used
             return value ? 1 : 0;
         },
         finalize(id) {

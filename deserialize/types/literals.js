@@ -1,37 +1,35 @@
-'use strict';
+"use strict";
 
 // Imports
-const { Node, Enum, Option, Custom } = require('../kinds/index.js');
+const { Node, Enum, Option, Custom } = require("../kinds/index.js");
 
 // Exports
 
 module.exports = {
     Literal: Enum([
-        'StringLiteral', 'BooleanLiteral', 'NullLiteral', 'NumericLiteral',
-        'BigIntLiteral', 'RegExpLiteral', 'JSXText'
+        "StringLiteral",
+        "BooleanLiteral",
+        "NullLiteral",
+        "NumericLiteral",
+        "BigIntLiteral",
+        "RegExpLiteral",
+        "JSXText",
     ]),
 
-    StringLiteral: Node({ value: 'JsWord', raw: Option('JsWord') }),
+    StringLiteral: Node({ value: "JsWord", raw: Option("JsWord") }),
 
-    BooleanLiteral: Node({ value: 'Boolean' }),
+    BooleanLiteral: Node({ value: "Boolean" }),
 
     NullLiteral: Node({}),
 
-    NumericLiteral: Node(
-        {
-            value: 'Number',
-            span: 'Span',
-            raw: 'OptionAsciiJsWord'
-        },
-        { keys: ['span', 'value', 'raw'] }
-    ),
+    NumericLiteral: Node({ value: "Number", raw: "OptionAsciiJsWord" }),
 
-    BigIntLiteral: Node({ value: 'BigIntValue', raw: 'OptionAsciiJsWord' }),
+    BigIntLiteral: Node({ value: "BigIntValue", raw: "OptionAsciiJsWord" }),
     BigIntValue: Custom({
         deserialize(pos) {
             // TODO This implementation could be more efficient
             const str = deserializeAsciiJsWord(pos);
-            if (str === '0') return [0, []];
+            if (str === "0") return [0, []];
 
             let current = BigInt(str);
             const parts = [];
@@ -49,7 +47,7 @@ module.exports = {
             return [1, parts]; // TODO What is the initial 1 for?
         },
         serialize(value) {
-            if (value[0] === 0) return serializeAsciiJsWord('0');
+            if (value[0] === 0) return serializeAsciiJsWord("0");
 
             const parts = value[1];
             let num = 0n;
@@ -62,11 +60,11 @@ module.exports = {
         },
         // Use `finalizeJsWord` as finalizer for type
         finalize: false,
-        finalizerName: 'finalizeJsWord',
-        dependencies: ['AsciiJsWord', 'JsWord'],
+        finalizerName: "finalizeJsWord",
+        dependencies: ["AsciiJsWord", "JsWord"],
         length: 8,
-        align: 4
+        align: 4,
     }),
 
-    RegExpLiteral: Node({ pattern: 'JsWord', flags: 'AsciiJsWord' })
+    RegExpLiteral: Node({ pattern: "JsWord", flags: "AsciiJsWord" }),
 };

@@ -1,70 +1,60 @@
-'use strict';
+"use strict";
 
 // Imports
-const { Node, Enum, Option, Box, Vec } = require('../kinds/index.js');
+const { Node, Enum, Option, Box, Vec } = require("../kinds/index.js");
 
 // Exports
 
 module.exports = {
     ObjectExpression: Node({
-        properties: Vec(Enum(['SpreadElement', Box('ObjectProperty')]))
+        properties: Vec(Enum(["SpreadElement", Box("ObjectProperty")])),
     }),
 
     SpreadElement: Node(
-        { spread: 'Span', arguments: Box('Expression') },
+        { spread: "Span", arguments: Box("Expression") },
         { noSpan: true }
     ),
 
     ObjectProperty: Enum([
-        'Identifier', 'KeyValueProperty', 'AssignmentProperty', 'GetterProperty',
-        'SetterProperty', 'MethodProperty'
+        "Identifier",
+        "KeyValueProperty",
+        "AssignmentProperty",
+        "GetterProperty",
+        "SetterProperty",
+        "MethodProperty",
     ]),
     KeyValueProperty: Node(
-        { key: 'PropertyName', value: Box('Expression') },
+        { key: "PropertyName", value: Box("Expression") },
         { noSpan: true }
     ),
-    AssignmentProperty: Node({ key: 'Identifier', value: Box('Expression') }),
-    GetterProperty: Node(
-        {
-            key: 'PropertyName',
-            span: 'Span',
-            typeAnnotation: Option('TsTypeAnnotation'),
-            body: Option('BlockStatement')
-        },
-        { keys: ['span', 'key', 'typeAnnotation', 'body'] }
-    ),
-    SetterProperty: Node(
-        {
-            key: 'PropertyName',
-            span: 'Span',
-            param: 'Pattern',
-            body: Option('BlockStatement')
-        },
-        { keys: ['span', 'key', 'param', 'body'] }
-    ),
-    MethodProperty: Node(
-        {
-            key: 'PropertyName',
-            params: Vec('Parameter'),
-            decorators: Vec('Decorator'),
-            span: 'Span',
-            body: Option('BlockStatement'),
-            typeParameters: Option('TsTypeParameterDeclaration'),
-            generator: 'Boolean',
-            async: 'Boolean',
-            returnType: Option('TsTypeAnnotation')
-        },
-        {
-            keys: [
-                'key', 'params', 'decorators', 'span',
-                'body', 'generator', 'async', 'typeParameters',
-                'returnType'
-            ]
-        }
-    ),
+    AssignmentProperty: Node({ key: "Identifier", value: Box("Expression") }),
+    GetterProperty: Node({
+        key: "PropertyName",
+        typeAnnotation: Option("TsTypeAnnotation"),
+        body: Option("BlockStatement"),
+    }),
+    SetterProperty: Node({
+        key: "PropertyName",
+        param: "Pattern",
+        body: Option("BlockStatement"),
+    }),
+    MethodProperty: Node({
+        key: "PropertyName",
+        params: Vec("Parameter"),
+        decorators: Vec("Decorator"),
+        span: "Span",
+        body: Option("BlockStatement"),
+        generator: "Boolean",
+        async: "Boolean",
+        typeParameters: Option("TsTypeParameterDeclaration"),
+        returnType: Option("TsTypeAnnotation"),
+    }),
 
     PropertyName: Enum([
-        'Identifier', 'StringLiteral', 'NumericLiteral', 'Computed',
-        'BigIntLiteral'
-    ])
+        "Identifier",
+        "StringLiteral",
+        "NumericLiteral",
+        "Computed",
+        "BigIntLiteral",
+    ]),
 };

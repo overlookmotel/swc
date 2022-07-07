@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
 // Imports
-const { EnumValue, Option, Custom } = require('../kinds/index.js');
+const { Option, Custom } = require("../kinds/index.js");
 
 // Exports
 
@@ -29,16 +29,16 @@ module.exports = {
             let len = buff[pos + 7];
             if (len === 0) {
                 /* DEBUG_ONLY_START */
-                debugBuff('JsWord content', pos, len);
+                debugBuff("JsWord content", pos, len);
                 /* DEBUG_ONLY_END */
 
-                return '';
+                return "";
             }
 
             // Fast path for single-char strings (common in minified code)
             if (len === 1) {
                 /* DEBUG_ONLY_START */
-                debugBuff('JsWord content', pos, len);
+                debugBuff("JsWord content", pos, len);
                 /* DEBUG_ONLY_END */
 
                 return String.fromCharCode(buff[pos]);
@@ -53,7 +53,7 @@ module.exports = {
                 pos += int32[pos32 + 1];
 
                 /* DEBUG_ONLY_START */
-                debugBuff('JsWord content', pos, len);
+                debugBuff("JsWord content", pos, len);
                 /* DEBUG_ONLY_END */
 
                 // For longer strings, native method is faster.
@@ -64,10 +64,9 @@ module.exports = {
                 // `Buffer.prototype.toString`. `.utf8Slice` is faster as skips bounds-checking.
                 // Next line is equivalent to `buff.toString('utf8', pos, pos + len)`.
                 if (len > 24) return utf8Slice.call(buff, pos, pos + len);
-            }
+            } else {
             /* DEBUG_ONLY_START */
-            else {
-                debugBuff('JsWord content', pos, len);
+                debugBuff("JsWord content", pos, len);
             }
             /* DEBUG_ONLY_END */
 
@@ -84,8 +83,10 @@ module.exports = {
             return String.fromCharCode(...arr);
         },
         generateDeserializer() {
-            return Custom.prototype.generateDeserializer.call(this)
-                + `\n\n${' '.repeat(8)}const { utf8Slice } = Buffer.prototype;`;
+            return (
+                Custom.prototype.generateDeserializer.call(this) +
+                `\n\n${" ".repeat(8)}const { utf8Slice } = Buffer.prototype;`
+            );
         },
         serialize(str) {
             // Handle empty string
@@ -99,7 +100,7 @@ module.exports = {
             // If string is longer than 7 chars, write direct to output buffer
             if (strLen > 7) {
                 /* DEBUG_ONLY_START */
-                debugAst('finalize JsWord content');
+                debugAst("finalize JsWord content");
                 /* DEBUG_ONLY_END */
 
                 // Allocate 3 bytes for every character (in case of Unicode chars).
@@ -115,9 +116,10 @@ module.exports = {
                 // `Buffer.prototype.utf8Write` is undocumented but used internally by
                 // `Buffer.prototype.write`. `.utf8Write` is faster as skips bounds-checking.
                 // `utf8Write.call(buff, str, pos)` is equivalent to `buff.write(str, pos)`.
-                const len = strLen < 42
-                    ? writeStringToBuffer(str, buff, strLen, pos)
-                    : utf8Write.call(buff, str, pos);
+                const len =
+                    strLen < 42
+                        ? writeStringToBuffer(str, buff, strLen, pos)
+                        : utf8Write.call(buff, str, pos);
 
                 const storePos32 = allocScratch(2);
                 scratchUint32[storePos32] = len;
@@ -135,7 +137,12 @@ module.exports = {
             // Allocate 3 bytes scratch for every character (in case of Unicode chars)
             // + 4 bytes for length. Ensure allocate scratch in multiple of 8 bytes.
             const storePos32 = allocScratchAligned(4 + strLen * 3);
-            const len = writeStringToBuffer(str, scratchBuff, strLen, (storePos32 + 1) << 2);
+            const len = writeStringToBuffer(
+                str,
+                scratchBuff,
+                strLen,
+                (storePos32 + 1) << 2
+            );
             scratchUint32[storePos32] = len;
 
             if (len <= 7) {
@@ -146,7 +153,7 @@ module.exports = {
 
             // UTF8-encoded string ended up being longer than 7 chars - move to output buffer
             /* DEBUG_ONLY_START */
-            debugAst('finalize JsWord content');
+            debugAst("finalize JsWord content");
             /* DEBUG_ONLY_END */
 
             alloc(len);
@@ -165,7 +172,8 @@ module.exports = {
                 if (len > 0) {
                     const pos32 = pos >> 2;
                     uint32[pos32] = scratchUint32[storePos32 + 1];
-                    if (len > 4) uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
+                    if (len > 4)
+                        uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
                 }
 
                 /* DEBUG_ONLY_START */
@@ -173,7 +181,11 @@ module.exports = {
                 // It doesn't matter that this happens, but makes it hard to validate
                 // output by comparing buffers as it introduces a random element.
                 if (len !== 0 && len !== 4 && len !== 7) {
-                    for (let emptyPos = pos + len; emptyPos < pos + (len < 4 ? 4 : 7); emptyPos++) {
+                    for (
+                        let emptyPos = pos + len;
+                        emptyPos < pos + (len < 4 ? 4 : 7);
+                        emptyPos++
+                    ) {
                         buff[emptyPos] = 0;
                     }
                 }
@@ -190,11 +202,13 @@ module.exports = {
             pos += 8;
         },
         generateSerializer() {
-            return Custom.prototype.generateSerializer.call(this)
-                + `\n\n${' '.repeat(8)}const { utf8Write } = Buffer.prototype;`;
+            return (
+                Custom.prototype.generateSerializer.call(this) +
+                `\n\n${" ".repeat(8)}const { utf8Write } = Buffer.prototype;`
+            );
         },
         length: 8,
-        align: 4
+        align: 4,
     }),
 
     AsciiJsWord: Custom({
@@ -209,16 +223,16 @@ module.exports = {
             let len = buff[pos + 7];
             if (len === 0) {
                 /* DEBUG_ONLY_START */
-                debugBuff('JsWord content', pos, len);
+                debugBuff("JsWord content", pos, len);
                 /* DEBUG_ONLY_END */
 
-                return '';
+                return "";
             }
 
             // Fast path for single-char strings
             if (len === 1) {
                 /* DEBUG_ONLY_START */
-                debugBuff('AsciiJsWord content', pos, len);
+                debugBuff("AsciiJsWord content", pos, len);
                 /* DEBUG_ONLY_END */
 
                 return String.fromCharCode(buff[pos]);
@@ -233,7 +247,7 @@ module.exports = {
                 pos += int32[pos32 + 1];
 
                 /* DEBUG_ONLY_START */
-                debugBuff('AsciiJsWord content', pos, len);
+                debugBuff("AsciiJsWord content", pos, len);
                 /* DEBUG_ONLY_END */
 
                 // For longer strings, native method is faster.
@@ -244,10 +258,9 @@ module.exports = {
                 // `Buffer.prototype.toString`. `.asciiSlice` is faster as skips bounds-checking.
                 // Next line is equivalent to `buff.toString('ascii', pos, pos + len)`.
                 if (len > 28) return asciiSlice.call(buff, pos, pos + len);
-            }
+            } else {
             /* DEBUG_ONLY_START */
-            else {
-                debugBuff('AsciiJsWord content', pos, len);
+                debugBuff("AsciiJsWord content", pos, len);
             }
             /* DEBUG_ONLY_END */
 
@@ -261,8 +274,10 @@ module.exports = {
             return String.fromCharCode(...arr);
         },
         generateDeserializer() {
-            return Custom.prototype.generateDeserializer.call(this)
-                + `\n\n${' '.repeat(8)}const { asciiSlice } = Buffer.prototype;`;
+            return (
+                Custom.prototype.generateDeserializer.call(this) +
+                `\n\n${" ".repeat(8)}const { asciiSlice } = Buffer.prototype;`
+            );
         },
         serialize(str) {
             // Handle empty string
@@ -276,7 +291,7 @@ module.exports = {
             // If string is longer than 7 chars, write direct to output buffer
             if (len > 7) {
                 /* DEBUG_ONLY_START */
-                debugAst('finalize AsciiJsWord content');
+                debugAst("finalize AsciiJsWord content");
                 /* DEBUG_ONLY_END */
 
                 // Allocate 1 byte for every character
@@ -307,31 +322,52 @@ module.exports = {
             // Allocate 1 byte scratch for every character + 4 bytes for length.
             // Ensure allocate scratch in multiple of 8 bytes.
             const storePos32 = allocScratch(len > 4 ? 4 : 2);
-            writeAsciiStringToBuffer(str, scratchBuff, len, (storePos32 + 1) << 2);
+            writeAsciiStringToBuffer(
+                str,
+                scratchBuff,
+                len,
+                (storePos32 + 1) << 2
+            );
             scratchUint32[storePos32] = len;
             return storePos32;
         },
         generateSerializer() {
-            return Custom.prototype.generateSerializer.call(this)
-                + `\n\n${' '.repeat(8)}const { asciiWrite } = Buffer.prototype;`;
+            return (
+                Custom.prototype.generateSerializer.call(this) +
+                `\n\n${" ".repeat(8)}const { asciiWrite } = Buffer.prototype;`
+            );
         },
         // Use `finalizeJsWord` as finalizer for type
         finalize: false,
-        finalizerName: 'finalizeJsWord',
-        dependencies: ['JsWord'],
+        finalizerName: "finalizeJsWord",
+        dependencies: ["JsWord"],
         length: 8,
-        align: 4
+        align: 4,
     }),
-    OptionAsciiJsWord: Option('AsciiJsWord', {
+    OptionAsciiJsWord: Option("AsciiJsWord", {
         // Use `finalizeOptionJsWord` as finalizer for type
         generateSerializer() {
-            return Option.prototype.generateSerializer.call(this)
-                .replace(/\s+function finalize[\s\S]+$/, '');
+            return Option.prototype.generateSerializer
+                .call(this)
+                .replace(/\s+function finalize[\s\S]+$/, "");
         },
-        finalizerName: 'finalizeOptionJsWord'
+        finalizerName: "finalizeOptionJsWord",
     }),
 
-    Boolean: EnumValue([false, true]),
+    Boolean: Custom({
+        deserialize(pos) {
+            return buff[pos] === 1;
+        },
+        serialize(value) {
+            return value ? 1 : 0;
+        },
+        finalize(id) {
+            buff[pos] = id;
+            pos++;
+        },
+        length: 1,
+        align: 1,
+    }),
 
     Number: Custom({
         deserialize(pos) {
@@ -347,7 +383,7 @@ module.exports = {
             pos += 8;
         },
         length: 8,
-        align: 8
+        align: 8,
     }),
 
     Span: Custom({
@@ -356,7 +392,7 @@ module.exports = {
             return {
                 start: uint32[pos32],
                 end: uint32[pos32 + 1],
-                ctxt: uint32[pos32 + 2]
+                ctxt: uint32[pos32 + 2],
             };
         },
         serialize(span) {
@@ -375,6 +411,6 @@ module.exports = {
             pos += 12;
         },
         length: 12,
-        align: 4
-    })
+        align: 4,
+    }),
 };

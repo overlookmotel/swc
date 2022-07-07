@@ -21,76 +21,86 @@ serialize.replaceFinalizeJsWord();
 
 // Create `itParsesAndPrints()` + `itParsesAndPrintsOne()` test functions
 module.exports = {
-    itParsesAndPrints: wrapTestFunction(itParsesAndPrints, describe),
-    itParsesAndPrintsOne: wrapTestFunction(itParsesAndPrintsOne, it)
+    itParsesAndPrints: wrapTestFunction(itParsesAndPrints),
+    itParsesAndPrintsOne: wrapTestFunction(itParsesAndPrintsOne)
 };
 
 /**
  * Test that group of code samples can be parsed and printed successfully.
- * @param {Function} describe - Jest `describe` function
+ * @param {Function} describeWrapped - Jest `describe` function
  * @param {string} groupName - Test group name
  * @param {Object} [options] - Options object
  * @param {Array<string>} codes - Array of input code samples
  * @returns {undefined}
  */
-function itParsesAndPrints(describe, groupName, options, codes) {
+function itParsesAndPrints(describeWrapped, groupName, options, codes) {
     if (Array.isArray(options)) {
         codes = options;
         options = undefined;
     }
 
-    describe(groupName, () => {
+    describeWrapped(groupName, () => {
         for (const code of codes) {
             const testName = code.replace(/\s+/g, " ");
-            itParsesAndPrintsOne(it, testName, code, options);
+            itParsesAndPrintsOne(describe, testName, code, options);
         }
     });
 }
 
 /**
  * Test that code sample can be parsed and printed successfully.
- * @param {Function} it - Jest `it` function
+ * @param {Function} describeWrapped - Jest `describe` function
  * @param {string} testName - Test name
  * @param {string} code - Input code sample
  * @param {Object} [options] - Options object
  * @returns {undefined}
  */
-function itParsesAndPrintsOne(it, testName, code, options) {
+function itParsesAndPrintsOne(describeWrapped, testName, code, options) {
     if (options) testName += ` (${JSON.stringify(options).replace(/"/g, "")})`;
-    it(testName, () => {
-        const buff = parseSyncToBuffer(code, options);
-        const ast = deserialize(buff);
+
+    describeWrapped(testName, () => {
+        // Test `deserialize(parseSyncToBuffer())` produces identical AST
+        // to what original SWC `parseSync()` produces
+        it("parses", () => {
+            const astOld = parseSync(code, options),
+                ast = deserialize(parseSyncToBuffer(code, options));
+
+            expect(conformSpans(ast)).toStrictEqual(conformSpans(astOld));
+            expect(JSON.stringify(ast)).toBe(JSON.stringify(astOld));
+        });
 
         // Test `serialize()` produces identical buffer to what `parseSyncToBuffer()` produced
-        serialize.resetBuffers();
-        const buff2 = serialize(ast);
-        expect(buffToString(buff2)).toEqual(buffToString(buff));
+        it("serializes", () => {
+            const buff = parseSyncToBuffer(code, options),
+                ast = deserialize(buff);
 
-        // Test `printSyncFromBuffer()` produces same output as `printSync()`
-        const astOld = parseSync(code, options);
-        const printedOld = printSync(astOld, { sourceMaps: true });
-        const printed = printSyncFromBuffer(buff2, { sourceMaps: true });
-        expect(printed).toStrictEqual(printedOld);
+            serialize.resetBuffers();
+            const buff2 = serialize(ast);
+            expect(buffToString(buff2)).toEqual(buffToString(buff));
+        });
 
-        // Test ASTs are identical.
-        // Have to test this last as need to conform spans to compare ASTs.
-        // This mutates ASTs and would result in different buffer output
-        // reflecting those changes.
-        expect(conformSpans(ast)).toStrictEqual(conformSpans(astOld));
-        expect(JSON.stringify(ast)).toBe(JSON.stringify(astOld));
+        // Test `printSyncFromBuffer()` produces same output as original SWC `printSync()`
+        it("prints", () => {
+            const astOld = parseSync(code, options),
+                printedOld = printSync(astOld, { sourceMaps: true });
+
+            const buff = parseSyncToBuffer(code, options),
+                printed = printSyncFromBuffer(buff, { sourceMaps: true });
+
+            expect(printed).toStrictEqual(printedOld);
+        });
     });
 }
 
 /**
  * Wrap test function to add `.only` and `.skip` methods (like Jest's `describe`).
  * @param {Function} test - Test function
- * @param {Function} describeOrIt - Jest `describe` or `it` function
  * @returns {Function} - Wrapped test function
  */
-function wrapTestFunction(test, describeOrIt) {
-    const wrapped = (...args) => test(describeOrIt, ...args);
-    wrapped.only = (...args) => test(describeOrIt.only, ...args);
-    wrapped.skip = (...args) => test(describeOrIt.skip, ...args);
+function wrapTestFunction(test) {
+    const wrapped = (...args) => test(describe, ...args);
+    wrapped.only = (...args) => test(describe.only, ...args);
+    wrapped.skip = (...args) => test(describe.skip, ...args);
     return wrapped;
 }
 

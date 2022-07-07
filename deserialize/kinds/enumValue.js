@@ -96,7 +96,7 @@ class EnumValue extends Kind {
  * @returns {undefined}
  */
 function finalizeEnumValue(id) {
-    buff[pos] = id & 255;
+    uint32[pos >> 2] = id & 255;
     pos += 4;
 }
 

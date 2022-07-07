@@ -5667,14 +5667,14 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
 
 function finalizeEnum(id, finalizeData, finalize, offset, length) {
     const startPos = pos;
-    buff[pos] = id;
+    uint32[pos >> 2] = id;
     pos += offset;
     finalize(finalizeData);
     pos = startPos + length;
 }
 
 function finalizeEnumValue(id) {
-    buff[pos] = id & 255;
+    uint32[pos >> 2] = id & 255;
     pos += 4;
 }
 

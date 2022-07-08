@@ -11,11 +11,7 @@ const {
         parseSyncToBuffer,
         parseSyncNoReturn,
         parseSyncToBufferNoReturn,
-        parseSyncToTypedArray,
-        parseSyncToTypedArrayNoReturn,
-        parseSyncRkyvVecNoReturn,
-        parseSyncRkyvSliceNoReturn,
-        parseSyncRkyvNoReturn,
+        parseSyncRkyvNoBuffer,
         parseSyncNoSerialization,
     } = require("./index.js"),
     parseSyncBinding = require("./binding.js").parseSync,
@@ -73,30 +69,15 @@ async function run() {
             parseSyncToBuffer(code, parseOptions);
         }),
 
-        /*
-        b.add("SWC with buffer serialization but buffer not returned to JS", () => {
-            parseSyncToBufferNoReturn(code, parseOptions);
-        }),
+        b.add(
+            "SWC with buffer serialization but buffer not returned to JS",
+            () => {
+                parseSyncToBufferNoReturn(code, parseOptions);
+            }
+        ),
 
-        b.add("SWC with typed array serialization but no deserialization", () => {
-            parseSyncToTypedArray(code, parseOptions);
-        }),
-
-        b.add("SWC with typed array serialization but buffer not returned to JS", () => {
-            parseSyncToTypedArrayNoReturn(code, parseOptions);
-        }),
-
-        b.add("SWC with RKYV serialization and vec but not returned to JS", () => {
-            parseSyncRkyvVecNoReturn(code, parseOptions);
-        }),
-
-        b.add("SWC with RKYV serialization and slice but not returned to JS", () => {
-            parseSyncRkyvSliceNoReturn(code, parseOptions);
-        }),
-        */
-
-        b.add("SWC with RKYV serialization but not returned to JS", () => {
-            parseSyncRkyvNoReturn(code, parseOptions);
+        b.add("SWC with RKYV serialization but not converted to buffer", () => {
+            parseSyncRkyvNoBuffer(code, parseOptions);
         }),
 
         b.add("SWC with no serialization or deserialization", () => {

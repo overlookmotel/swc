@@ -236,7 +236,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { bundle, minify, minifySync, parse, parseSync, parseSyncNoReturn, parseSyncToBuffer, parseSyncToBufferNoReturn, parseSyncToTypedArray, parseSyncToTypedArrayNoReturn, parseSyncRkyvVecNoReturn, parseSyncRkyvSliceNoReturn, parseSyncRkyvNoReturn, parseSyncNoSerialization, parseFileSync, parseFile, print, printSync, printSyncFromBuffer, transform, transformSync, transformSyncFromBuffer, transformFile, transformFileSync, getTargetTriple, initCustomTraceSubscriber, Compiler } = nativeBinding
+const { bundle, minify, minifySync, parse, parseSync, parseSyncNoReturn, parseSyncToBuffer, parseSyncToBufferNoReturn, parseSyncRkyvNoBuffer, parseSyncNoSerialization, parseFileSync, parseFile, print, printSync, printSyncFromBuffer, transform, transformSync, transformSyncFromBuffer, transformFile, transformFileSync, getTargetTriple, initCustomTraceSubscriber, Compiler } = nativeBinding
 
 module.exports.bundle = bundle
 module.exports.minify = minify
@@ -246,11 +246,7 @@ module.exports.parseSync = parseSync
 module.exports.parseSyncNoReturn = parseSyncNoReturn
 module.exports.parseSyncToBuffer = parseSyncToBuffer
 module.exports.parseSyncToBufferNoReturn = parseSyncToBufferNoReturn
-module.exports.parseSyncToTypedArray = parseSyncToTypedArray
-module.exports.parseSyncToTypedArrayNoReturn = parseSyncToTypedArrayNoReturn
-module.exports.parseSyncRkyvVecNoReturn = parseSyncRkyvVecNoReturn
-module.exports.parseSyncRkyvSliceNoReturn = parseSyncRkyvSliceNoReturn
-module.exports.parseSyncRkyvNoReturn = parseSyncRkyvNoReturn
+module.exports.parseSyncRkyvNoBuffer = parseSyncRkyvNoBuffer
 module.exports.parseSyncNoSerialization = parseSyncNoSerialization
 module.exports.parseFileSync = parseFileSync
 module.exports.parseFile = parseFile

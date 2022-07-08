@@ -136,6 +136,8 @@ module.exports = {
     AssignmentLeftEquals: Custom({
         // Use `deserializeAssignmentLeft` as deserializer for type
         deserialize: false,
+        // Use `visitAssignmentLeft` as visitor for type
+        visit: false,
         // Shortened serializer as only patterns are valid on left side of `=` assignment expression
         serialize(node) {
             const storePos32 = allocScratch(2);

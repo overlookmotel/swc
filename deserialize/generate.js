@@ -11,13 +11,25 @@ const { types } = require("./types/index.js"),
     { finalizeEnumValue } = require("./kinds/enumValue.js"),
     {
         deserializeOption,
+        visitOption,
         serializeOption,
         finalizeOption,
     } = require("./kinds/option.js"),
-    { deserializeBox, serializeBox, finalizeBox } = require("./kinds/box.js"),
-    { deserializeVec, serializeVec, finalizeVec } = require("./kinds/vec.js"),
+    {
+        deserializeBox,
+        visitBox,
+        serializeBox,
+        finalizeBox,
+    } = require("./kinds/box.js"),
+    {
+        deserializeVec,
+        visitVec,
+        serializeVec,
+        finalizeVec,
+    } = require("./kinds/vec.js"),
     {
         deserialize,
+        visit,
         serialize,
         resetBuffers,
         initBuffer,
@@ -47,6 +59,7 @@ constants.PROGRAM_ALIGN = Math.max(types.Program.align, 4);
 
 writeFileSync(pathJoin(__dirname, "deserialize.js"), generateDeserializer());
 writeFileSync(pathJoin(__dirname, "serialize.js"), generateSerializer());
+writeFileSync(pathJoin(__dirname, "visit.js"), generateVisitor());
 
 /**
  * Generate code for deserializer.
@@ -84,6 +97,43 @@ function generateDeserializer() {
                     deserializeBox,
                     deserializeVec,
                 ],
+                debugBuff
+            ),
+        ].join("\n\n")
+    );
+}
+
+/**
+ * Generate code for visitor.
+ * @returns {string} - Code for visitor
+ */
+function generateVisitor() {
+    return format(
+        [
+            "// Generated code. Do not edit.",
+            '"use strict";',
+
+            // Visitor entry point
+            "module.exports = visit;",
+            "let buff, int32, uint32;",
+
+            // Type visitor functions
+            ...Object.values(types).flatMap((type) => {
+                let visitorCode = type.generateVisitor();
+                if (!visitorCode) return [];
+                visitorCode = conformFunctionCode(visitorCode);
+                if (!DEBUG) return visitorCode;
+                return visitorCode.replace(
+                    /function visit.+\n/,
+                    (line) =>
+                        line +
+                        `debugBuff("${type.name}", pos, ${type.length});\n`
+                );
+            }),
+
+            // Utility functions
+            ...getUtilitiesCode(
+                [visit, visitOption, visitBox, visitVec],
                 debugBuff
             ),
         ].join("\n\n")

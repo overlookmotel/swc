@@ -48,6 +48,12 @@ class Box extends Kind {
         }`;
     }
 
+    generateVisitor() {
+        return `function ${this.visitorName}(pos) {
+            visitBox(pos, ${this.valueType.visitorName});
+        }`;
+    }
+
     /**
      * Generate serializer function code for type.
      * Serializer calls `serializeBox()` with info about value type.
@@ -77,6 +83,16 @@ class Box extends Kind {
  */
 function deserializeBox(pos, deserialize) {
     return deserialize(pos + int32[pos >> 2]);
+}
+
+/**
+ * Visit boxed value.
+ * @param {number} pos - Buffer position
+ * @param {Function} visit - Visit function for value
+ * @returns {*} - Value
+ */
+function visitBox(pos, visit) {
+    return visit(pos + int32[pos >> 2]);
 }
 
 /**
@@ -110,4 +126,4 @@ function finalizeBox(valuePos) {
     pos += 4;
 }
 
-module.exports = { Box, deserializeBox, serializeBox, finalizeBox };
+module.exports = { Box, deserializeBox, visitBox, serializeBox, finalizeBox };

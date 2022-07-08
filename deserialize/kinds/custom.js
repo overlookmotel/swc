@@ -28,6 +28,10 @@ class Custom extends Kind {
             `Custom type ${this.name} has no deserializer`
         );
         assert(
+            typeof this.visit === "function" || this.visit === false,
+            `Custom type ${this.name} has no visitor`
+        );
+        assert(
             typeof this.serialize === "function",
             `Custom type ${this.name} has no serializer`
         );
@@ -51,6 +55,16 @@ class Custom extends Kind {
         return `function ${this.deserializerName}${code.slice(
             "deserialize".length
         )}`;
+    }
+
+    generateVisitor() {
+        if (!this.visit) return null;
+        let code = this.visit.toString();
+        assert(
+            code.startsWith("visit("),
+            `Custom type ${this.name} malformed visitor function`
+        );
+        return `function ${this.visitorName}${code.slice("visit".length)}`;
     }
 
     generateSerializer() {

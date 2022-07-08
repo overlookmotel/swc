@@ -92,6 +92,7 @@ module.exports = {
                 "\n\nconst { utf8Slice } = Buffer.prototype;"
             );
         },
+        visit: false,
         serialize(str) {
             // Handle empty string
             const strLen = str.length;
@@ -287,6 +288,7 @@ module.exports = {
                 "\n\nconst { asciiSlice } = Buffer.prototype;"
             );
         },
+        visit: false,
         serialize(str) {
             // Handle empty string
             const len = str.length;
@@ -366,6 +368,7 @@ module.exports = {
         deserialize(pos) {
             return buff[pos] === 1;
         },
+        visit: false,
         serialize(value) {
             // 0 has special meaning for Options, but is safe to use as finalizer data here
             // as `Option<Boolean>` is never used
@@ -383,6 +386,7 @@ module.exports = {
         deserialize(pos) {
             return float64[pos >> 3];
         },
+        visit: false,
         serialize(num) {
             const storePos64 = allocScratch(2) >> 1;
             scratchFloat64[storePos64] = num;
@@ -405,6 +409,7 @@ module.exports = {
                 ctxt: uint32[pos32 + 2],
             };
         },
+        visit: false,
         serialize(span) {
             // Only need 12 bytes scratch, but scratch must be allocated in 8-byte blocks
             const storePos32 = allocScratch(4);

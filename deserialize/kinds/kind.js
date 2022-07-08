@@ -59,6 +59,9 @@ class Kind {
     get deserializerName() {
         return `deserialize${this.name}`;
     }
+    get visitorName() {
+        return `visit${this.name}`;
+    }
     get serializerName() {
         return `serialize${this.name}`;
     }

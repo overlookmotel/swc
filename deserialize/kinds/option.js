@@ -58,6 +58,13 @@ class Option extends Kind {
         }`;
     }
 
+    generateVisitor() {
+        if (this.valueType.visit === false) return null;
+        return `function ${this.visitorName}(pos) {
+            visitOption(pos, ${this.valueType.visitorName}, ${this.valueType.align});
+        }`;
+    }
+
     /**
      * Generate serializer + finalizer function code for type.
      * @returns {string} - Code for `serialize` + `finalize` functions
@@ -100,6 +107,24 @@ function deserializeOption(pos, deserialize, offset) {
 }
 
 /**
+ * Visit Option.
+ * @param {number} pos - Buffer position
+ * @param {Function} visit - Visit function for value
+ * @param {number} offset - Offset of value in buffer
+ * @returns {undefined}
+ */
+function visitOption(pos, visit, offset) {
+    switch (buff[pos]) {
+        case 0:
+            return;
+        case 1:
+            return visit(pos + offset);
+        default:
+            throw new Error("Unexpected option value");
+    }
+}
+
+/**
  * Serialize Option.
  * If option disabled, return 0;
  * If option enabled, return finalize data for value.
@@ -134,4 +159,10 @@ function finalizeOption(finalizeData, finalize, offset, length) {
     }
 }
 
-module.exports = { Option, deserializeOption, serializeOption, finalizeOption };
+module.exports = {
+    Option,
+    deserializeOption,
+    visitOption,
+    serializeOption,
+    finalizeOption,
+};

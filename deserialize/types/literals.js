@@ -46,6 +46,7 @@ module.exports = {
 
             return [1, parts]; // TODO What is the initial 1 for?
         },
+        visit: false,
         serialize(value) {
             if (value[0] === 0) return serializeAsciiJsWord("0");
 

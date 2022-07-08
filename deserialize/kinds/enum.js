@@ -83,6 +83,22 @@ class Enum extends Kind {
         }`;
     }
 
+    generateVisitor() {
+        const caseCodes = this.valueTypes.map(
+            ({ visitorName, align }, index) =>
+                `case ${index}: ${visitorName}(pos + ${align}); break;`
+        );
+
+        return `function ${this.visitorName}(pos) {
+            switch (buff[pos]) {
+                ${caseCodes.join("\n")}
+                default: throw new Error("Unexpected enum value for ${
+                    this.name
+                }");
+            }
+        }`;
+    }
+
     /**
      * Generate serializer + finalizer functions code for type.
      * Serializer stores 8 bytes in scratch:

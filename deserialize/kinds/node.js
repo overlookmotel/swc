@@ -83,6 +83,19 @@ class Node extends Kind {
         }`;
     }
 
+    generateVisitor() {
+        const propsCodes = this.propsWithPos
+            .filter(({ prop }) => (prop.valueType || prop).visit !== false)
+            .map(
+                ({ prop, pos }) =>
+                    `${prop.visitorName}(pos${pos === 0 ? "" : ` + ${pos}`});`
+            );
+
+        return `function ${this.visitorName}(pos) {
+            ${propsCodes.join("\n")}
+        }`;
+    }
+
     /**
      * Generate serializer + finalizer functions code for type.
      * Serializer calls the serializer for each property in turn.

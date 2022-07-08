@@ -49,6 +49,12 @@ class Vec extends Kind {
         }`;
     }
 
+    generateVisitor() {
+        return `function ${this.visitorName}(pos) {
+            visitVec(pos, ${this.valueType.visitorName}, ${this.valueType.length});
+        }`;
+    }
+
     /**
      * Generate serializer function code for type.
      * @returns {string} - Code for `serialize` function
@@ -92,6 +98,29 @@ function deserializeVec(pos, deserialize, length) {
         pos += length;
     }
     return entries;
+}
+
+/**
+ * Visit Vec.
+ * @param {number} pos - Buffer position
+ * @param {Function} visit - Visit function for value
+ * @param {number} length - Length in bytes of value
+ * @returns {undefined}
+ */
+function visitVec(pos, visit, length) {
+    const pos32 = pos >> 2;
+
+    /* DEBUG_ONLY_START */
+    console.log("Vec pointer target:", pos + int32[pos32]);
+    /* DEBUG_ONLY_END */
+
+    const numEntries = uint32[pos32 + 1];
+    if (numEntries === 0) return;
+    pos += int32[pos32];
+    for (let i = 0; i < numEntries; i++) {
+        visit(pos);
+        pos += length;
+    }
 }
 
 /**
@@ -165,4 +194,4 @@ function finalizeVec(storePos32) {
     pos += 8;
 }
 
-module.exports = { Vec, deserializeVec, serializeVec, finalizeVec };
+module.exports = { Vec, deserializeVec, visitVec, serializeVec, finalizeVec };

@@ -22,6 +22,7 @@ class EnumValue extends Kind {
     length = 4;
     align = 4;
     values = null;
+    visit = false;
 
     constructor(values, options) {
         const enumValue = enumValues.get(JSON.stringify(values));
@@ -58,6 +59,10 @@ class EnumValue extends Kind {
                 }");
             }
         }`;
+    }
+
+    generateVisitor() {
+        return null;
     }
 
     /**

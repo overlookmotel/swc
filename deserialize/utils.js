@@ -15,6 +15,7 @@ const {
 
 module.exports = {
     deserialize,
+    visit,
     serialize,
     resetBuffers,
     initBuffer,
@@ -51,6 +52,21 @@ function deserialize(buffIn) {
     );
 }
 let buff, int32, uint32, float64;
+
+/**
+ * Visit AST buffer.
+ * @param {Buffer} buffIn - Buffer
+ * @returns {undefined}
+ */
+function visit(buffIn) {
+    const arrayBuffer = buffIn.buffer;
+    buff = Buffer.from(arrayBuffer);
+    int32 = new Int32Array(arrayBuffer);
+    uint32 = new Uint32Array(arrayBuffer);
+
+    // Skip over `VersionedSerializable` data
+    visitProgram(buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH_PLUS_4);
+}
 
 /**
  * Serialize AST to buffer.

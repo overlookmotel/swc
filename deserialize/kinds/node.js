@@ -95,25 +95,17 @@ class Node extends Kind {
      * @returns {string} - Code for `serialize` + `finalize` functions
      */
     generateSerializer() {
-        const propsOrdered = [...this.propsWithPos].sort((prop1, prop2) =>
-            prop1.pos < prop2.pos ? -1 : 1
-        );
-
         const serializeCodes = [],
             finalizeCodes = [];
         let endPos = 0;
-        propsOrdered.forEach(({ key, prop, pos }, index) => {
+        this.propsWithPos.forEach(({ key, prop, pos }, index) => {
             const storePos32Str = `storePos32${index > 0 ? ` + ${index}` : ""}`;
             // Need to use `writeScratchUint32()` - reason explained in that function's definition
             serializeCodes.push(
                 `writeScratchUint32(${storePos32Str}, ${prop.serializerName}(node.${key}));`
             );
 
-            if (pos > endPos) {
-                finalizeCodes.push(`pos += ${pos - endPos};`);
-            } else if (pos < endPos) {
-                finalizeCodes.push(`pos -= ${endPos - pos};`);
-            }
+            if (pos > endPos) finalizeCodes.push(`pos += ${pos - endPos};`);
             finalizeCodes.push(
                 `${prop.finalizerName}(scratchUint32[${storePos32Str}]);`
             );
@@ -127,7 +119,7 @@ class Node extends Kind {
         // NB Scratch must be allocated in 8-byte blocks
         return `function ${this.serializerName}(node) {
             const storePos32 = allocScratch(${
-                getAligned(propsOrdered.length * 4, 8) >> 2
+                getAligned(this.propsWithPos.length * 4, 8) >> 2
             });
             ${serializeCodes.join("\n")}
             return storePos32;

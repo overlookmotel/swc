@@ -134,7 +134,7 @@ module.exports = {
     ),
     AssignmentLeft: Enum([Box("Expression"), Box("Pattern")]),
     AssignmentLeftEquals: Custom({
-        // Use `deserializAssignmentLeft` as deserializer for type
+        // Use `deserializeAssignmentLeft` as deserializer for type
         deserialize: false,
         // Shortened serializer as only patterns are valid on left side of `=` assignment expression
         serialize(node) {

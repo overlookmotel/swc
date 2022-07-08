@@ -16,6 +16,7 @@ const {
     } = require("./index.js"),
     parseSyncBinding = require("./binding.js").parseSync,
     deserialize = require("./deserialize/deserialize.js"),
+    visit = require("./deserialize/visit.js"),
     babelParse = require("@babel/parser").parse,
     acornParse = require("acorn").parse;
 
@@ -79,6 +80,14 @@ async function run() {
         b.add("SWC with RKYV serialization but not converted to buffer", () => {
             parseSyncRkyvNoBuffer(code, parseOptions);
         }),
+
+        b.add(
+            "SWC with buffer serialization and deserialization visit only",
+            () => {
+                const buff = parseSyncToBuffer(code, parseOptions);
+                visit(buff);
+            }
+        ),
 
         b.add("SWC with no serialization or deserialization", () => {
             parseSyncNoSerialization(code, parseOptions);

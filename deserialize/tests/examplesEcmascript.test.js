@@ -9,7 +9,7 @@ const { itParsesAndPrintsOne } = require("./utils.js");
 
 // Tests
 
-describe("Example files", () => {
+describe("Ecmascript example files", () => {
     for (const filename of [
         "react/cjs/react.production.min.js",
         "react/cjs/react.development.js",

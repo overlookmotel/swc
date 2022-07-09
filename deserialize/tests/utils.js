@@ -58,6 +58,9 @@ function itParsesAndPrints(describeWrapped, groupName, options, codes) {
 function itParsesAndPrintsOne(describeWrapped, testName, code, options) {
     if (options) testName += ` (${JSON.stringify(options).replace(/"/g, "")})`;
 
+    let noPrint;
+    ({ noPrint, ...options } = options || {});
+
     describeWrapped(testName, () => {
         // Test `deserialize(parseSyncToBuffer())` produces identical AST
         // to what original SWC `parseSync()` produces
@@ -80,7 +83,7 @@ function itParsesAndPrintsOne(describeWrapped, testName, code, options) {
         });
 
         // Test `printSyncFromBuffer()` produces same output as original SWC `printSync()`
-        it("prints", () => {
+        (noPrint ? it.skip : it)("prints", () => {
             const astOld = parseSync(code, options),
                 printedOld = printSync(astOld, { sourceMaps: true });
 

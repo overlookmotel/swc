@@ -110,7 +110,7 @@ module.exports = {
     // When operator is `=`, left-hand side is a `Pattern`, and nodes with `Identifier` type in JS
     // are `BindingIdentifier` Rust type.
     // With any other operator, left-hand side is an `Expression`, and nodes with `Identifier`
-    // type in JS are `Identifer` Rust type.
+    // type in JS are `Identifier` Rust type.
     AssignmentExpression: Node(
         {
             operator: "AssignmentOperator",

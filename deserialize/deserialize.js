@@ -21,7 +21,7 @@ function deserializeModule(pos) {
     return {
         type: "Module",
         span: deserializeSpan(pos),
-        body: deserializeVecModuleDeclarationOrStatement(pos + 12),
+        body: deserializeVecModuleItem(pos + 12),
         interpreter: deserializeOptionJsWord(pos + 20),
     };
 }
@@ -33,6 +33,17 @@ function deserializeScript(pos) {
         body: deserializeVecStatement(pos + 12),
         interpreter: deserializeOptionJsWord(pos + 20),
     };
+}
+
+function deserializeModuleItem(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeModuleDeclaration(pos + 4);
+        case 1:
+            return deserializeStatement(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for ModuleItem");
+    }
 }
 
 function deserializeModuleDeclaration(pos) {
@@ -89,7 +100,7 @@ function deserializeImportNamedSpecifier(pos) {
         type: "ImportSpecifier",
         span: deserializeSpan(pos),
         local: deserializeIdentifier(pos + 12),
-        imported: deserializeOptionModuleExportName(pos + 36),
+        imported: deserializeOptionTsModuleName(pos + 36),
         isTypeOnly: deserializeBoolean(pos + 76),
     };
 }
@@ -146,7 +157,7 @@ function deserializeExportNamespaceSpecifier(pos) {
     return {
         type: "ExportNamespaceSpecifier",
         span: deserializeSpan(pos),
-        name: deserializeModuleExportName(pos + 12),
+        name: deserializeTsModuleName(pos + 12),
     };
 }
 
@@ -162,8 +173,8 @@ function deserializeExportNamedSpecifier(pos) {
     return {
         type: "ExportSpecifier",
         span: deserializeSpan(pos),
-        orig: deserializeModuleExportName(pos + 12),
-        exported: deserializeOptionModuleExportName(pos + 48),
+        orig: deserializeTsModuleName(pos + 12),
+        exported: deserializeOptionTsModuleName(pos + 48),
         isTypeOnly: deserializeBoolean(pos + 88),
     };
 }
@@ -195,14 +206,14 @@ function deserializeExportAllDeclaration(pos) {
     };
 }
 
-function deserializeModuleExportName(pos) {
+function deserializeTsModuleName(pos) {
     switch (buff[pos]) {
         case 0:
             return deserializeIdentifier(pos + 4);
         case 1:
             return deserializeStringLiteral(pos + 4);
         default:
-            throw new Error("Unexpected enum option ID for ModuleExportName");
+            throw new Error("Unexpected enum option ID for TsModuleName");
     }
 }
 
@@ -555,11 +566,11 @@ function deserializeClassDeclaration(pos) {
         body: deserializeVecClassMember(pos + 48),
         superClass: deserializeOptionBoxExpression(pos + 56),
         isAbstract: deserializeBoolean(pos + 64),
-        typeParams: deserializeOptionTsTypeParamDeclaration(pos + 68),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 68),
         superTypeParams: deserializeOptionTsTypeParameterInstantiation(
             pos + 92
         ),
-        implements: deserializeVecTsExpressionWithTypeArg(pos + 116),
+        implements: deserializeVecTsExpressionWithTypeArguments(pos + 116),
     };
 }
 
@@ -572,11 +583,11 @@ function deserializeClassExpression(pos) {
         body: deserializeVecClassMember(pos + 48),
         superClass: deserializeOptionBoxExpression(pos + 56),
         isAbstract: deserializeBoolean(pos + 64),
-        typeParams: deserializeOptionTsTypeParamDeclaration(pos + 68),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 68),
         superTypeParams: deserializeOptionTsTypeParameterInstantiation(
             pos + 92
         ),
-        implements: deserializeVecTsExpressionWithTypeArg(pos + 116),
+        implements: deserializeVecTsExpressionWithTypeArguments(pos + 116),
     };
 }
 
@@ -608,7 +619,7 @@ function deserializeConstructor(pos) {
         type: "Constructor",
         span: deserializeSpan(pos),
         key: deserializePropertyName(pos + 16),
-        params: deserializeVecTsParamPropOrParameter(pos + 64),
+        params: deserializeVecTsParameterPropertyOrParameter(pos + 64),
         body: deserializeOptionBlockStatement(pos + 72),
         accessibility: deserializeOptionAccessibility(pos + 96),
         isOptional: deserializeBoolean(pos + 104),
@@ -710,7 +721,7 @@ function deserializeFunction(pos) {
         body: deserializeOptionBlockStatement(pos + 28),
         generator: deserializeBoolean(pos + 52),
         async: deserializeBoolean(pos + 53),
-        typeParameters: deserializeOptionTsTypeParamDeclaration(pos + 56),
+        typeParameters: deserializeOptionTsTypeParameterDeclaration(pos + 56),
         returnType: deserializeOptionTsTypeAnnotation(pos + 80),
     };
 }
@@ -1674,41 +1685,6 @@ function deserializeJSXElementName(pos) {
     }
 }
 
-function deserializeTsTypeAssertion(pos) {
-    return {
-        type: "TsTypeAssertion",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsConstAssertion(pos) {
-    return {
-        type: "TsConstAssertion",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsNonNullExpression(pos) {
-    return {
-        type: "TsNonNullExpression",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsAsExpression(pos) {
-    return {
-        type: "TsAsExpression",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsInstantiation(pos) {
-    return {
-        type: "TsInstantiation",
-        span: deserializeSpan(pos),
-    };
-}
-
 function deserializeTsTypeAnnotation(pos) {
     return {
         type: "TsTypeAnnotation",
@@ -1717,60 +1693,23 @@ function deserializeTsTypeAnnotation(pos) {
     };
 }
 
-function deserializeTsInterfaceDeclaration(pos) {
+function deserializeTsTypeParameterDeclaration(pos) {
     return {
-        type: "TsInterfaceDeclaration",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsTypeAliasDeclaration(pos) {
-    return {
-        type: "TsTypeAliasDeclaration",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsEnumDeclaration(pos) {
-    return {
-        type: "TsEnumDeclaration",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsModuleDeclaration(pos) {
-    return {
-        type: "TsModuleDeclaration",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsImportEqualsDeclaration(pos) {
-    return {
-        type: "TsImportEqualsDeclaration",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsExportAssignment(pos) {
-    return {
-        type: "TsExportAssignment",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsNamespaceExportDeclaration(pos) {
-    return {
-        type: "TsNamespaceExportDeclaration",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsTypeParamDeclaration(pos) {
-    return {
-        type: "TsTypeParamDeclaration",
+        type: "TsTypeParameterDeclaration",
         span: deserializeSpan(pos),
         parameters: deserializeVecTsTypeParameter(pos + 12),
+    };
+}
+
+function deserializeTsTypeParameter(pos) {
+    return {
+        type: "TsTypeParameter",
+        span: deserializeSpan(pos),
+        name: deserializeIdentifier(pos + 12),
+        in: deserializeBoolean(pos + 36),
+        out: deserializeBoolean(pos + 37),
+        constraint: deserializeOptionBoxTsType(pos + 40),
+        default: deserializeOptionBoxTsType(pos + 48),
     };
 }
 
@@ -1782,23 +1721,9 @@ function deserializeTsTypeParameterInstantiation(pos) {
     };
 }
 
-function deserializeTsExpressionWithTypeArg(pos) {
+function deserializeTsParameterProperty(pos) {
     return {
-        type: "TsExpressionWithTypeArg",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsIndexSignature(pos) {
-    return {
-        type: "TsIndexSignature",
-        span: deserializeSpan(pos),
-    };
-}
-
-function deserializeTsParamProp(pos) {
-    return {
-        type: "TsParamProp",
+        type: "TsParameterProperty",
         span: deserializeSpan(pos),
         decorators: deserializeVecDecorator(pos + 12),
         accessibility: deserializeOptionAccessibility(pos + 20),
@@ -1819,25 +1744,723 @@ function deserializeTsParamPropParam(pos) {
     }
 }
 
-function deserializeTsTypeParameterDeclaration(pos) {
+function deserializeTsQualifiedName(pos) {
     return {
-        type: "TsTypeParameterDeclaration",
-        span: deserializeSpan(pos),
-        parameters: deserializeVecTsTypeParameter(pos + 12),
+        type: "TsQualifiedName",
+        left: deserializeTsEntityName(pos),
+        right: deserializeIdentifier(pos + 28),
     };
 }
 
-function deserializeTsTypeParameter(pos) {
+function deserializeTsEntityName(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeBoxTsQualifiedName(pos + 4);
+        case 1:
+            return deserializeIdentifier(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsEntityName");
+    }
+}
+
+function deserializeTsTypeElement(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeTsCallSignatureDeclaration(pos + 4);
+        case 1:
+            return deserializeTsConstructSignatureDeclaration(pos + 4);
+        case 2:
+            return deserializeTsPropertySignature(pos + 4);
+        case 3:
+            return deserializeTsGetterSignature(pos + 4);
+        case 4:
+            return deserializeTsSetterSignature(pos + 4);
+        case 5:
+            return deserializeTsMethodSignature(pos + 4);
+        case 6:
+            return deserializeTsIndexSignature(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsTypeElement");
+    }
+}
+
+function deserializeTsCallSignatureDeclaration(pos) {
     return {
-        type: "TsTypeParameter",
+        type: "TsCallSignatureDeclaration",
         span: deserializeSpan(pos),
+        params: deserializeVecTsFnParam(pos + 12),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 20),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 40),
+    };
+}
+
+function deserializeTsConstructSignatureDeclaration(pos) {
+    return {
+        type: "TsConstructSignatureDeclaration",
+        span: deserializeSpan(pos),
+        params: deserializeVecTsFnParam(pos + 12),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 20),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 40),
+    };
+}
+
+function deserializeTsPropertySignature(pos) {
+    return {
+        type: "TsPropertySignature",
+        span: deserializeSpan(pos),
+        readonly: deserializeBoolean(pos + 12),
+        key: deserializeBoxExpression(pos + 16),
+        computed: deserializeBoolean(pos + 20),
+        optional: deserializeBoolean(pos + 21),
+        init: deserializeOptionBoxExpression(pos + 24),
+        params: deserializeVecTsFnParam(pos + 32),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 40),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 60),
+    };
+}
+
+function deserializeTsGetterSignature(pos) {
+    return {
+        type: "TsGetterSignature",
+        span: deserializeSpan(pos),
+        readonly: deserializeBoolean(pos + 12),
+        key: deserializeBoxExpression(pos + 16),
+        computed: deserializeBoolean(pos + 20),
+        optional: deserializeBoolean(pos + 21),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 24),
+    };
+}
+
+function deserializeTsSetterSignature(pos) {
+    return {
+        type: "TsSetterSignature",
+        span: deserializeSpan(pos),
+        readonly: deserializeBoolean(pos + 12),
+        key: deserializeBoxExpression(pos + 16),
+        computed: deserializeBoolean(pos + 20),
+        optional: deserializeBoolean(pos + 21),
+        param: deserializeTsFnParam(pos + 24),
+    };
+}
+
+function deserializeTsMethodSignature(pos) {
+    return {
+        type: "TsMethodSignature",
+        span: deserializeSpan(pos),
+        readonly: deserializeBoolean(pos + 12),
+        key: deserializeBoxExpression(pos + 16),
+        computed: deserializeBoolean(pos + 20),
+        optional: deserializeBoolean(pos + 21),
+        params: deserializeVecTsFnParam(pos + 24),
+        typeAnn: deserializeOptionTsTypeAnnotation(pos + 32),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 52),
+    };
+}
+
+function deserializeTsIndexSignature(pos) {
+    return {
+        type: "TsIndexSignature",
+        params: deserializeVecTsFnParam(pos),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 8),
+        readonly: deserializeBoolean(pos + 28),
+        static: deserializeBoolean(pos + 29),
+        span: deserializeSpan(pos + 32),
     };
 }
 
 function deserializeTsType(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeTsKeywordType(pos + 4);
+        case 1:
+            return deserializeTsThisType(pos + 4);
+        case 2:
+            return deserializeTsFnOrConstructorType(pos + 4);
+        case 3:
+            return deserializeTsTypeReference(pos + 4);
+        case 4:
+            return deserializeTsTypeQuery(pos + 4);
+        case 5:
+            return deserializeTsTypeLiteral(pos + 4);
+        case 6:
+            return deserializeTsArrayType(pos + 4);
+        case 7:
+            return deserializeTsTupleType(pos + 4);
+        case 8:
+            return deserializeTsOptionalType(pos + 4);
+        case 9:
+            return deserializeTsRestType(pos + 4);
+        case 10:
+            return deserializeTsUnionOrIntersectionType(pos + 4);
+        case 11:
+            return deserializeTsConditionalType(pos + 4);
+        case 12:
+            return deserializeTsInferType(pos + 4);
+        case 13:
+            return deserializeTsParenthesizedType(pos + 4);
+        case 14:
+            return deserializeTsTypeOperator(pos + 4);
+        case 15:
+            return deserializeTsIndexedAccessType(pos + 4);
+        case 16:
+            return deserializeTsMappedType(pos + 4);
+        case 17:
+            return deserializeTsLiteralType(pos + 8);
+        case 18:
+            return deserializeTsTypePredicate(pos + 4);
+        case 19:
+            return deserializeTsImportType(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsType");
+    }
+}
+
+function deserializeTsFnOrConstructorType(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeTsFunctionType(pos + 4);
+        case 1:
+            return deserializeTsConstructorType(pos + 4);
+        default:
+            throw new Error(
+                "Unexpected enum option ID for TsFnOrConstructorType"
+            );
+    }
+}
+
+function deserializeTsKeywordType(pos) {
     return {
-        type: "TsType",
+        type: "TsKeywordType",
         span: deserializeSpan(pos),
+        kind: deserializeTsKeywordTypeKind(pos + 12),
+    };
+}
+
+function deserializeTsKeywordTypeKind(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return "any";
+        case 1:
+            return "unknown";
+        case 2:
+            return "number";
+        case 3:
+            return "object";
+        case 4:
+            return "boolean";
+        case 5:
+            return "bigint";
+        case 6:
+            return "string";
+        case 7:
+            return "symbol";
+        case 8:
+            return "void";
+        case 9:
+            return "undefined";
+        case 10:
+            return "null";
+        case 11:
+            return "never";
+        case 12:
+            return "intrinsic";
+        default:
+            throw new Error("Unexpected enum value ID for TsKeywordTypeKind");
+    }
+}
+
+function deserializeTsThisType(pos) {
+    return {
+        type: "TsThisType",
+        span: deserializeSpan(pos),
+    };
+}
+
+function deserializeTsFnParam(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeBindingIdentifier(pos + 4);
+        case 1:
+            return deserializeArrayPattern(pos + 4);
+        case 2:
+            return deserializeRestElement(pos + 4);
+        case 3:
+            return deserializeObjectPattern(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsFnParam");
+    }
+}
+
+function deserializeTsFunctionType(pos) {
+    return {
+        type: "TsFunctionType",
+        span: deserializeSpan(pos),
+        params: deserializeVecTsFnParam(pos + 12),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 20),
+        typeAnnotation: deserializeTsTypeAnnotation(pos + 44),
+    };
+}
+
+function deserializeTsConstructorType(pos) {
+    return {
+        type: "TsConstructorType",
+        span: deserializeSpan(pos),
+        params: deserializeVecTsFnParam(pos + 12),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 20),
+        typeAnnotation: deserializeTsTypeAnnotation(pos + 44),
+        isAbstract: deserializeBoolean(pos + 60),
+    };
+}
+
+function deserializeTsTypeReference(pos) {
+    return {
+        type: "TsTypeReference",
+        span: deserializeSpan(pos),
+        typeName: deserializeTsEntityName(pos + 12),
+        typeParams: deserializeOptionTsTypeParameterInstantiation(pos + 40),
+    };
+}
+
+function deserializeTsTypePredicate(pos) {
+    return {
+        type: "TsTypePredicate",
+        span: deserializeSpan(pos),
+        asserts: deserializeBoolean(pos + 12),
+        paramName: deserializeTsThisTypeOrIdent(pos + 16),
+        typeAnnotation: deserializeOptionTsTypeAnnotation(pos + 44),
+    };
+}
+
+function deserializeTsThisTypeOrIdent(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeTsThisType(pos + 4);
+        case 1:
+            return deserializeIdentifier(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsThisTypeOrIdent");
+    }
+}
+
+function deserializeTsTypeQuery(pos) {
+    return {
+        type: "TsTypeQuery",
+        span: deserializeSpan(pos),
+        exprName: deserializeTsTypeQueryExpr(pos + 12),
+        typeArguments: deserializeOptionTsTypeParameterInstantiation(pos + 116),
+    };
+}
+
+function deserializeTsTypeQueryExpr(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeTsEntityName(pos + 4);
+        case 1:
+            return deserializeTsImportType(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsTypeQueryExpr");
+    }
+}
+
+function deserializeTsImportType(pos) {
+    return {
+        type: "TsImportType",
+        span: deserializeSpan(pos),
+        argument: deserializeStringLiteral(pos + 12),
+        qualifier: deserializeOptionTsEntityName(pos + 44),
+        typeArguments: deserializeOptionTsTypeParameterInstantiation(pos + 76),
+    };
+}
+
+function deserializeTsTypeLiteral(pos) {
+    return {
+        type: "TsTypeLiteral",
+        span: deserializeSpan(pos),
+        members: deserializeVecTsTypeElement(pos + 12),
+    };
+}
+
+function deserializeTsArrayType(pos) {
+    return {
+        type: "TsArrayType",
+        span: deserializeSpan(pos),
+        elemType: deserializeBoxTsType(pos + 12),
+    };
+}
+
+function deserializeTsTupleType(pos) {
+    return {
+        type: "TsTupleType",
+        span: deserializeSpan(pos),
+        elemTypes: deserializeVecTsTupleElement(pos + 12),
+    };
+}
+
+function deserializeTsTupleElement(pos) {
+    return {
+        type: "TsTupleElement",
+        span: deserializeSpan(pos),
+        label: deserializeOptionPattern(pos + 12),
+        ty: deserializeTsType(pos + 72),
+    };
+}
+
+function deserializeTsOptionalType(pos) {
+    return {
+        type: "TsOptionalType",
+        span: deserializeSpan(pos),
+        typeAnnotation: deserializeBoxTsType(pos + 12),
+    };
+}
+
+function deserializeTsRestType(pos) {
+    return {
+        type: "TsRestType",
+        span: deserializeSpan(pos),
+        typeAnnotation: deserializeBoxTsType(pos + 12),
+    };
+}
+
+function deserializeTsUnionOrIntersectionType(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeTsUnionType(pos + 4);
+        case 1:
+            return deserializeTsIntersectionType(pos + 4);
+        default:
+            throw new Error(
+                "Unexpected enum option ID for TsUnionOrIntersectionType"
+            );
+    }
+}
+
+function deserializeTsUnionType(pos) {
+    return {
+        type: "TsUnionType",
+        span: deserializeSpan(pos),
+        types: deserializeVecBoxTsType(pos + 12),
+    };
+}
+
+function deserializeTsIntersectionType(pos) {
+    return {
+        type: "TsIntersectionType",
+        span: deserializeSpan(pos),
+        types: deserializeVecBoxTsType(pos + 12),
+    };
+}
+
+function deserializeTsConditionalType(pos) {
+    return {
+        type: "TsConditionalType",
+        span: deserializeSpan(pos),
+        checkType: deserializeBoxTsType(pos + 12),
+        extendsType: deserializeBoxTsType(pos + 16),
+        trueType: deserializeBoxTsType(pos + 20),
+        falseType: deserializeBoxTsType(pos + 24),
+    };
+}
+
+function deserializeTsInferType(pos) {
+    return {
+        type: "TsInferType",
+        span: deserializeSpan(pos),
+        typeParam: deserializeTsTypeParameter(pos + 12),
+    };
+}
+
+function deserializeTsParenthesizedType(pos) {
+    return {
+        type: "TsParenthesizedType",
+        span: deserializeSpan(pos),
+        typeAnnotation: deserializeBoxTsType(pos + 12),
+    };
+}
+
+function deserializeTsTypeOperator(pos) {
+    return {
+        type: "TsTypeOperator",
+        span: deserializeSpan(pos),
+        op: deserializeTsTypeOperatorOp(pos + 12),
+        typeAnnotation: deserializeBoxTsType(pos + 16),
+    };
+}
+
+function deserializeTsTypeOperatorOp(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return "keyof";
+        case 1:
+            return "unique";
+        case 2:
+            return "readonly";
+        default:
+            throw new Error("Unexpected enum value ID for TsTypeOperatorOp");
+    }
+}
+
+function deserializeTsIndexedAccessType(pos) {
+    return {
+        type: "TsIndexedAccessType",
+        span: deserializeSpan(pos),
+        readonly: deserializeBoolean(pos + 12),
+        objectType: deserializeBoxTsType(pos + 16),
+        indexType: deserializeBoxTsType(pos + 20),
+    };
+}
+
+function deserializeTruePlusMinus(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return true;
+        case 1:
+            return "+";
+        case 2:
+            return "-";
+        default:
+            throw new Error("Unexpected enum value ID for TruePlusMinus");
+    }
+}
+
+function deserializeTsMappedType(pos) {
+    return {
+        type: "TsMappedType",
+        span: deserializeSpan(pos),
+        readonly: deserializeOptionTruePlusMinus(pos + 12),
+        typeParam: deserializeTsTypeParameter(pos + 20),
+        nameType: deserializeOptionBoxTsType(pos + 76),
+        optional: deserializeOptionTruePlusMinus(pos + 84),
+        typeAnnotation: deserializeOptionBoxTsType(pos + 92),
+    };
+}
+
+function deserializeTsLiteralType(pos) {
+    return {
+        type: "TsLiteralType",
+        span: deserializeSpan(pos),
+        literal: deserializeTsLit(pos + 16),
+    };
+}
+
+function deserializeTsLit(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeNumericLiteral(pos + 8);
+        case 1:
+            return deserializeStringLiteral(pos + 4);
+        case 2:
+            return deserializeBooleanLiteral(pos + 4);
+        case 3:
+            return deserializeBigIntLiteral(pos + 4);
+        case 4:
+            return deserializeTsTemplateLiteralType(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsLit");
+    }
+}
+
+function deserializeTsTemplateLiteralType(pos) {
+    return {
+        type: "TemplateLiteral",
+        span: deserializeSpan(pos),
+        types: deserializeVecBoxTsType(pos + 12),
+        quasis: deserializeVecTemplateElement(pos + 20),
+    };
+}
+
+function deserializeTsInterfaceDeclaration(pos) {
+    return {
+        type: "TsInterfaceDeclaration",
+        span: deserializeSpan(pos),
+        id: deserializeIdentifier(pos + 12),
+        declare: deserializeBoolean(pos + 36),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 40),
+        extends: deserializeVecTsExpressionWithTypeArguments(pos + 64),
+        body: deserializeTsInterfaceBody(pos + 72),
+    };
+}
+
+function deserializeTsInterfaceBody(pos) {
+    return {
+        type: "TsInterfaceBody",
+        span: deserializeSpan(pos),
+        body: deserializeVecTsTypeElement(pos + 12),
+    };
+}
+
+function deserializeTsExpressionWithTypeArguments(pos) {
+    return {
+        type: "TsExpressionWithTypeArguments",
+        span: deserializeSpan(pos),
+        expression: deserializeBoxExpression(pos + 12),
+        typeArguments: deserializeOptionTsTypeParameterInstantiation(pos + 16),
+    };
+}
+
+function deserializeTsTypeAliasDeclaration(pos) {
+    return {
+        type: "TsTypeAliasDeclaration",
+        span: deserializeSpan(pos),
+        declare: deserializeBoolean(pos + 12),
+        id: deserializeIdentifier(pos + 16),
+        typeParams: deserializeOptionTsTypeParameterDeclaration(pos + 40),
+        typeAnnotation: deserializeBoxTsType(pos + 64),
+    };
+}
+
+function deserializeTsEnumDeclaration(pos) {
+    return {
+        type: "TsEnumDeclaration",
+        span: deserializeSpan(pos),
+        declare: deserializeBoolean(pos + 12),
+        isConst: deserializeBoolean(pos + 13),
+        id: deserializeIdentifier(pos + 16),
+        members: deserializeVecTsEnumMember(pos + 40),
+    };
+}
+
+function deserializeTsEnumMember(pos) {
+    return {
+        type: "TsEnumMember",
+        span: deserializeSpan(pos),
+        id: deserializeTsModuleName(pos + 12),
+        init: deserializeOptionBoxExpression(pos + 48),
+    };
+}
+
+function deserializeTsModuleName(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeIdentifier(pos + 4);
+        case 1:
+            return deserializeStringLiteral(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsModuleName");
+    }
+}
+
+function deserializeTsModuleDeclaration(pos) {
+    return {
+        type: "TsModuleDeclaration",
+        span: deserializeSpan(pos),
+        declare: deserializeBoolean(pos + 12),
+        global: deserializeBoolean(pos + 13),
+        id: deserializeTsModuleName(pos + 16),
+        body: deserializeOptionTsNamespaceBody(pos + 52),
+    };
+}
+
+function deserializeTsNamespaceBody(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeTsModuleBlock(pos + 4);
+        case 1:
+            return deserializeTsNamespaceDeclaration(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsNamespaceBody");
+    }
+}
+
+function deserializeTsModuleBlock(pos) {
+    return {
+        type: "TsModuleBlock",
+        span: deserializeSpan(pos),
+        body: deserializeVecModuleItem(pos + 12),
+    };
+}
+
+function deserializeTsNamespaceDeclaration(pos) {
+    return {
+        type: "TsNamespaceDeclaration",
+        span: deserializeSpan(pos),
+        declare: deserializeBoolean(pos + 12),
+        global: deserializeBoolean(pos + 13),
+        id: deserializeIdentifier(pos + 16),
+        body: deserializeBoxTsNamespaceBody(pos + 40),
+    };
+}
+
+function deserializeTsModuleName(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeIdentifier(pos + 4);
+        case 1:
+            return deserializeStringLiteral(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsModuleName");
+    }
+}
+
+function deserializeTsImportEqualsDeclaration(pos) {
+    return {
+        type: "TsImportEqualsDeclaration",
+        span: deserializeSpan(pos),
+        declare: deserializeBoolean(pos + 12),
+        isExport: deserializeBoolean(pos + 13),
+        isTypeOnly: deserializeBoolean(pos + 14),
+        id: deserializeIdentifier(pos + 16),
+        moduleRef: deserializeTsModuleRef(pos + 40),
+    };
+}
+
+function deserializeTsModuleRef(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeTsEntityName(pos + 4);
+        case 1:
+            return deserializeTsExternalModuleReference(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for TsModuleRef");
+    }
+}
+
+function deserializeTsExternalModuleReference(pos) {
+    return {
+        type: "TsExternalModuleReference",
+        span: deserializeSpan(pos),
+        expression: deserializeStringLiteral(pos + 12),
+    };
+}
+
+function deserializeTsExportAssignment(pos) {
+    return {
+        type: "TsExportAssignment",
+        span: deserializeSpan(pos),
+        expression: deserializeBoxExpression(pos + 12),
+    };
+}
+
+function deserializeTsNamespaceExportDeclaration(pos) {
+    return {
+        type: "TsNamespaceExportDeclaration",
+        span: deserializeSpan(pos),
+        id: deserializeIdentifier(pos + 12),
+    };
+}
+
+function deserializeTsAsExpression(pos) {
+    return {
+        type: "TsAsExpression",
+        span: deserializeSpan(pos),
+        expression: deserializeBoxExpression(pos + 12),
+        typeAnnotation: deserializeBoxTsType(pos + 16),
+    };
+}
+
+function deserializeTsTypeAssertion(pos) {
+    return {
+        type: "TsTypeAssertion",
+        span: deserializeSpan(pos),
+        expression: deserializeBoxExpression(pos + 12),
+        typeAnnotation: deserializeBoxTsType(pos + 16),
+    };
+}
+
+function deserializeTsNonNullExpression(pos) {
+    return {
+        type: "TsNonNullExpression",
+        span: deserializeSpan(pos),
+        expression: deserializeBoxExpression(pos + 12),
     };
 }
 
@@ -1852,6 +2475,23 @@ function deserializeAccessibility(pos) {
         default:
             throw new Error("Unexpected enum value ID for Accessibility");
     }
+}
+
+function deserializeTsConstAssertion(pos) {
+    return {
+        type: "TsConstAssertion",
+        span: deserializeSpan(pos),
+        expression: deserializeBoxExpression(pos + 12),
+    };
+}
+
+function deserializeTsInstantiation(pos) {
+    return {
+        type: "TsInstantiation",
+        span: deserializeSpan(pos),
+        expression: deserializeBoxExpression(pos + 12),
+        typeArguments: deserializeTsTypeParameterInstantiation(pos + 16),
+    };
 }
 
 function deserializeJsWord(pos) {
@@ -1925,29 +2565,16 @@ function deserializeSpan(pos) {
     };
 }
 
-function deserializeVecModuleDeclarationOrStatement(pos) {
-    return deserializeVec(pos, deserializeModuleDeclarationOrStatement, 156);
-}
-
-function deserializeModuleDeclarationOrStatement(pos) {
-    switch (buff[pos]) {
-        case 0:
-            return deserializeModuleDeclaration(pos + 4);
-        case 1:
-            return deserializeStatement(pos + 4);
-        default:
-            throw new Error(
-                "Unexpected enum option ID for ModuleDeclarationOrStatement"
-            );
-    }
+function deserializeVecModuleItem(pos) {
+    return deserializeVec(pos, deserializeModuleItem, 156);
 }
 
 function deserializeVecImportSpecifier(pos) {
     return deserializeVec(pos, deserializeImportSpecifier, 84);
 }
 
-function deserializeOptionModuleExportName(pos) {
-    return deserializeOption(pos, deserializeModuleExportName, 4);
+function deserializeOptionTsModuleName(pos) {
+    return deserializeOption(pos, deserializeTsModuleName, 4);
 }
 
 function deserializeOptionJsWord(pos) {
@@ -2011,6 +2638,10 @@ function deserializeBoxTsType(pos) {
     return deserializeBox(pos, deserializeTsType);
 }
 
+function deserializeVecTsFnParam(pos) {
+    return deserializeVec(pos, deserializeTsFnParam, 52);
+}
+
 function deserializeVecOptionPattern(pos) {
     return deserializeVec(pos, deserializeOptionPattern, 56);
 }
@@ -2029,6 +2660,50 @@ function deserializeVecObjectPatternProperty(pos) {
 
 function deserializeOptionBoxExpression(pos) {
     return deserializeOption(pos, deserializeBoxExpression, 4);
+}
+
+function deserializeOptionTsTypeParameterDeclaration(pos) {
+    return deserializeOption(pos, deserializeTsTypeParameterDeclaration, 4);
+}
+
+function deserializeVecTsTypeParameter(pos) {
+    return deserializeVec(pos, deserializeTsTypeParameter, 56);
+}
+
+function deserializeOptionBoxTsType(pos) {
+    return deserializeOption(pos, deserializeBoxTsType, 4);
+}
+
+function deserializeBoxTsQualifiedName(pos) {
+    return deserializeBox(pos, deserializeTsQualifiedName);
+}
+
+function deserializeOptionTsTypeParameterInstantiation(pos) {
+    return deserializeOption(pos, deserializeTsTypeParameterInstantiation, 4);
+}
+
+function deserializeVecBoxTsType(pos) {
+    return deserializeVec(pos, deserializeBoxTsType, 4);
+}
+
+function deserializeOptionTsEntityName(pos) {
+    return deserializeOption(pos, deserializeTsEntityName, 4);
+}
+
+function deserializeVecTsTypeElement(pos) {
+    return deserializeVec(pos, deserializeTsTypeElement, 88);
+}
+
+function deserializeVecTsTupleElement(pos) {
+    return deserializeVec(pos, deserializeTsTupleElement, 216);
+}
+
+function deserializeOptionTruePlusMinus(pos) {
+    return deserializeOption(pos, deserializeTruePlusMinus, 4);
+}
+
+function deserializeVecTemplateElement(pos) {
+    return deserializeVec(pos, deserializeTemplateElement, 36);
 }
 
 function deserializeOptionBlockStatement(pos) {
@@ -2097,19 +2772,19 @@ function deserializeVecClassMember(pos) {
     return deserializeVec(pos, deserializeClassMember, 192);
 }
 
-function deserializeVecTsParamPropOrParameter(pos) {
-    return deserializeVec(pos, deserializeTsParamPropOrParameter, 84);
+function deserializeVecTsParameterPropertyOrParameter(pos) {
+    return deserializeVec(pos, deserializeTsParameterPropertyOrParameter, 84);
 }
 
-function deserializeTsParamPropOrParameter(pos) {
+function deserializeTsParameterPropertyOrParameter(pos) {
     switch (buff[pos]) {
         case 0:
-            return deserializeTsParamProp(pos + 4);
+            return deserializeTsParameterProperty(pos + 4);
         case 1:
             return deserializeParameter(pos + 4);
         default:
             throw new Error(
-                "Unexpected enum option ID for TsParamPropOrParameter"
+                "Unexpected enum option ID for TsParameterPropertyOrParameter"
             );
     }
 }
@@ -2118,28 +2793,20 @@ function deserializeOptionAccessibility(pos) {
     return deserializeOption(pos, deserializeAccessibility, 4);
 }
 
-function deserializeOptionTsTypeParamDeclaration(pos) {
-    return deserializeOption(pos, deserializeTsTypeParamDeclaration, 4);
+function deserializeVecTsExpressionWithTypeArguments(pos) {
+    return deserializeVec(pos, deserializeTsExpressionWithTypeArguments, 40);
 }
 
-function deserializeVecTsTypeParameter(pos) {
-    return deserializeVec(pos, deserializeTsTypeParameter, 12);
+function deserializeVecTsEnumMember(pos) {
+    return deserializeVec(pos, deserializeTsEnumMember, 56);
 }
 
-function deserializeOptionTsTypeParameterInstantiation(pos) {
-    return deserializeOption(pos, deserializeTsTypeParameterInstantiation, 4);
+function deserializeOptionTsNamespaceBody(pos) {
+    return deserializeOption(pos, deserializeTsNamespaceBody, 4);
 }
 
-function deserializeVecBoxTsType(pos) {
-    return deserializeVec(pos, deserializeBoxTsType, 4);
-}
-
-function deserializeVecTsExpressionWithTypeArg(pos) {
-    return deserializeVec(pos, deserializeTsExpressionWithTypeArg, 12);
-}
-
-function deserializeOptionTsTypeParameterDeclaration(pos) {
-    return deserializeOption(pos, deserializeTsTypeParameterDeclaration, 4);
+function deserializeBoxTsNamespaceBody(pos) {
+    return deserializeBox(pos, deserializeTsNamespaceBody);
 }
 
 function deserializeIdentifierOrPrivateNameOrComputed(pos) {
@@ -2195,10 +2862,6 @@ function deserializeOptionVecExpressionOrSpread(pos) {
 
 function deserializeVecBoxExpression(pos) {
     return deserializeVec(pos, deserializeBoxExpression, 4);
-}
-
-function deserializeVecTemplateElement(pos) {
-    return deserializeVec(pos, deserializeTemplateElement, 36);
 }
 
 function deserializeVecPattern(pos) {

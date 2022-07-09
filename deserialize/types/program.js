@@ -9,7 +9,7 @@ module.exports = {
     Program: Enum(["Module", "Script"]),
 
     Module: Node({
-        body: Vec(Enum(["ModuleDeclaration", "Statement"])),
+        body: Vec("ModuleItem"),
         interpreter: Option("JsWord"),
     }),
 

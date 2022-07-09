@@ -22,9 +22,9 @@ module.exports = {
         body: Vec("ClassMember"),
         superClass: Option(Box("Expression")),
         isAbstract: "Boolean", // TODO Needs tests
-        typeParams: Option("TsTypeParamDeclaration"),
+        typeParams: Option("TsTypeParameterDeclaration"),
         superTypeParams: Option("TsTypeParameterInstantiation"),
-        implements: Vec("TsExpressionWithTypeArg"),
+        implements: Vec("TsExpressionWithTypeArguments"),
     }),
 
     ClassExpression: Node({
@@ -35,9 +35,9 @@ module.exports = {
         body: Vec("ClassMember"),
         superClass: Option(Box("Expression")),
         isAbstract: "Boolean", // TODO Needs tests
-        typeParams: Option("TsTypeParamDeclaration"),
+        typeParams: Option("TsTypeParameterDeclaration"),
         superTypeParams: Option("TsTypeParameterInstantiation"),
-        implements: Vec("TsExpressionWithTypeArg"),
+        implements: Vec("TsExpressionWithTypeArguments"),
     }),
 
     // Class members
@@ -54,7 +54,7 @@ module.exports = {
 
     Constructor: Node({
         key: "PropertyName",
-        params: Vec(Enum(["TsParamProp", "Parameter"])),
+        params: Vec(Enum(["TsParameterProperty", "Parameter"])),
         body: Option("BlockStatement"),
         accessibility: Option("Accessibility"), // TODO Needs tests
         isOptional: "Boolean", // TODO Needs tests
@@ -123,7 +123,7 @@ module.exports = {
             body: Option("BlockStatement"),
             generator: "Boolean",
             async: "Boolean",
-            typeParameters: Option("TsTypeParamDeclaration"),
+            typeParameters: Option("TsTypeParameterDeclaration"),
             returnType: Option("TsTypeAnnotation"),
         },
         { noType: true }

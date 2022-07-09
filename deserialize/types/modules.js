@@ -6,6 +6,8 @@ const { Node, Enum, Option, Box, Vec } = require("../kinds/index.js");
 // Exports
 
 module.exports = {
+    ModuleItem: Enum(["ModuleDeclaration", "Statement"]),
+
     ModuleDeclaration: Enum([
         "ImportDeclaration",
         "ExportDeclaration",

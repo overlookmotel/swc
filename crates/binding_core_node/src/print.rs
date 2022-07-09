@@ -123,8 +123,11 @@ pub fn print_sync_from_buffer(buff: Buffer, options: Buffer) -> napi::Result<Tra
         .len()
         .try_into()
         .expect("Should able to convert ptr length");
-    let program: Program =
-        unsafe { deserialize_from_ptr(ptr, len).expect("Should able to deserialize") };
+    let program: Program = unsafe {
+        deserialize_from_ptr(ptr, len)
+            .map(|v| v.into_inner())
+            .expect("Should able to deserialize")
+    };
 
     let options: Options = get_deserialized(&options)?;
 

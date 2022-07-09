@@ -189,8 +189,11 @@ pub fn transform_sync_from_buffer(buff: Buffer, opts: Buffer) -> napi::Result<Tr
                     .len()
                     .try_into()
                     .expect("Should able to convert ptr length");
-                let program: Program =
-                    unsafe { deserialize_from_ptr(ptr, len).expect("Should able to deserialize") };
+                let program = unsafe {
+                    deserialize_from_ptr(ptr, len)
+                        .map(|v| v.into_inner())
+                        .expect("Should able to deserialize")
+                };
 
                 c.process_js(handler, program, &options)
             })

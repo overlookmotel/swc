@@ -41,8 +41,9 @@ const { types } = require("./types/index.js"),
 
 const DEBUG = !!process.env.DEBUG;
 
-constants.PROGRAM_LENGTH = types.Program.length;
-constants.PROGRAM_ALIGN = types.Program.align;
+constants.PROGRAM_LENGTH_PLUS_4 = types.Program.length + 4;
+constants.PROGRAM_LENGTH_PLUS_8 = types.Program.length + 8;
+constants.PROGRAM_ALIGN = Math.max(types.Program.align, 4);
 
 writeFileSync(pathJoin(__dirname, "deserialize.js"), generateDeserializer());
 writeFileSync(pathJoin(__dirname, "serialize.js"), generateSerializer());

@@ -6229,9 +6229,12 @@ function serialize(ast) {
     scratchPos32 = 2;
     const storePos32 = serializeProgram(ast);
     alignPos(4);
-    alloc(36);
+    alloc(44);
+    uint32[pos >> 2] = 1;
+    pos += 4;
     finalizeProgram(storePos32);
-    return buff.subarray(0, pos);
+    int32[pos >> 2] = -40;
+    return buff.subarray(0, pos + 4);
 }
 
 function serializeOption(value, serialize) {

@@ -2303,7 +2303,7 @@ function deserialize(buffIn) {
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
-    return deserializeProgram(buffIn.byteOffset + buffIn.length - 36);
+    return deserializeProgram(buffIn.byteOffset + buffIn.length - 40);
 }
 
 function deserializeOption(pos, deserialize, offset) {

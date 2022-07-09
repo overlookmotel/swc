@@ -875,7 +875,7 @@ function deserializeExpression(pos) {
         case 26:
             return deserializeJSXEmptyExpression(pos + 4);
         case 27:
-            return deserializeJSXElement(pos + 4);
+            return deserializeBoxJSXElement(pos + 4);
         case 28:
             return deserializeJSXFragment(pos + 4);
         case 29:
@@ -1486,9 +1486,90 @@ function deserializeRegExpLiteral(pos) {
     };
 }
 
-function deserializeJSXText(pos) {
+function deserializeJSXElement(pos) {
     return {
-        type: "JSXText",
+        type: "JSXElement",
+        span: deserializeSpan(pos),
+        opening: deserializeJSXOpeningElement(pos + 12),
+        children: deserializeVecJSXElementChild(pos + 116),
+        closing: deserializeOptionJSXClosingElement(pos + 124),
+    };
+}
+
+function deserializeJSXOpeningElement(pos) {
+    return {
+        type: "JSXOpeningElement",
+        name: deserializeJSXElementName(pos),
+        span: deserializeSpan(pos + 56),
+        attributes: deserializeVecJSXAttributeOrSpreadElement(pos + 68),
+        selfClosing: deserializeBoolean(pos + 76),
+        typeArguments: deserializeOptionTsTypeParameterInstantiation(pos + 80),
+    };
+}
+
+function deserializeJSXAttribute(pos) {
+    return {
+        type: "JSXAttribute",
+        span: deserializeSpan(pos),
+        name: deserializeJSXAttributeName(pos + 12),
+        value: deserializeOptionJSXAttributeValue(pos + 64),
+    };
+}
+
+function deserializeJSXAttributeName(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeIdentifier(pos + 4);
+        case 1:
+            return deserializeJSXNamespacedName(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for JSXAttributeName");
+    }
+}
+
+function deserializeJSXAttributeValue(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeLiteral(pos + 8);
+        case 1:
+            return deserializeJSXExpressionContainer(pos + 4);
+        case 2:
+            return deserializeBoxJSXElement(pos + 4);
+        case 3:
+            return deserializeJSXFragment(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for JSXAttributeValue");
+    }
+}
+
+function deserializeJSXClosingElement(pos) {
+    return {
+        type: "JSXClosingElement",
+        span: deserializeSpan(pos),
+        name: deserializeJSXElementName(pos + 12),
+    };
+}
+
+function deserializeJSXFragment(pos) {
+    return {
+        type: "JSXFragment",
+        span: deserializeSpan(pos),
+        opening: deserializeJSXOpeningFragment(pos + 12),
+        children: deserializeVecJSXElementChild(pos + 24),
+        closing: deserializeJSXClosingFragment(pos + 32),
+    };
+}
+
+function deserializeJSXOpeningFragment(pos) {
+    return {
+        type: "JSXOpeningFragment",
+        span: deserializeSpan(pos),
+    };
+}
+
+function deserializeJSXClosingFragment(pos) {
+    return {
+        type: "JSXClosingFragment",
         span: deserializeSpan(pos),
     };
 }
@@ -1496,14 +1577,36 @@ function deserializeJSXText(pos) {
 function deserializeJSXMemberExpression(pos) {
     return {
         type: "JSXMemberExpression",
-        span: deserializeSpan(pos),
+        object: deserializeJSXObject(pos),
+        property: deserializeIdentifier(pos + 28),
     };
+}
+
+function deserializeJSXObject(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeBoxJSXMemberExpression(pos + 4);
+        case 1:
+            return deserializeIdentifier(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for JSXObject");
+    }
 }
 
 function deserializeJSXNamespacedName(pos) {
     return {
         type: "JSXNamespacedName",
+        namespace: deserializeIdentifier(pos),
+        name: deserializeIdentifier(pos + 24),
+    };
+}
+
+function deserializeJSXText(pos) {
+    return {
+        type: "JSXText",
         span: deserializeSpan(pos),
+        value: deserializeJsWord(pos + 12),
+        raw: deserializeJsWord(pos + 20),
     };
 }
 
@@ -1514,18 +1617,61 @@ function deserializeJSXEmptyExpression(pos) {
     };
 }
 
-function deserializeJSXElement(pos) {
+function deserializeJSXElementChild(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeJSXText(pos + 4);
+        case 1:
+            return deserializeJSXExpressionContainer(pos + 4);
+        case 2:
+            return deserializeJSXSpreadChild(pos + 4);
+        case 3:
+            return deserializeBoxJSXElement(pos + 4);
+        case 4:
+            return deserializeJSXFragment(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for JSXElementChild");
+    }
+}
+
+function deserializeJSXExpressionContainer(pos) {
     return {
-        type: "JSXElement",
+        type: "JSXExpressionContainer",
         span: deserializeSpan(pos),
+        expression: deserializeJSXExpression(pos + 12),
     };
 }
 
-function deserializeJSXFragment(pos) {
+function deserializeJSXExpression(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeJSXEmptyExpression(pos + 4);
+        case 1:
+            return deserializeBoxExpression(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for JSXExpression");
+    }
+}
+
+function deserializeJSXSpreadChild(pos) {
     return {
-        type: "JSXFragment",
+        type: "JSXSpreadChild",
         span: deserializeSpan(pos),
+        expression: deserializeBoxExpression(pos + 12),
     };
+}
+
+function deserializeJSXElementName(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeIdentifier(pos + 4);
+        case 1:
+            return deserializeJSXMemberExpression(pos + 4);
+        case 2:
+            return deserializeJSXNamespacedName(pos + 4);
+        default:
+            throw new Error("Unexpected enum option ID for JSXElementName");
+    }
 }
 
 function deserializeTsTypeAssertion(pos) {
@@ -2070,6 +2216,43 @@ function deserializeBlockStatementOrBoxExpression(pos) {
                 "Unexpected enum option ID for BlockStatementOrBoxExpression"
             );
     }
+}
+
+function deserializeBoxJSXMemberExpression(pos) {
+    return deserializeBox(pos, deserializeJSXMemberExpression);
+}
+
+function deserializeBoxJSXElement(pos) {
+    return deserializeBox(pos, deserializeJSXElement);
+}
+
+function deserializeVecJSXAttributeOrSpreadElement(pos) {
+    return deserializeVec(pos, deserializeJSXAttributeOrSpreadElement, 136);
+}
+
+function deserializeJSXAttributeOrSpreadElement(pos) {
+    switch (buff[pos]) {
+        case 0:
+            return deserializeJSXAttribute(pos + 8);
+        case 1:
+            return deserializeSpreadElement(pos + 4);
+        default:
+            throw new Error(
+                "Unexpected enum option ID for JSXAttributeOrSpreadElement"
+            );
+    }
+}
+
+function deserializeOptionJSXAttributeValue(pos) {
+    return deserializeOption(pos, deserializeJSXAttributeValue, 8);
+}
+
+function deserializeVecJSXElementChild(pos) {
+    return deserializeVec(pos, deserializeJSXElementChild, 48);
+}
+
+function deserializeOptionJSXClosingElement(pos) {
+    return deserializeOption(pos, deserializeJSXClosingElement, 4);
 }
 
 function deserializeMemberExpressionOrOptionalChainingCall(pos) {

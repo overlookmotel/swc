@@ -43,7 +43,7 @@ module.exports = {
         "JSXMemberExpression",
         "JSXNamespacedName",
         "JSXEmptyExpression",
-        "JSXElement",
+        Box("JSXElement"),
         "JSXFragment",
         "TsTypeAssertion",
         "TsConstAssertion",

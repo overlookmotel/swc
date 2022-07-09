@@ -2453,7 +2453,7 @@ function serializeExpression(node) {
             break;
         case "JSXElement":
             scratchBuff[storePos32 << 2] = 27;
-            writeScratchUint32(storePos32 + 1, serializeJSXElement(node));
+            writeScratchUint32(storePos32 + 1, serializeBoxJSXElement(node));
             break;
         case "JSXFragment":
             scratchBuff[storePos32 << 2] = 28;
@@ -2752,7 +2752,7 @@ function finalizeExpression(storePos32) {
             finalizeEnum(
                 27,
                 scratchUint32[storePos32 + 1],
-                finalizeJSXElement,
+                finalizeBox,
                 4,
                 136
             );
@@ -4017,34 +4017,323 @@ function finalizeRegExpLiteral(storePos32) {
     finalizeJsWord(scratchUint32[storePos32 + 2]);
 }
 
-function serializeJSXText(node) {
+function serializeJSXElement(node) {
+    const storePos32 = allocScratch(4);
+    writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(
+        storePos32 + 1,
+        serializeJSXOpeningElement(node.opening)
+    );
+    writeScratchUint32(
+        storePos32 + 2,
+        serializeVecJSXElementChild(node.children)
+    );
+    writeScratchUint32(
+        storePos32 + 3,
+        serializeOptionJSXClosingElement(node.closing)
+    );
+    return storePos32;
+}
+
+function finalizeJSXElement(storePos32) {
+    finalizeSpan(scratchUint32[storePos32]);
+    finalizeJSXOpeningElement(scratchUint32[storePos32 + 1]);
+    finalizeVec(scratchUint32[storePos32 + 2]);
+    finalizeOptionJSXClosingElement(scratchUint32[storePos32 + 3]);
+}
+
+function serializeJSXOpeningElement(node) {
+    const storePos32 = allocScratch(6);
+    writeScratchUint32(storePos32, serializeJSXElementName(node.name));
+    writeScratchUint32(storePos32 + 1, serializeSpan(node.span));
+    writeScratchUint32(
+        storePos32 + 2,
+        serializeVecJSXAttributeOrSpreadElement(node.attributes)
+    );
+    writeScratchUint32(storePos32 + 3, serializeBoolean(node.selfClosing));
+    writeScratchUint32(
+        storePos32 + 4,
+        serializeOptionTsTypeParameterInstantiation(node.typeArguments)
+    );
+    return storePos32;
+}
+
+function finalizeJSXOpeningElement(storePos32) {
+    finalizeJSXElementName(scratchUint32[storePos32]);
+    finalizeSpan(scratchUint32[storePos32 + 1]);
+    finalizeVec(scratchUint32[storePos32 + 2]);
+    finalizeBoolean(scratchUint32[storePos32 + 3]);
+    pos += 3;
+    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 4]);
+}
+
+function serializeJSXAttribute(node) {
+    const storePos32 = allocScratch(4);
+    writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(storePos32 + 1, serializeJSXAttributeName(node.name));
+    writeScratchUint32(
+        storePos32 + 2,
+        serializeOptionJSXAttributeValue(node.value)
+    );
+    return storePos32;
+}
+
+function finalizeJSXAttribute(storePos32) {
+    finalizeSpan(scratchUint32[storePos32]);
+    finalizeJSXAttributeName(scratchUint32[storePos32 + 1]);
+    finalizeOptionJSXAttributeValue(scratchUint32[storePos32 + 2]);
+}
+
+function serializeJSXAttributeName(node) {
+    const storePos32 = allocScratch(2);
+    switch (node.type) {
+        case "Identifier":
+            scratchBuff[storePos32 << 2] = 0;
+            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            break;
+        case "JSXNamespacedName":
+            scratchBuff[storePos32 << 2] = 1;
+            writeScratchUint32(
+                storePos32 + 1,
+                serializeJSXNamespacedName(node)
+            );
+            break;
+        default:
+            throw new Error("Unexpected enum option type for JSXAttributeName");
+    }
+    return storePos32;
+}
+
+function finalizeJSXAttributeName(storePos32) {
+    switch (scratchBuff[storePos32 << 2]) {
+        case 0:
+            finalizeEnum(
+                0,
+                scratchUint32[storePos32 + 1],
+                finalizeIdentifier,
+                4,
+                52
+            );
+            break;
+        case 1:
+            finalizeEnum(
+                1,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXNamespacedName,
+                4,
+                52
+            );
+            break;
+        default:
+            throw new Error("Unexpected enum option ID for JSXAttributeName");
+    }
+}
+
+function serializeJSXAttributeValue(node) {
+    const storePos32 = allocScratch(2);
+    switch (node.type) {
+        case "StringLiteral":
+        case "BooleanLiteral":
+        case "NullLiteral":
+        case "NumericLiteral":
+        case "BigIntLiteral":
+        case "RegExpLiteral":
+        case "JSXText":
+            scratchBuff[storePos32 << 2] = 0;
+            writeScratchUint32(storePos32 + 1, serializeLiteral(node));
+            break;
+        case "JSXExpressionContainer":
+            scratchBuff[storePos32 << 2] = 1;
+            writeScratchUint32(
+                storePos32 + 1,
+                serializeJSXExpressionContainer(node)
+            );
+            break;
+        case "JSXElement":
+            scratchBuff[storePos32 << 2] = 2;
+            writeScratchUint32(storePos32 + 1, serializeBoxJSXElement(node));
+            break;
+        case "JSXFragment":
+            scratchBuff[storePos32 << 2] = 3;
+            writeScratchUint32(storePos32 + 1, serializeJSXFragment(node));
+            break;
+        default:
+            throw new Error(
+                "Unexpected enum option type for JSXAttributeValue"
+            );
+    }
+    return storePos32;
+}
+
+function finalizeJSXAttributeValue(storePos32) {
+    switch (scratchBuff[storePos32 << 2]) {
+        case 0:
+            finalizeEnum(
+                0,
+                scratchUint32[storePos32 + 1],
+                finalizeLiteral,
+                8,
+                56
+            );
+            break;
+        case 1:
+            finalizeEnum(
+                1,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXExpressionContainer,
+                4,
+                56
+            );
+            break;
+        case 2:
+            finalizeEnum(2, scratchUint32[storePos32 + 1], finalizeBox, 4, 56);
+            break;
+        case 3:
+            finalizeEnum(
+                3,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXFragment,
+                4,
+                56
+            );
+            break;
+        default:
+            throw new Error("Unexpected enum option ID for JSXAttributeValue");
+    }
+}
+
+function serializeJSXClosingElement(node) {
+    const storePos32 = allocScratch(2);
+    writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(storePos32 + 1, serializeJSXElementName(node.name));
+    return storePos32;
+}
+
+function finalizeJSXClosingElement(storePos32) {
+    finalizeSpan(scratchUint32[storePos32]);
+    finalizeJSXElementName(scratchUint32[storePos32 + 1]);
+}
+
+function serializeJSXFragment(node) {
+    const storePos32 = allocScratch(4);
+    writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(
+        storePos32 + 1,
+        serializeJSXOpeningFragment(node.opening)
+    );
+    writeScratchUint32(
+        storePos32 + 2,
+        serializeVecJSXElementChild(node.children)
+    );
+    writeScratchUint32(
+        storePos32 + 3,
+        serializeJSXClosingFragment(node.closing)
+    );
+    return storePos32;
+}
+
+function finalizeJSXFragment(storePos32) {
+    finalizeSpan(scratchUint32[storePos32]);
+    finalizeJSXOpeningFragment(scratchUint32[storePos32 + 1]);
+    finalizeVec(scratchUint32[storePos32 + 2]);
+    finalizeJSXClosingFragment(scratchUint32[storePos32 + 3]);
+}
+
+function serializeJSXOpeningFragment(node) {
     const storePos32 = allocScratch(2);
     writeScratchUint32(storePos32, serializeSpan(node.span));
     return storePos32;
 }
 
-function finalizeJSXText(storePos32) {
+function finalizeJSXOpeningFragment(storePos32) {
+    finalizeSpan(scratchUint32[storePos32]);
+}
+
+function serializeJSXClosingFragment(node) {
+    const storePos32 = allocScratch(2);
+    writeScratchUint32(storePos32, serializeSpan(node.span));
+    return storePos32;
+}
+
+function finalizeJSXClosingFragment(storePos32) {
     finalizeSpan(scratchUint32[storePos32]);
 }
 
 function serializeJSXMemberExpression(node) {
     const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(storePos32, serializeJSXObject(node.object));
+    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.property));
     return storePos32;
 }
 
 function finalizeJSXMemberExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
+    finalizeJSXObject(scratchUint32[storePos32]);
+    finalizeIdentifier(scratchUint32[storePos32 + 1]);
+}
+
+function serializeJSXObject(node) {
+    const storePos32 = allocScratch(2);
+    switch (node.type) {
+        case "JSXMemberExpression":
+            scratchBuff[storePos32 << 2] = 0;
+            writeScratchUint32(
+                storePos32 + 1,
+                serializeBoxJSXMemberExpression(node)
+            );
+            break;
+        case "Identifier":
+            scratchBuff[storePos32 << 2] = 1;
+            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            break;
+        default:
+            throw new Error("Unexpected enum option type for JSXObject");
+    }
+    return storePos32;
+}
+
+function finalizeJSXObject(storePos32) {
+    switch (scratchBuff[storePos32 << 2]) {
+        case 0:
+            finalizeEnum(0, scratchUint32[storePos32 + 1], finalizeBox, 4, 28);
+            break;
+        case 1:
+            finalizeEnum(
+                1,
+                scratchUint32[storePos32 + 1],
+                finalizeIdentifier,
+                4,
+                28
+            );
+            break;
+        default:
+            throw new Error("Unexpected enum option ID for JSXObject");
+    }
 }
 
 function serializeJSXNamespacedName(node) {
     const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(storePos32, serializeIdentifier(node.namespace));
+    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.name));
     return storePos32;
 }
 
 function finalizeJSXNamespacedName(storePos32) {
+    finalizeIdentifier(scratchUint32[storePos32]);
+    finalizeIdentifier(scratchUint32[storePos32 + 1]);
+}
+
+function serializeJSXText(node) {
+    const storePos32 = allocScratch(4);
+    writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(storePos32 + 1, serializeJsWord(node.value));
+    writeScratchUint32(storePos32 + 2, serializeJsWord(node.raw));
+    return storePos32;
+}
+
+function finalizeJSXText(storePos32) {
     finalizeSpan(scratchUint32[storePos32]);
+    finalizeJsWord(scratchUint32[storePos32 + 1]);
+    finalizeJsWord(scratchUint32[storePos32 + 2]);
 }
 
 function serializeJSXEmptyExpression(node) {
@@ -4057,24 +4346,247 @@ function finalizeJSXEmptyExpression(storePos32) {
     finalizeSpan(scratchUint32[storePos32]);
 }
 
-function serializeJSXElement(node) {
+function serializeJSXElementChild(node) {
     const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
+    switch (node.type) {
+        case "JSXText":
+            scratchBuff[storePos32 << 2] = 0;
+            writeScratchUint32(storePos32 + 1, serializeJSXText(node));
+            break;
+        case "JSXExpressionContainer":
+            scratchBuff[storePos32 << 2] = 1;
+            writeScratchUint32(
+                storePos32 + 1,
+                serializeJSXExpressionContainer(node)
+            );
+            break;
+        case "JSXSpreadChild":
+            scratchBuff[storePos32 << 2] = 2;
+            writeScratchUint32(storePos32 + 1, serializeJSXSpreadChild(node));
+            break;
+        case "JSXElement":
+            scratchBuff[storePos32 << 2] = 3;
+            writeScratchUint32(storePos32 + 1, serializeBoxJSXElement(node));
+            break;
+        case "JSXFragment":
+            scratchBuff[storePos32 << 2] = 4;
+            writeScratchUint32(storePos32 + 1, serializeJSXFragment(node));
+            break;
+        default:
+            throw new Error("Unexpected enum option type for JSXElementChild");
+    }
     return storePos32;
 }
 
-function finalizeJSXElement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
+function finalizeJSXElementChild(storePos32) {
+    switch (scratchBuff[storePos32 << 2]) {
+        case 0:
+            finalizeEnum(
+                0,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXText,
+                4,
+                48
+            );
+            break;
+        case 1:
+            finalizeEnum(
+                1,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXExpressionContainer,
+                4,
+                48
+            );
+            break;
+        case 2:
+            finalizeEnum(
+                2,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXSpreadChild,
+                4,
+                48
+            );
+            break;
+        case 3:
+            finalizeEnum(3, scratchUint32[storePos32 + 1], finalizeBox, 4, 48);
+            break;
+        case 4:
+            finalizeEnum(
+                4,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXFragment,
+                4,
+                48
+            );
+            break;
+        default:
+            throw new Error("Unexpected enum option ID for JSXElementChild");
+    }
 }
 
-function serializeJSXFragment(node) {
+function serializeJSXExpressionContainer(node) {
     const storePos32 = allocScratch(2);
     writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(storePos32 + 1, serializeJSXExpression(node.expression));
     return storePos32;
 }
 
-function finalizeJSXFragment(storePos32) {
+function finalizeJSXExpressionContainer(storePos32) {
     finalizeSpan(scratchUint32[storePos32]);
+    finalizeJSXExpression(scratchUint32[storePos32 + 1]);
+}
+
+function serializeJSXExpression(node) {
+    const storePos32 = allocScratch(2);
+    switch (node.type) {
+        case "JSXEmptyExpression":
+            scratchBuff[storePos32 << 2] = 0;
+            writeScratchUint32(
+                storePos32 + 1,
+                serializeJSXEmptyExpression(node)
+            );
+            break;
+        case "ThisExpression":
+        case "ArrayExpression":
+        case "ObjectExpression":
+        case "FunctionExpression":
+        case "UnaryExpression":
+        case "UpdateExpression":
+        case "BinaryExpression":
+        case "AssignmentExpression":
+        case "MemberExpression":
+        case "SuperPropExpression":
+        case "ConditionalExpression":
+        case "CallExpression":
+        case "NewExpression":
+        case "SequenceExpression":
+        case "Identifier":
+        case "StringLiteral":
+        case "BooleanLiteral":
+        case "NullLiteral":
+        case "NumericLiteral":
+        case "BigIntLiteral":
+        case "RegExpLiteral":
+        case "JSXText":
+        case "TemplateLiteral":
+        case "TaggedTemplateExpression":
+        case "ArrowFunctionExpression":
+        case "ClassExpression":
+        case "YieldExpression":
+        case "MetaProperty":
+        case "AwaitExpression":
+        case "ParenthesisExpression":
+        case "JSXMemberExpression":
+        case "JSXNamespacedName":
+        case "JSXElement":
+        case "JSXFragment":
+        case "TsTypeAssertion":
+        case "TsConstAssertion":
+        case "TsNonNullExpression":
+        case "TsAsExpression":
+        case "TsInstantiation":
+        case "PrivateName":
+        case "OptionalChainingExpression":
+        case "Invalid":
+            scratchBuff[storePos32 << 2] = 1;
+            writeScratchUint32(storePos32 + 1, serializeBoxExpression(node));
+            break;
+        default:
+            throw new Error("Unexpected enum option type for JSXExpression");
+    }
+    return storePos32;
+}
+
+function finalizeJSXExpression(storePos32) {
+    switch (scratchBuff[storePos32 << 2]) {
+        case 0:
+            finalizeEnum(
+                0,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXEmptyExpression,
+                4,
+                16
+            );
+            break;
+        case 1:
+            finalizeEnum(1, scratchUint32[storePos32 + 1], finalizeBox, 4, 16);
+            break;
+        default:
+            throw new Error("Unexpected enum option ID for JSXExpression");
+    }
+}
+
+function serializeJSXSpreadChild(node) {
+    const storePos32 = allocScratch(2);
+    writeScratchUint32(storePos32, serializeSpan(node.span));
+    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
+    return storePos32;
+}
+
+function finalizeJSXSpreadChild(storePos32) {
+    finalizeSpan(scratchUint32[storePos32]);
+    finalizeBox(scratchUint32[storePos32 + 1]);
+}
+
+function serializeJSXElementName(node) {
+    const storePos32 = allocScratch(2);
+    switch (node.type) {
+        case "Identifier":
+            scratchBuff[storePos32 << 2] = 0;
+            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            break;
+        case "JSXMemberExpression":
+            scratchBuff[storePos32 << 2] = 1;
+            writeScratchUint32(
+                storePos32 + 1,
+                serializeJSXMemberExpression(node)
+            );
+            break;
+        case "JSXNamespacedName":
+            scratchBuff[storePos32 << 2] = 2;
+            writeScratchUint32(
+                storePos32 + 1,
+                serializeJSXNamespacedName(node)
+            );
+            break;
+        default:
+            throw new Error("Unexpected enum option type for JSXElementName");
+    }
+    return storePos32;
+}
+
+function finalizeJSXElementName(storePos32) {
+    switch (scratchBuff[storePos32 << 2]) {
+        case 0:
+            finalizeEnum(
+                0,
+                scratchUint32[storePos32 + 1],
+                finalizeIdentifier,
+                4,
+                56
+            );
+            break;
+        case 1:
+            finalizeEnum(
+                1,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXMemberExpression,
+                4,
+                56
+            );
+            break;
+        case 2:
+            finalizeEnum(
+                2,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXNamespacedName,
+                4,
+                56
+            );
+            break;
+        default:
+            throw new Error("Unexpected enum option ID for JSXElementName");
+    }
 }
 
 function serializeTsTypeAssertion(node) {
@@ -5468,6 +5980,102 @@ function finalizeBlockStatementOrBoxExpression(storePos32) {
                 "Unexpected enum option ID for BlockStatementOrBoxExpression"
             );
     }
+}
+
+function serializeBoxJSXMemberExpression(value) {
+    return serializeBox(
+        value,
+        serializeJSXMemberExpression,
+        finalizeJSXMemberExpression,
+        52,
+        4
+    );
+}
+
+function serializeBoxJSXElement(value) {
+    return serializeBox(value, serializeJSXElement, finalizeJSXElement, 196, 4);
+}
+
+function serializeVecJSXAttributeOrSpreadElement(values) {
+    return serializeVec(
+        values,
+        serializeJSXAttributeOrSpreadElement,
+        finalizeJSXAttributeOrSpreadElement,
+        136,
+        8
+    );
+}
+
+function serializeJSXAttributeOrSpreadElement(node) {
+    const storePos32 = allocScratch(2);
+    switch (node.type) {
+        case "JSXAttribute":
+            scratchBuff[storePos32 << 2] = 0;
+            writeScratchUint32(storePos32 + 1, serializeJSXAttribute(node));
+            break;
+        case "SpreadElement":
+            scratchBuff[storePos32 << 2] = 1;
+            writeScratchUint32(storePos32 + 1, serializeSpreadElement(node));
+            break;
+        default:
+            throw new Error(
+                "Unexpected enum option type for JSXAttributeOrSpreadElement"
+            );
+    }
+    return storePos32;
+}
+
+function finalizeJSXAttributeOrSpreadElement(storePos32) {
+    switch (scratchBuff[storePos32 << 2]) {
+        case 0:
+            finalizeEnum(
+                0,
+                scratchUint32[storePos32 + 1],
+                finalizeJSXAttribute,
+                8,
+                136
+            );
+            break;
+        case 1:
+            finalizeEnum(
+                1,
+                scratchUint32[storePos32 + 1],
+                finalizeSpreadElement,
+                4,
+                136
+            );
+            break;
+        default:
+            throw new Error(
+                "Unexpected enum option ID for JSXAttributeOrSpreadElement"
+            );
+    }
+}
+
+function serializeOptionJSXAttributeValue(value) {
+    return serializeOption(value, serializeJSXAttributeValue);
+}
+
+function finalizeOptionJSXAttributeValue(finalizeData) {
+    return finalizeOption(finalizeData, finalizeJSXAttributeValue, 8, 64);
+}
+
+function serializeVecJSXElementChild(values) {
+    return serializeVec(
+        values,
+        serializeJSXElementChild,
+        finalizeJSXElementChild,
+        48,
+        4
+    );
+}
+
+function serializeOptionJSXClosingElement(value) {
+    return serializeOption(value, serializeJSXClosingElement);
+}
+
+function finalizeOptionJSXClosingElement(finalizeData) {
+    return finalizeOption(finalizeData, finalizeJSXClosingElement, 4, 72);
 }
 
 function serializeMemberExpressionOrOptionalChainingCall(node) {

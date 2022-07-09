@@ -31,7 +31,15 @@ module.exports = {
             const str = deserializeAsciiJsWord(pos);
             if (str === "0") return [0, []];
 
-            let current = BigInt(str);
+            let sign, current;
+            if (str[0] === "-") {
+                sign = -1;
+                current = BigInt(str.slice(1));
+            } else {
+                sign = 1;
+                current = BigInt(str);
+            }
+
             const parts = [];
             while (true) {
                 const next = current >> 32n;
@@ -44,7 +52,7 @@ module.exports = {
                 current = next;
             }
 
-            return [1, parts]; // TODO What is the initial 1 for?
+            return [sign, parts];
         },
         serialize(value) {
             if (value[0] === 0) return serializeAsciiJsWord("0");
@@ -56,7 +64,10 @@ module.exports = {
                 num += BigInt(parts[i]);
             }
 
-            return serializeAsciiJsWord(num.toString());
+            let str = num.toString();
+            if (value[0] === -1) str = `-${str}`;
+
+            return serializeAsciiJsWord(str);
         },
         // Use `finalizeJsWord` as finalizer for type
         finalize: false,

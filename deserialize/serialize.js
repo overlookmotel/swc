@@ -4074,7 +4074,9 @@ function serializeBigIntValue(value) {
         num <<= 32n;
         num += BigInt(parts[i]);
     }
-    return serializeAsciiJsWord(num.toString());
+    let str = num.toString();
+    if (value[0] === -1) str = `-${str}`;
+    return serializeAsciiJsWord(str);
 }
 
 function serializeRegExpLiteral(node) {

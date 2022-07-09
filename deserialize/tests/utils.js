@@ -84,11 +84,13 @@ function itParsesAndPrintsOne(describeWrapped, testName, code, options) {
 
         // Test `printSyncFromBuffer()` produces same output as original SWC `printSync()`
         (noPrint ? it.skip : it)("prints", () => {
-            const astOld = parseSync(code, options),
-                printedOld = printSync(astOld, { sourceMaps: true });
+            const printOptions = { sourceMaps: true };
 
-            const buff = parseSyncToBuffer(code, options),
-                printed = printSyncFromBuffer(buff, { sourceMaps: true });
+            const astOld = parseSync(code, options),
+                printedOld = printSync(astOld, printOptions);
+
+            const ast = deserialize(parseSyncToBuffer(code, options)),
+                printed = printSyncFromBuffer(serialize(ast), printOptions);
 
             expect(printed).toStrictEqual(printedOld);
         });

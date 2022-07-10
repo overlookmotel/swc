@@ -69,9 +69,7 @@ class EnumValue extends Kind {
     generateSerializer() {
         const caseCodes = this.values.map(
             (value, index) =>
-                `case ${
-                    typeof value === "string" ? `"${value}"` : value
-                }: return ${index + 256};`
+                `case ${JSON.stringify(value)}: return ${index + 256};`
         );
 
         return `function ${this.serializerName}(value) {

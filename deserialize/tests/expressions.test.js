@@ -245,68 +245,77 @@ describe("Expressions", () => {
         x || y; x && y; x in y; x instanceof y; x ** y; x ?? y`,
     ]);
 
-    itParsesAndPrints("Assignment expressions", [
-        "x = 1",
-        "x += 1",
-        "x -= 1",
-        "x *= 1",
-        "x /= 1",
-        "x %= 1",
-        "x <<= 1",
-        "x >>= 1",
-        "x >>>= 1",
-        "x |= 1",
-        "x ^= 1",
-        "x &= 1",
-        "x **= 1",
-        "x &&= 1",
-        "x ||= 1",
-        "x ??= 1",
+    describe("Assignment expressions", () => {
+        itParsesAndPrints("general", [
+            "x = 1",
+            "x += 1",
+            "x -= 1",
+            "x *= 1",
+            "x /= 1",
+            "x %= 1",
+            "x <<= 1",
+            "x >>= 1",
+            "x >>>= 1",
+            "x |= 1",
+            "x ^= 1",
+            "x &= 1",
+            "x **= 1",
 
-        "[x] = 1",
-        "({x} = 1)",
+            "[x] = 1",
+            "({x} = 1)",
 
-        "x.y = 1",
-        "x.y += 1",
-        "x.y -= 1",
-        "x.y *= 1",
-        "x.y /= 1",
-        "x.y %= 1",
-        "x.y <<= 1",
-        "x.y >>= 1",
-        "x.y >>>= 1",
-        "x.y |= 1",
-        "x.y ^= 1",
-        "x.y &= 1",
-        "x.y **= 1",
-        "x.y &&= 1",
-        "x.y ||= 1",
-        "x.y ??= 1",
+            "x.y = 1",
+            "x.y += 1",
+            "x.y -= 1",
+            "x.y *= 1",
+            "x.y /= 1",
+            "x.y %= 1",
+            "x.y <<= 1",
+            "x.y >>= 1",
+            "x.y >>>= 1",
+            "x.y |= 1",
+            "x.y ^= 1",
+            "x.y &= 1",
+            "x.y **= 1",
+            "x.y &&= 1",
+            "x.y ||= 1",
+            "x.y ??= 1",
 
-        "({ m() { super.x = 1; } })",
-        "({ m() { super.x += 1; } })",
-        "({ m() { super.x -= 1; } })",
-        "({ m() { super.x *= 1; } })",
-        "({ m() { super.x /= 1; } })",
-        "({ m() { super.x %= 1; } })",
-        "({ m() { super.x <<= 1; } })",
-        "({ m() { super.x >>= 1; } })",
-        "({ m() { super.x >>>= 1; } })",
-        "({ m() { super.x |= 1; } })",
-        "({ m() { super.x ^= 1; } })",
-        "({ m() { super.x &= 1; } })",
-        "({ m() { super.x **= 1; } })",
-        "({ m() { super.x &&= 1; } })",
-        "({ m() { super.x ||= 1; } })",
-        "({ m() { super.x ??= 1; } })",
+            "({ m() { super.x = 1; } })",
+            "({ m() { super.x += 1; } })",
+            "({ m() { super.x -= 1; } })",
+            "({ m() { super.x *= 1; } })",
+            "({ m() { super.x /= 1; } })",
+            "({ m() { super.x %= 1; } })",
+            "({ m() { super.x <<= 1; } })",
+            "({ m() { super.x >>= 1; } })",
+            "({ m() { super.x >>>= 1; } })",
+            "({ m() { super.x |= 1; } })",
+            "({ m() { super.x ^= 1; } })",
+            "({ m() { super.x &= 1; } })",
+            "({ m() { super.x **= 1; } })",
+            "({ m() { super.x &&= 1; } })",
+            "({ m() { super.x ||= 1; } })",
+            "({ m() { super.x ??= 1; } })",
 
-        `x = 1; x += 1; x -= 1; x *= 1; x /= 1; x %= 1;
-        x <<= 1; x >>= 1; x >>>= 1; x |= 1; x ^= 1; x &= 1;
-        x **= 1; x &&= 1; x ||= 1; x ??= 1`,
-        `x.y = 1; x.y += 1; x.y -= 1; x.y *= 1; x.y /= 1; x.y %= 1;
-        x.y <<= 1; x.y >>= 1; x.y >>>= 1; x.y |= 1; x.y ^= 1; x.y &= 1;
-        x.y **= 1; x.y &&= 1; x.y ||= 1; x.y ??= 1`,
-    ]);
+            `x.y = 1; x.y += 1; x.y -= 1; x.y *= 1; x.y /= 1; x.y %= 1;
+            x.y <<= 1; x.y >>= 1; x.y >>>= 1; x.y |= 1; x.y ^= 1; x.y &= 1;
+            x.y **= 1; x.y &&= 1; x.y ||= 1; x.y ??= 1`,
+        ]);
+
+        itParsesAndPrints("&&=, ||=, ??=", { noTransform: true }, [
+            // Differing output from `transform()`.
+            // https://github.com/swc-project/swc/issues/5168
+            // TODO Remove this exclusion once fixed
+            "x &&= 1",
+            "x ||= 1",
+            "x ??= 1",
+
+            `x = 1; x += 1; x -= 1; x *= 1; x /= 1; x %= 1;
+            x <<= 1; x >>= 1; x >>>= 1; x |= 1; x ^= 1; x &= 1;
+            x **= 1; x &&= 1; x ||= 1; x ??= 1`,
+        ]);
+    });
 
     itParsesAndPrints("Member expressions", [
         "x.y",

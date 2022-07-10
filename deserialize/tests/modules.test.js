@@ -45,7 +45,7 @@ describe("Module declarations", () => {
         `
                 export const x = 1;
                 export let y = 2;
-                export var y = 3;
+                export var z = 3;
                 export function f() {}
                 export class C {}
             `,
@@ -81,13 +81,19 @@ describe("Module declarations", () => {
             // TODO What code creates this? TS only?
         ]);
 
-        itParsesAndPrints("namespace specifiers", [
-            "export * as x from 'm'",
-            "export * as var_name_longer_than_7_chars from 'm'",
-            "export * as 'x x' from 'm'",
-            "export * as 'string_longer_than_7_chars' from 'm'",
-            "export * as x from 'string_longer_than_7_chars'",
-        ]);
+        describe("namespace specifiers", () => {
+            itParsesAndPrints("named exports", [
+                "export * as x from 'm'",
+                "export * as var_name_longer_than_7_chars from 'm'",
+                "export * as x from 'string_longer_than_7_chars'",
+            ]);
+
+            itParsesAndPrints("string exports", { noTransform: true }, [
+                // String exports not supported by `transform()`
+                "export * as 'x x' from 'm'",
+                "export * as 'string_longer_than_7_chars' from 'm'"
+            ]);
+        })
     });
 
     itParsesAndPrints("Export default declarations", [

@@ -54,7 +54,7 @@ describe("Patterns", () => {
             "({x, y, z} = a)"
         ]);
 
-        itParsesAndPrints("Key value patterns", [
+        itParsesAndPrints("Key value patterns", { target: 'es2015' }, [
             "({b: x} = a)",
             "({b: x, c: y, d: z} = a)",
             "({'x x': x} = a)",
@@ -83,7 +83,7 @@ describe("Patterns", () => {
             "({x = 1, y = 2, ...z} = a)",
         ]);
 
-        itParsesAndPrints("Assignment patterns", [
+        itParsesAndPrints("Assignment patterns", { target: 'es2015' }, [
             "({b: x = 1} = a)",
             "({b: x = 1, c: y = 2, d: z = 3} = a)",
             "({'x x': x = 1} = a)",
@@ -99,7 +99,7 @@ describe("Patterns", () => {
             "({b: x = 1, c: y = 2, ...z} = a)",
         ]);
 
-        itParsesAndPrints("Expression patterns", [
+        itParsesAndPrints("Expression patterns", { target: 'es2015' }, [
             "({b: x.c} = a)",
             "({b: x.c.d.e} = a)",
             "({b: x.c, d: y.e, f: z.g} = a)",

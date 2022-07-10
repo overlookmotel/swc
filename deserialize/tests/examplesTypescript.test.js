@@ -5,8 +5,8 @@ const { readdirSync, readFileSync } = require("fs"),
     { join: pathJoin, extname } = require("path");
 
 // Imports
-const { itParsesAndPrintsOne } = require("./utils.js"),
-    { parseSync } = require("../../index.js");
+const { itParsesAndPrintsOne, getOptions } = require("./utils.js"),
+    { parseSync, transformSync } = require("../../index.js");
 
 // Tests
 
@@ -54,9 +54,14 @@ describe("TypeScript example files", () => {
 
         let options;
         try {
-            const { jsc } = JSON.parse(readFileSync(pathJoin(dirname(path), ".swcrc"), "utf8"));
-            options = jsc.parser;
-            if (options && jsc.target) options.target = jsc.target;
+            const transformOptions = JSON.parse(readFileSync(pathJoin(dirname(path), ".swcrc"), "utf8"));
+            if (Array.isArray(transformOptions)) throw new Error("Bad options");
+
+            options = {
+                ...transformOptions?.jsc?.parser,
+                transform: transformOptions
+            };
+            if (transformOptions.jsc?.target) options.target = transformOptions.jsc.target;
         } catch (e) { }
 
         if (!options) {
@@ -111,6 +116,15 @@ describe("TypeScript example files", () => {
             parseSync(code, options);
         } catch (e) {
             continue;
+        }
+
+        // Skip transform of any files which existing SWC cannot transform.
+        // Some TS files contain intentionally invalid code.
+        const { transformOptions } = getOptions(options);
+        try {
+            transformSync(code, transformOptions);
+        } catch (e) {
+            options.noTransform = true;
         }
 
         itParsesAndPrintsOne(path, code, options);

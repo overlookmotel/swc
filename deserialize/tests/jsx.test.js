@@ -5,10 +5,21 @@ const { itParsesAndPrints } = require("./utils.js");
 
 // Tests
 
+const options = {
+    jsx: true,
+    transform: {
+        jsc: {
+            transform: {
+                react: { throwIfNamespace: false }
+            }
+        }
+    }
+};
+
 describe("JSX", () => {
     describe("JSX elements", () => {
         describe("self-closing", () => {
-            itParsesAndPrints("with no attributes", { jsx: true }, [
+            itParsesAndPrints("with no attributes", options, [
                 "<div />",
                 "<tag_name_longer_than_7_chars />",
                 "<Foo />",
@@ -23,7 +34,7 @@ describe("JSX", () => {
                 "<Tag_name_longer_than_7_chars.prop_name_longer_than_7_chars.prop_name_longer_than_7_chars2 />"
             ]);
 
-            itParsesAndPrints("with attributes", { jsx: true }, [
+            itParsesAndPrints("with attributes", options, [
                 "<Foo x={a} />",
                 "<Foo x={1} />",
                 "<Foo x={'a'} />",
@@ -101,7 +112,7 @@ describe("JSX", () => {
 
         describe("with closing tag", () => {
             describe("no children", () => {
-                itParsesAndPrints("with no attributes", { jsx: true }, [
+                itParsesAndPrints("with no attributes", options, [
                     "<div></div>",
                     "<tag_name_longer_than_7_chars></tag_name_longer_than_7_chars>",
                     "<Foo></Foo>",
@@ -116,7 +127,7 @@ describe("JSX", () => {
                     "<Tag_name_longer_than_7_chars.prop_name_longer_than_7_chars.prop_name_longer_than_7_chars2></Tag_name_longer_than_7_chars.prop_name_longer_than_7_chars.prop_name_longer_than_7_chars2>"
                 ]);
 
-                itParsesAndPrints("with attributes", { jsx: true }, [
+                itParsesAndPrints("with attributes", options, [
                     "<Foo x={a}></Foo>",
                     "<Foo x={1}></Foo>",
                     "<Foo x={'a'}></Foo>",
@@ -192,7 +203,7 @@ describe("JSX", () => {
                 ]);
             });
 
-            itParsesAndPrints("with children", { jsx: true }, [
+            itParsesAndPrints("with children", options, [
                 "<div>Hello</div>",
                 "<div>text longer than 7 chars</div>",
                 "<div><span /></div>",
@@ -200,8 +211,6 @@ describe("JSX", () => {
                 "<div><h1>Hello <em>Burt</em></h1><div>And goodbye</div></div>",
                 "<div>{greeting}</div>",
                 "<div>Hello {name}</div>",
-                "<div>{...spreadable}</div>",
-                "<div>Hello {...spreadable}</div>",
 
                 `<html>
                     <head>
@@ -221,8 +230,6 @@ describe("JSX", () => {
                 "<Outer><Inner>Hello <Name>Burt</Name></Inner><Inner>And goodbye</Inner></Outer>",
                 "<Greeting>{name}</Greeting>",
                 "<Greeting>Hello {name}</Greeting>",
-                "<Greeting>{...spreadable}</Greeting>",
-                "<Greeting>Hello {...spreadable}</Greeting>",
 
                 `<Outer x={xx} style={{font: 'Arial', 'font-size': 24}}>
                     <Inner1 >
@@ -238,7 +245,7 @@ describe("JSX", () => {
         });
     });
 
-    itParsesAndPrints("JSX fragments", { jsx: true }, [
+    itParsesAndPrints("JSX fragments", options, [
         "<></>",
         "<><></><></><></></>",
         "<><div>a</div><div>b</div><div>c</div></>",
@@ -256,7 +263,7 @@ describe("JSX", () => {
     ]);
 
     describe("JSX expressions", () => {
-        itParsesAndPrints("JS expressions", { jsx: true }, [
+        itParsesAndPrints("JS expressions", options, [
             "<Foo>{a}</Foo>",
             "<Foo>{'a'}</Foo>",
             '<Foo>{"a"}</Foo>',
@@ -268,20 +275,22 @@ describe("JSX", () => {
             "<Foo>{function f() {}}</Foo>"
         ]);
 
-        itParsesAndPrints("JSX expressions", { jsx: true }, [
+        itParsesAndPrints("JSX expressions", options, [
             "<Foo>{<Bar />}</Foo>",
             "<Foo>{<Bar>x</Bar>}</Foo>",
             "<Foo>{<></>}</Foo>",
             "<Foo>{<>x</>}</Foo>"
         ]);
 
-        itParsesAndPrints("spread", { jsx: true }, [
+        itParsesAndPrints("spread", { ...options, noTransform: true }, [
+            // Spread JSX expressions not supported by `transform()`
             "<Foo>{...x}</Foo>",
             "<Foo>{...[]}</Foo>",
-            "<Foo>{...[x, y, z]}</Foo>"
+            "<Foo>{...[x, y, z]}</Foo>",
+            "<Foo>Hello {...x}</Foo>"
         ]);
 
-        itParsesAndPrints("empty", { jsx: true }, [
+        itParsesAndPrints("empty", options, [
             "<Foo>{}</Foo>",
             "<Foo>{ /* bar */ }</Foo>"
         ]);

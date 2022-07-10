@@ -11,6 +11,8 @@ const {
     parseSyncToBuffer,
     printSync,
     printSyncFromBuffer,
+    transformSync,
+    transformSyncFromBuffer,
 } = require("../../index.js"),
     deserialize = require("../deserialize.js"),
     serialize = require("../serialize.js");
@@ -22,7 +24,8 @@ serialize.replaceFinalizeJsWord();
 // Create `itParsesAndPrints()` + `itParsesAndPrintsOne()` test functions
 module.exports = {
     itParsesAndPrints: wrapTestFunction(itParsesAndPrints),
-    itParsesAndPrintsOne: wrapTestFunction(itParsesAndPrintsOne)
+    itParsesAndPrintsOne: wrapTestFunction(itParsesAndPrintsOne),
+    getOptions
 };
 
 /**
@@ -58,15 +61,14 @@ function itParsesAndPrints(describeWrapped, groupName, options, codes) {
 function itParsesAndPrintsOne(describeWrapped, testName, code, options) {
     if (options) testName += ` (${JSON.stringify(options).replace(/"/g, "")})`;
 
-    let noPrint;
-    ({ noPrint, ...options } = options || {});
+    const { noPrint, noTransform, parseOptions, transformOptions } = getOptions(options);
 
     describeWrapped(testName, () => {
         // Test `deserialize(parseSyncToBuffer())` produces identical AST
         // to what original SWC `parseSync()` produces
         it("parses", () => {
-            const astOld = parseSync(code, options),
-                ast = deserialize(parseSyncToBuffer(code, options));
+            const astOld = parseSync(code, parseOptions),
+                ast = deserialize(parseSyncToBuffer(code, parseOptions));
 
             expect(conformSpans(ast)).toStrictEqual(conformSpans(astOld));
             expect(JSON.stringify(ast)).toBe(JSON.stringify(astOld));
@@ -74,7 +76,7 @@ function itParsesAndPrintsOne(describeWrapped, testName, code, options) {
 
         // Test `serialize()` produces identical buffer to what `parseSyncToBuffer()` produced
         it("serializes", () => {
-            const buff = parseSyncToBuffer(code, options),
+            const buff = parseSyncToBuffer(code, parseOptions),
                 ast = deserialize(buff);
 
             serialize.resetBuffers();
@@ -86,15 +88,48 @@ function itParsesAndPrintsOne(describeWrapped, testName, code, options) {
         (noPrint ? it.skip : it)("prints", () => {
             const printOptions = { sourceMaps: true };
 
-            const astOld = parseSync(code, options),
+            const astOld = parseSync(code, parseOptions),
                 printedOld = printSync(astOld, printOptions);
 
-            const ast = deserialize(parseSyncToBuffer(code, options)),
+            const ast = deserialize(parseSyncToBuffer(code, parseOptions)),
                 printed = printSyncFromBuffer(serialize(ast), printOptions);
 
             expect(printed).toStrictEqual(printedOld);
         });
+
+        // Test transform via buffer produces same result as `transformSync()`
+        (noTransform ? it.skip : it)("transforms", () => {
+            const transformedOld = transformSync(code, { ...transformOptions, plugin: ast => ast });
+
+            const ast = deserialize(parseSyncToBuffer(code, options)),
+                transformed = transformSyncFromBuffer(serialize(ast), transformOptions);
+
+            expect(transformed).toStrictEqual(transformedOld);
+            expect(JSON.stringify(transformed)).toBe(JSON.stringify(transformedOld));
+        });
     });
+}
+
+/**
+ * Get parse and transform options from test function options.
+ * @param {Object} options - Options object
+ * @returns {Object} - Parse and transform options
+ */
+function getOptions(options) {
+    let { noPrint, noTransform, transform: transformOptions, ...parseOptions } = options || {};
+
+    transformOptions = {
+        sourceMaps: true,
+        isModule: parseOptions.isModule,
+        ...transformOptions,
+        jsc: {
+            parser: parseOptions,
+            target: parseOptions.target,
+            ...transformOptions?.jsc
+        }
+    };
+
+    return { noPrint, noTransform, parseOptions, transformOptions };
 }
 
 /**

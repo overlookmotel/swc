@@ -44,13 +44,16 @@ describe("Fixtures", () => {
         const code = readFileSync(pathJoin(rootPath, path), "utf8");
 
         let options;
-        if (dirname(path).endsWith('/input')) {
-            try {
-                const { jsc } = JSON.parse(readFileSync(pathJoin(dirname(path), '.swcrc'), 'utf8'));
-                options = jsc.parser;
-                if (options && jsc.target) options.target = jsc.target;
-            } catch (e) { }
-        }
+        try {
+            const transformOptions = JSON.parse(readFileSync(pathJoin(dirname(path), ".swcrc"), "utf8"));
+            if (Array.isArray(transformOptions)) throw new Error("Bad options");
+
+            options = {
+                ...transformOptions?.jsc?.parser,
+                transform: transformOptions
+            };
+            if (transformOptions.jsc?.target) options.target = transformOptions.jsc.target;
+        } catch (e) { }
 
         if (!options) {
             const isTs = ['.ts', '.tsx'].includes(ext)
@@ -77,6 +80,40 @@ describe("Fixtures", () => {
         // TODO Remove this exclusion once TS Namespace Declarations are implemented
         if (path === 'crates/swc_ecma_transforms_typescript/tests/fixture/issue-3454/1/input.ts') {
             options.noPrint = true;
+        }
+
+        // Skip transform on files where it doesn't work
+        if ([
+            "crates/swc/tests/fixture/issues-1xxx/1441/input/index.ts",
+            "crates/swc/tests/fixture/issues-1xxx/1713/case1/input/index.js",
+            "crates/swc/tests/fixture/issues-2xxx/2037/case1/input/index.js",
+            "crates/swc/tests/fixture/issues-2xxx/2225/case1/input/index.js",
+            "crates/swc/tests/fixture/module/ignore-dynamic/1/input/index.js",
+            "crates/swc_ecma_codegen/tests/fixture/template-literal/input.js",
+            "crates/swc_ecma_transforms_module/tests/fixture/common/ignore-dynamic/1/input.js",
+            "crates/swc_ecma_transforms_module/tests/fixture/common/issue-2549/input.js",
+            "crates/swc_ecma_transforms_module/tests/fixture/common/misc/import-const-throw/input.js",
+            "crates/swc_ecma_transforms_react/tests/jsx/fixture/react/should-disallow-spread-children/input.js",
+            "crates/swc_ecma_transforms_react/tests/jsx/fixture/react-automatic/should-disallow-spread-children/input.js",
+            // https://github.com/swc-project/swc/issues/5168
+            // TODO Remove this exclusion once fixed
+            "crates/swc/tests/fixture/issues-1xxx/1812/case1/input/input.js",
+            "crates/swc/tests/fixture/issues-5xxx/5102/input/index.js",
+            "crates/swc_bundler/tests/fixture/deno-8627/input/entry.ts"
+        ].includes(path)) {
+            options.noTransform = true;
+        }
+
+        // Disable throwing errors for JSX namespaces
+        if ([
+            "crates/swc_ecma_transforms_react/tests/jsx/fixture/react/should-disallow-xml-namespacing/input.js",
+            "crates/swc_ecma_transforms_react/tests/jsx/fixture/react/should-support-xml-namespaces-if-flag/input.js",
+            "crates/swc_ecma_transforms_react/tests/jsx/fixture/react/should-throw-error-namespaces-if-not-flag/input.js",
+            "crates/swc_ecma_transforms_react/tests/jsx/fixture/react-automatic/should-disallow-xml-namespacing/input.js",
+            "crates/swc_ecma_transforms_react/tests/jsx/fixture/react-automatic/should-support-xml-namespaces-if-flag/input.js",
+            "crates/swc_ecma_transforms_react/tests/jsx/fixture/react-automatic/should-throw-error-namespaces-if-not-flag/input.js"
+        ].includes(path)) {
+            options.transform = { jsc: { transform: { react: { throwIfNamespace: false } } } };
         }
 
         itParsesAndPrintsOne(path, code, options);

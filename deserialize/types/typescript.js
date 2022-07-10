@@ -45,7 +45,7 @@ module.exports = {
      * TypeScript type members (for type literal / interface / class)
      */
     TsTypeElement: Enum([
-        // TODO Not used
+        // TODO Needs tests
         "TsCallSignatureDeclaration",
         "TsConstructSignatureDeclaration",
         "TsPropertySignature",
@@ -157,8 +157,8 @@ module.exports = {
         "intrinsic",
     ]),
     TsThisType: Node({}), // TODO Needs tests
-    // TODO Needs tests
     TsFnParam: Enum([
+        // TODO Needs tests
         "BindingIdentifier",
         "ArrayPattern",
         "RestElement",
@@ -190,11 +190,13 @@ module.exports = {
     }),
     TsThisTypeOrIdent: Enum(["TsThisType", "Identifier"]), // TODO Needs tests
     TsTypeQuery: Node({
+        // TODO Needs tests
         exprName: "TsTypeQueryExpr",
         typeArguments: Option("TsTypeParameterInstantiation"),
     }),
     TsTypeQueryExpr: Enum(["TsEntityName", "TsImportType"]), // TODO Needs tests
     TsImportType: Node({
+        // TODO Needs tests
         argument: "StringLiteral",
         qualifier: Option("TsEntityName"),
         typeArguments: Option("TsTypeParameterInstantiation"),
@@ -217,8 +219,8 @@ module.exports = {
     }),
     TsInferType: Node({ typeParam: "TsTypeParameter" }), // TODO Needs tests
     TsParenthesizedType: Node({ typeAnnotation: Box("TsType") }), // TODO Needs tests
-    // TODO Needs tests
     TsTypeOperator: Node({
+        // TODO Needs tests
         op: "TsTypeOperatorOp",
         typeAnnotation: Box("TsType"),
     }),
@@ -296,9 +298,10 @@ module.exports = {
         members: Vec("TsEnumMember"),
     }),
     TsEnumMember: Node({
+        // TODO Needs tests
         id: "TsEnumMemberId",
         init: Option(Box("Expression")),
-    }), // TODO Needs tests
+    }),
     TsEnumMemberId: Enum(["Identifier", "StringLiteral"]), // TODO Needs tests
     TsModuleDeclaration: Node({
         // TODO Needs tests
@@ -335,17 +338,18 @@ module.exports = {
      */
     // TODO Needs tests
     TsAsExpression: Node({
+        // TODO Needs tests
         expression: Box("Expression"),
         typeAnnotation: Box("TsType"),
     }),
-    // TODO Needs tests
     TsTypeAssertion: Node({
+        // TODO Needs tests
         expression: Box("Expression"),
         typeAnnotation: Box("TsType"),
     }),
     TsNonNullExpression: Node({ expression: Box("Expression") }), // TODO Needs tests
     Accessibility: EnumValue(["public", "protected", "private"]), // TODO Needs tests
-    TsConstAssertion: Node({ expression: Box("Expression") }), // TODO
+    TsConstAssertion: Node({ expression: Box("Expression") }), // TODO Needs tests
     TsInstantiation: Node({
         // TODO Needs tests
         expression: Box("Expression"),

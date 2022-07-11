@@ -38,8 +38,10 @@ class EnumValue extends Kind {
 
     link() {}
 
-    getName() {
-        return this.values.join("Or");
+    getTsName() {
+        return this.tsInline
+            ? this.values.map(JSON.stringify).join(" | ")
+            : this.name;
     }
 
     generateDeserializer() {
@@ -84,6 +86,13 @@ class EnumValue extends Kind {
 
     // Use `finalizeEnumValue` as finalizer for all EnumValue types
     finalizerName = "finalizeEnumValue";
+
+    generateTypeDef() {
+        if (this.tsInline) return;
+        return `export type ${this.tsName} = ${this.values
+            .map(JSON.stringify)
+            .join(" | ")};`;
+    }
 }
 
 /**

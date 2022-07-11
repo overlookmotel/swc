@@ -41,6 +41,9 @@ class Box extends Kind {
     getName() {
         return `Box${this.valueType.initName()}`;
     }
+    getTsName() {
+        return this.valueType.initTsName();
+    }
 
     generateDeserializer() {
         return `function ${this.deserializerName}(pos) {

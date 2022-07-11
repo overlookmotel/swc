@@ -213,6 +213,7 @@ module.exports = {
         },
         length: 8,
         align: 4,
+        tsName: "string",
     }),
 
     AsciiJsWord: Custom({
@@ -351,6 +352,7 @@ module.exports = {
         dependencies: ["JsWord"],
         length: 8,
         align: 4,
+        tsName: "string",
     }),
     OptionAsciiJsWord: Option("AsciiJsWord", {
         // Use `finalizeOptionJsWord` as finalizer for type
@@ -377,6 +379,7 @@ module.exports = {
         },
         length: 1,
         align: 1,
+        tsName: "boolean",
     }),
 
     Number: Custom({
@@ -394,6 +397,7 @@ module.exports = {
         },
         length: 8,
         align: 8,
+        tsName: "number",
     }),
 
     Span: Custom({
@@ -419,6 +423,13 @@ module.exports = {
             uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
             uint32[pos32 + 2] = scratchUint32[storePos32 + 2];
             pos += 12;
+        },
+        generateTypeDef() {
+            return `export interface Span {
+                start: number,
+                end: number,
+                ctxt: number
+            }`;
         },
         length: 12,
         align: 4,

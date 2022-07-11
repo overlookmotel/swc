@@ -75,6 +75,7 @@ module.exports = {
         dependencies: ["AsciiJsWord", "JsWord"],
         length: 8,
         align: 4,
+        tsName: "bigint",
     }),
 
     RegExpLiteral: Node({ pattern: "JsWord", flags: "AsciiJsWord" }),

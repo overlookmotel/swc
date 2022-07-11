@@ -14,6 +14,9 @@ const {
 
 // Exports
 
+const ExpressionNode = (props, options) =>
+    Node(props, { inheritFrom: "ExpressionBase", ...options });
+
 module.exports = {
     Expression: Enum([
         "ThisExpression",
@@ -55,24 +58,36 @@ module.exports = {
         "Invalid",
     ]),
 
-    ThisExpression: Node({}),
+    ExpressionBase: Node(
+        {},
+        {
+            generateDeserializer() {},
+            generateSerializer() {},
+            noType: true,
+            noSpan: true,
+            tsExtends: ["Node", "HasSpan"],
+            tsNoExport: true,
+        }
+    ),
 
-    ArrayExpression: Node({ elements: Vec(Option("ExpressionOrSpread")) }),
+    ThisExpression: ExpressionNode({}),
 
-    UnaryExpression: Node({
+    ArrayExpression: ExpressionNode({ elements: Vec(Option("ExprOrSpread")) }),
+
+    UnaryExpression: ExpressionNode({
         operator: "UnaryOperator",
         argument: Box("Expression"),
     }),
     UnaryOperator: EnumValue(["-", "+", "!", "~", "typeof", "void", "delete"]),
 
-    UpdateExpression: Node({
+    UpdateExpression: ExpressionNode({
         operator: "UpdateOperator",
         prefix: "Boolean",
         argument: Box("Expression"),
     }),
     UpdateOperator: EnumValue(["++", "--"]),
 
-    BinaryExpression: Node({
+    BinaryExpression: ExpressionNode({
         operator: "BinaryOperator",
         left: Box("Expression"),
         right: Box("Expression"),
@@ -111,7 +126,7 @@ module.exports = {
     // are `BindingIdentifier` Rust type.
     // With any other operator, left-hand side is an `Expression`, and nodes with `Identifier`
     // type in JS are `Identifier` Rust type.
-    AssignmentExpression: Node(
+    AssignmentExpression: ExpressionNode(
         {
             operator: "AssignmentOperator",
             left: "AssignmentLeft",
@@ -132,7 +147,9 @@ module.exports = {
             },
         }
     ),
-    AssignmentLeft: Enum([Box("Expression"), Box("Pattern")]),
+    AssignmentLeft: Enum([Box("Expression"), Box("Pattern")], {
+        tsInline: true,
+    }),
     AssignmentLeftEquals: Custom({
         // Use `deserializeAssignmentLeft` as deserializer for type
         deserialize: false,
@@ -168,79 +185,122 @@ module.exports = {
         "??=",
     ]),
 
-    MemberExpression: Node({
+    MemberExpression: ExpressionNode({
         object: Box("Expression"),
         property: Enum(["Identifier", "PrivateName", "Computed"]),
     }),
 
-    SuperPropExpression: Node({
+    SuperPropExpression: ExpressionNode({
         obj: "Super",
         property: Enum(["Identifier", "Computed"]),
     }),
 
-    ConditionalExpression: Node({
+    ConditionalExpression: ExpressionNode({
         test: Box("Expression"),
         consequent: Box("Expression"),
         alternate: Box("Expression"),
     }),
 
-    CallExpression: Node({
-        callee: Enum(["Super", "Import", Box("Expression")]),
-        arguments: Vec("ExpressionOrSpread"),
-        typeArguments: Option("TsTypeParameterInstantiation"),
-    }),
+    CallExpression: ExpressionNode(
+        {
+            callee: Enum(["Super", "Import", Box("Expression")]),
+            arguments: Vec("ExprOrSpread"),
+            typeArguments: Option("TsTypeParameterInstantiation"),
+        },
+        {
+            generateTypeDef() {
+                return Node.prototype.generateTypeDef.call({
+                    ...this,
+                    props: {
+                        ...this.props,
+                        arguments: {
+                            ...this.props.arguments,
+                            tsName: "Argument[]",
+                        },
+                    },
+                });
+            },
+        }
+    ),
+    Argument: Node(
+        { spread: Option("Span"), expression: Box("Expression") },
+        {
+            generateDeserializer() {},
+            generateSerializer() {},
+            noSpan: true,
+            noType: true,
+        }
+    ),
 
-    NewExpression: Node({
-        callee: Box("Expression"),
-        arguments: Option(Vec("ExpressionOrSpread")),
-        typeArguments: Option("TsTypeParameterInstantiation"),
-    }),
+    NewExpression: ExpressionNode(
+        {
+            callee: Box("Expression"),
+            arguments: Option(Vec("ExprOrSpread")),
+            typeArguments: Option("TsTypeParameterInstantiation"),
+        },
+        {
+            generateTypeDef() {
+                return Node.prototype.generateTypeDef.call({
+                    ...this,
+                    props: {
+                        ...this.props,
+                        arguments: {
+                            ...this.props.arguments,
+                            tsName: "Argument[]",
+                        },
+                    },
+                });
+            },
+        }
+    ),
 
-    SequenceExpression: Node({ expressions: Vec(Box("Expression")) }),
+    SequenceExpression: ExpressionNode({ expressions: Vec(Box("Expression")) }),
 
-    Identifier: Node({ value: "JsWord", optional: "Boolean" }), // TODO Needs tests
+    Identifier: ExpressionNode({ value: "JsWord", optional: "Boolean" }), // TODO Needs tests
 
-    TemplateLiteral: Node({
+    TemplateLiteral: ExpressionNode({
         expressions: Vec(Box("Expression")),
         quasis: Vec("TemplateElement"),
     }),
-    TemplateElement: Node({
+    TemplateElement: ExpressionNode({
         tail: "Boolean",
         cooked: Option("JsWord"),
         raw: "JsWord",
     }),
 
-    TaggedTemplateExpression: Node({
+    TaggedTemplateExpression: ExpressionNode({
         tag: Box("Expression"),
         typeParameters: Option("TsTypeParameterInstantiation"),
         template: "TemplateLiteral",
     }),
 
-    YieldExpression: Node({
+    YieldExpression: ExpressionNode({
         argument: Option(Box("Expression")),
         delegate: "Boolean",
     }),
 
     MetaProperty: Node({ kind: "MetaPropertyKind" }),
-    MetaPropertyKind: EnumValue(["new.target", "import.meta"]),
+    MetaPropertyKind: EnumValue(["new.target", "import.meta"], {
+        tsInline: true,
+    }),
 
-    AwaitExpression: Node({ argument: Box("Expression") }),
+    AwaitExpression: ExpressionNode({ argument: Box("Expression") }),
 
-    ParenthesisExpression: Node({ expression: Box("Expression") }),
+    ParenthesisExpression: ExpressionNode({ expression: Box("Expression") }),
 
-    PrivateName: Node({ id: "Identifier" }),
+    PrivateName: ExpressionNode({ id: "Identifier" }),
 
-    OptionalChainingExpression: Node({
+    OptionalChainingExpression: ExpressionNode({
         questionDotToken: "Span",
         base: Enum(["MemberExpression", "OptionalChainingCall"]),
     }),
-    OptionalChainingCall: Node(
+    OptionalChainingCall: ExpressionNode(
         {
             callee: Box("Expression"),
-            arguments: Vec("ExpressionOrSpread"),
+            arguments: Vec("ExprOrSpread"),
             typeArguments: Option("TsTypeParameterInstantiation"),
         },
-        { nodeName: "CallExpression" }
+        { nodeName: "CallExpression", tsName: "OptionalChainingCall" }
     ),
 
     Super: Node({}),
@@ -249,9 +309,12 @@ module.exports = {
 
     Invalid: Node({}), // TODO Needs tests. Not sure in what circumstances this is used.
 
-    Computed: Node({ expression: Box("Expression") }),
+    Computed: Node(
+        { expression: Box("Expression") },
+        { tsName: "ComputedPropName" }
+    ),
 
-    ExpressionOrSpread: Node(
+    ExprOrSpread: Node(
         { spread: Option("Span"), expression: Box("Expression") },
         { noSpan: true, noType: true }
     ),

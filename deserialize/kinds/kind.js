@@ -18,6 +18,9 @@ class Kind {
     align = null;
     isLinked = false;
     isInitialized = false;
+    tsName = null;
+    tsIsOptional = false;
+    tsInline = false;
 
     setOptions(options) {
         if (!options) return;
@@ -35,6 +38,10 @@ class Kind {
         }
         return this.name;
     }
+    initTsName() {
+        if (!this.tsName) this.tsName = this.getTsName?.() || this.name;
+        return this.tsName;
+    }
 
     initLengthAndAlign() {
         if (this.isInitialized) return;
@@ -51,7 +58,7 @@ class Kind {
             `Type ${this.name} has invalid length`
         );
         assert(
-            isPositiveInteger(this.align),
+            isPositiveInteger(this.align) && this.align > 0,
             `Type ${this.name} has invalid align`
         );
     }

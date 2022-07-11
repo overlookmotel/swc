@@ -62,6 +62,11 @@ for (const type of unnamedTypes) {
     }
 }
 
+// Init TS type names
+for (const type of Object.values(types)) {
+    type.initTsName();
+}
+
 // Init `length` and `align` for all types
 for (const type of Object.values(types)) {
     type.initLengthAndAlign();

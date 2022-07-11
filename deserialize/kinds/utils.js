@@ -21,10 +21,10 @@ function getAligned(pos, align) {
 }
 
 /**
- * Check if input is a positive integer.
+ * Check if input is a positive integer or zero.
  * @param {*} num - Input
- * @returns {boolean} - `true` if input is a positive integer
+ * @returns {boolean} - `true` if input is a positive integer or zero
  */
 function isPositiveInteger(num) {
-    return typeof num === "number" && num !== 0 && !isNaN(num) && num % 1 === 0;
+    return typeof num === "number" && !isNaN(num) && num % 1 === 0 && num >= 0;
 }

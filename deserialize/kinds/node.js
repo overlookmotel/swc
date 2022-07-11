@@ -32,7 +32,10 @@ class Node extends Kind {
     nodeName = null;
     noSpan = false;
     noType = false;
+    inheritFrom = null;
     propsWithPos = null;
+    tsExtends = null;
+    tsNoExport = false;
 
     constructor(props, options = {}) {
         super();
@@ -46,14 +49,29 @@ class Node extends Kind {
     link() {
         if (!this.nodeName) this.nodeName = this.name;
 
+        if (this.inheritFrom) {
+            if (!Array.isArray(this.inheritFrom))
+                this.inheritFrom = [this.inheritFrom];
+
+            this.inheritFrom = this.inheritFrom.map(getType);
+
+            for (const inheritFromType of this.inheritFrom) {
+                Object.assign(this.props, inheritFromType.props);
+            }
+        }
+
         for (let [key, prop] of Object.entries(this.props)) {
             this.props[key] = getType(prop);
         }
     }
 
+    getTsName() {
+        return this.nodeName;
+    }
+
     getLengthAndAlign() {
         let pos = 0,
-            align = 0;
+            align = 1;
         this.propsWithPos = Object.entries(this.props).map(([key, prop]) => {
             prop.initLengthAndAlign();
             pos = getAligned(pos, prop.align);
@@ -127,6 +145,46 @@ class Node extends Kind {
         
         function ${this.finalizerName}(storePos32) {
             ${finalizeCodes.join("\n")}
+        }`;
+    }
+
+    generateTypeDef() {
+        const propsCodes = Object.entries(this.props).flatMap(([key, prop]) => {
+            if (
+                ["span", "decorators", "interpreter"].includes(key) ||
+                this.inheritFrom?.some(
+                    (inheritFromType) => inheritFromType.props[key]
+                )
+            ) {
+                return [];
+            }
+
+            return `${key}${prop.tsIsOptional ? "?" : ""}: ${prop.tsName}`;
+        });
+
+        if (!this.noType) propsCodes.unshift(`type: "${this.nodeName}"`);
+
+        let { tsExtends } = this;
+        if (!tsExtends) {
+            if (this.inheritFrom) {
+                tsExtends = this.inheritFrom.map(
+                    (inheritFromType) => inheritFromType.tsName
+                );
+            } else {
+                tsExtends = [];
+                if (!this.noType) tsExtends.push("Node");
+                if (this.props.span) tsExtends.push("HasSpan");
+                if (this.props.decorators) tsExtends.push("HasDecorator");
+                if (this.props.interpreter) tsExtends.push("HasInterpreter");
+            }
+        }
+        const extendsStr =
+            tsExtends.length > 0 ? `extends ${tsExtends.join(", ")} ` : "";
+
+        return `${this.tsNoExport ? "" : "export "}interface ${
+            this.tsName
+        } ${extendsStr}{
+            ${propsCodes.join(";\n\n")}
         }`;
     }
 }

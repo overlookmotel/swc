@@ -49,9 +49,16 @@ class Enum extends Kind {
     }
 
     getName() {
+        this.tsInline = true;
+
         return this.valueTypes
             .map((valueType) => valueType.initName())
             .join("Or");
+    }
+    getTsName() {
+        return this.tsInline
+            ? this.valueTypes.map((type) => type.initTsName()).join(" | ")
+            : this.name;
     }
 
     getLengthAndAlign() {
@@ -158,6 +165,14 @@ class Enum extends Kind {
                     }");
             }
         }`;
+    }
+
+    generateTypeDef() {
+        if (this.tsInline) return;
+        return `
+            export type ${this.tsName} =
+            | ${this.valueTypes.map((type) => type.tsName).join("\n|")};
+        `;
     }
 }
 

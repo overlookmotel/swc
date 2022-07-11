@@ -24,6 +24,7 @@ const optionals = new Map();
  */
 class Option extends Kind {
     valueType = null;
+    tsIsOptional = true;
 
     constructor(valueType, options) {
         const optional = optionals.get(valueType);
@@ -42,6 +43,9 @@ class Option extends Kind {
 
     getName() {
         return `Option${this.valueType.initName()}`;
+    }
+    getTsName() {
+        return this.valueType.initTsName();
     }
 
     getLengthAndAlign() {

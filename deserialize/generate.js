@@ -1,7 +1,7 @@
 "use strict";
 
 // Modules
-const { writeFileSync } = require("fs"),
+const { writeFileSync, readFileSync } = require("fs"),
     pathJoin = require("path").join,
     prettier = require("prettier");
 
@@ -45,8 +45,36 @@ constants.PROGRAM_LENGTH_PLUS_4 = types.Program.length + 4;
 constants.PROGRAM_LENGTH_PLUS_8 = types.Program.length + 8;
 constants.PROGRAM_ALIGN = Math.max(types.Program.align, 4);
 
+let astTypes = readFileSync(
+    pathJoin(__dirname, "../node-swc/src/types.ts"),
+    "utf8"
+);
+astTypes = astTypes
+    .replace(/^[\s\S]+\/\/ ---------- Ast nodes ----------\n/, "")
+    .replace(/^.+\n+/, "")
+    .replace(/\n\n+/g, "\n")
+    .replace(/\n +/g, (s) => {
+        const numSpaces = s.length - 1;
+        return `\n${" ".repeat(numSpaces * 2 - (numSpaces % 2))}`;
+    });
+writeFileSync(pathJoin(__dirname, "../astTypes.ts"), astTypes);
+
+const { parseSync } = require("../index.js");
+
+const ast = parseSync(astTypes, { syntax: "typescript" });
+
+const typeNamesOrdered = ast.body.map(
+    (node) =>
+        (node.type === "ExportDeclaration" ? node.declaration : node).id.value
+);
+
 writeFileSync(pathJoin(__dirname, "deserialize.js"), generateDeserializer());
 writeFileSync(pathJoin(__dirname, "serialize.js"), generateSerializer());
+writeFileSync(pathJoin(__dirname, "types.ts"), generateTypeDefs());
+
+for (let i = 0; i < 10; i++) {
+    console.log();
+}
 
 /**
  * Generate code for deserializer.
@@ -160,6 +188,80 @@ function generateSerializer() {
             // TODO Find a better way to do this
             "serialize.resetBuffers = resetBuffers;",
             getReplaceFinalizeJsWord(),
+        ].join("\n\n")
+    );
+}
+
+/**
+ * Generate TS type definitions for AST nodes.
+ * @returns {string} - Code for type defs
+ */
+function generateTypeDefs() {
+    const typesOrdered = Object.fromEntries(
+        typeNamesOrdered
+            .flatMap(
+                (name) =>
+                    Object.values(types).find((t) => t.tsName === name) || []
+            )
+            .map((type) => [type.name, type])
+    );
+    Object.assign(typesOrdered, types);
+
+    const typeDefs = Object.values(typesOrdered).flatMap((type) => {
+        if (!type.generateTypeDef || type.tsInline) return [];
+        return type.generateTypeDef() || [];
+    });
+
+    typeDefs.splice(
+        1,
+        0,
+        "export interface Node {type: string;}",
+        "export interface HasSpan {span: Span;}",
+        "export interface HasDecorator {decorators?: Decorator[];}"
+    );
+
+    typeDefs.splice(
+        typeDefs.findIndex((t) => t.includes("export type Program")),
+        0,
+        `
+        interface HasInterpreter {
+            /**
+             * e.g. \`/usr/bin/node\` for \`#!/usr/bin/node\`
+             */
+            interpreter: string;
+        }
+        `
+    );
+
+    return format(typeDefs.join("\n\n")).replace(/\n\n+/g, "\n");
+
+    return format(
+        [
+            `// Generated code. Do not edit.
+
+            export interface Node {
+                type: string;
+            }
+
+            export interface HasSpan {
+                span: Span;
+            }
+
+            export interface HasDecorator {
+                decorators?: Decorator[];
+            }
+
+            interface HasInterpreter {
+              /**
+               * e.g. \`/usr/bin/node\` for \`#!/usr/bin/node\`
+               */
+              interpreter: string;
+            }`,
+
+            ...Object.values(typesOrdered).flatMap((type) => {
+                if (!type.generateTypeDef) return [];
+                return type.generateTypeDef() || [];
+            }),
         ].join("\n\n")
     );
 }

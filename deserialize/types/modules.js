@@ -39,7 +39,7 @@ module.exports = {
             imported: Option("ModuleExportName"),
             isTypeOnly: "Boolean", // TODO Needs tests
         },
-        { nodeName: "ImportSpecifier" }
+        { nodeName: "ImportSpecifier", tsName: "NamedImportSpecifier" }
     ),
     ImportDefaultSpecifier: Node({ local: "Identifier" }),
     ImportNamespaceSpecifier: Node({ local: "Identifier" }),
@@ -66,16 +66,15 @@ module.exports = {
             exported: Option("ModuleExportName"),
             isTypeOnly: "Boolean", // TODO Needs tests
         },
-        { nodeName: "ExportSpecifier" }
+        { nodeName: "ExportSpecifier", tsName: "NamedExportSpecifier" }
     ),
 
-    ExportDefaultDeclaration: Node({
-        decl: Enum([
-            "ClassExpression",
-            "FunctionExpression",
-            "TsInterfaceDeclaration",
-        ]),
-    }),
+    ExportDefaultDeclaration: Node({ decl: "DefaultDecl" }),
+    DefaultDecl: Enum([
+        "ClassExpression",
+        "FunctionExpression",
+        "TsInterfaceDeclaration",
+    ]),
 
     ExportDefaultExpression: Node({ expression: Box("Expression") }),
 
@@ -85,5 +84,7 @@ module.exports = {
     }),
 
     // Import/export name
-    ModuleExportName: Enum(["Identifier", "StringLiteral"]),
+    ModuleExportName: Enum(["Identifier", "StringLiteral"], {
+        tsName: "ModuleExportName",
+    }),
 };

@@ -14,21 +14,20 @@ module.exports = {
     JSXOpeningElement: Node({
         name: "JSXElementName",
         span: "Span",
-        attributes: Vec(Enum(["JSXAttribute", "SpreadElement"])),
+        attributes: Vec("JSXAttributeOrSpread"),
         selfClosing: "Boolean",
         typeArguments: Option("TsTypeParameterInstantiation"), // TODO Needs tests
     }),
+    JSXAttributeOrSpread: Enum(["JSXAttribute", "SpreadElement"]),
     JSXAttribute: Node({
         name: "JSXAttributeName",
         value: Option("JSXAttributeValue"),
     }),
     JSXAttributeName: Enum(["Identifier", "JSXNamespacedName"]),
-    JSXAttributeValue: Enum([
-        "Literal",
-        "JSXExpressionContainer",
-        Box("JSXElement"),
-        "JSXFragment",
-    ]),
+    JSXAttributeValue: Enum(
+        ["Literal", "JSXExpressionContainer", Box("JSXElement"), "JSXFragment"],
+        { tsName: "JSXAttrValue" }
+    ),
     JSXClosingElement: Node({ name: "JSXElementName" }),
 
     JSXFragment: Node({

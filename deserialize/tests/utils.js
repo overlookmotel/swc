@@ -198,7 +198,7 @@ function conformSpans(ast) {
                 // - `OptionalChainingExpression` which has an additional span under `questionDotToken` key
                 // - `RestElement` which has an additional span under `rest` key
                 // - `SpreadElement` which has an additional span under `spread` key
-                // - `ExpressionOrSpread` which may have a span under `spread` key
+                // - `ExprOrSpread` which may have a span under `spread` key
                 child.start -= offset;
                 child.end -= offset;
             } else {

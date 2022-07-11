@@ -42,6 +42,14 @@ class Vec extends Kind {
     getName() {
         return `Vec${this.valueType.initName()}`;
     }
+    getTsName() {
+        const { valueType } = this;
+        let tsName = valueType.initTsName();
+        if (valueType.tsIsOptional) tsName += " | undefined";
+        if (valueType.tsIsOptional || valueType.tsInline)
+            tsName = `(${tsName})`;
+        return `${tsName}[]`;
+    }
 
     generateDeserializer() {
         return `function ${this.deserializerName}(pos) {

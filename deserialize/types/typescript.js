@@ -12,6 +12,9 @@ const {
 
 // Exports
 
+const ExpressionNode = (props, options) =>
+    Node(props, { inheritFrom: "ExpressionBase", ...options });
+
 module.exports = {
     TsTypeAnnotation: Node({ typeAnnotation: Box("TsType") }), // TODO Needs tests
     TsTypeParameterDeclaration: Node({ parameters: Vec("TsTypeParameter") }), // TODO Needs tests
@@ -30,9 +33,12 @@ module.exports = {
         accessibility: Option("Accessibility"),
         override: "Boolean",
         readonly: "Boolean",
-        param: "TsParamPropParam",
+        param: "TsParameterPropertyParameter",
     }),
-    TsParamPropParam: Enum(["BindingIdentifier", "AssignmentPattern"]), // TODO Needs tests
+    TsParameterPropertyParameter: Enum([
+        "BindingIdentifier",
+        "AssignmentPattern",
+    ]), // TODO Needs tests
 
     TsQualifiedName: Node(
         // TODO Needs tests
@@ -56,13 +62,13 @@ module.exports = {
     ]),
     TsCallSignatureDeclaration: Node({
         // TODO Needs tests
-        params: Vec("TsFnParam"),
+        params: Vec("TsFnParameter"),
         typeAnnotation: Option("TsTypeAnnotation"),
         typeParams: Option("TsTypeParameterDeclaration"),
     }),
     TsConstructSignatureDeclaration: Node({
         // TODO Needs tests
-        params: Vec("TsFnParam"),
+        params: Vec("TsFnParameter"),
         typeAnnotation: Option("TsTypeAnnotation"),
         typeParams: Option("TsTypeParameterDeclaration"),
     }),
@@ -73,7 +79,7 @@ module.exports = {
         computed: "Boolean",
         optional: "Boolean",
         init: Option(Box("Expression")),
-        params: Vec("TsFnParam"),
+        params: Vec("TsFnParameter"),
         typeAnnotation: Option("TsTypeAnnotation"),
         typeParams: Option("TsTypeParameterDeclaration"),
     }),
@@ -91,7 +97,7 @@ module.exports = {
         key: Box("Expression"),
         computed: "Boolean",
         optional: "Boolean",
-        param: "TsFnParam",
+        param: "TsFnParameter",
     }),
     TsMethodSignature: Node({
         // TODO Needs tests
@@ -99,13 +105,13 @@ module.exports = {
         key: Box("Expression"),
         computed: "Boolean",
         optional: "Boolean",
-        params: Vec("TsFnParam"),
+        params: Vec("TsFnParameter"),
         typeAnn: Option("TsTypeAnnotation"),
         typeParams: Option("TsTypeParameterDeclaration"),
     }),
     TsIndexSignature: Node({
         // TODO Needs tests
-        params: Vec("TsFnParam"),
+        params: Vec("TsFnParameter"),
         typeAnnotation: Option("TsTypeAnnotation"),
         readonly: "Boolean",
         static: "Boolean",
@@ -157,7 +163,7 @@ module.exports = {
         "intrinsic",
     ]),
     TsThisType: Node({}), // TODO Needs tests
-    TsFnParam: Enum([
+    TsFnParameter: Enum([
         // TODO Needs tests
         "BindingIdentifier",
         "ArrayPattern",
@@ -166,13 +172,13 @@ module.exports = {
     ]),
     TsFunctionType: Node({
         // TODO Needs tests
-        params: Vec("TsFnParam"),
+        params: Vec("TsFnParameter"),
         typeParams: Option("TsTypeParameterDeclaration"),
         typeAnnotation: "TsTypeAnnotation",
     }),
     TsConstructorType: Node({
         // TODO Needs tests
-        params: Vec("TsFnParam"),
+        params: Vec("TsFnParameter"),
         typeParams: Option("TsTypeParameterDeclaration"),
         typeAnnotation: "TsTypeAnnotation",
         isAbstract: "Boolean",
@@ -251,8 +257,8 @@ module.exports = {
         optional: Option("TruePlusMinus"),
         typeAnnotation: Option(Box("TsType")),
     }),
-    TsLiteralType: Node({ literal: "TsLit" }), // TODO Needs tests
-    TsLit: Enum([
+    TsLiteralType: Node({ literal: "TsLiteral" }), // TODO Needs tests
+    TsLiteral: Enum([
         // TODO Needs tests
         "NumericLiteral",
         "StringLiteral",
@@ -263,7 +269,7 @@ module.exports = {
     TsTemplateLiteralType: Node(
         // TODO Needs tests
         { types: Vec(Box("TsType")), quasis: Vec("TemplateElement") },
-        { nodeName: "TemplateLiteral" }
+        { nodeName: "TemplateLiteral", tsName: "TsTemplateLiteralType" }
     ),
 
     /*
@@ -302,7 +308,11 @@ module.exports = {
         id: "TsEnumMemberId",
         init: Option(Box("Expression")),
     }),
-    TsEnumMemberId: Enum(["Identifier", "StringLiteral"]), // TODO Needs tests
+    TsEnumMemberId: Enum(
+        // TODO Needs tests
+        ["Identifier", "StringLiteral"],
+        { tsName: "TsEnumMemberId" }
+    ),
     TsModuleDeclaration: Node({
         // TODO Needs tests
         declare: "Boolean",
@@ -326,9 +336,9 @@ module.exports = {
         isExport: "Boolean",
         isTypeOnly: "Boolean",
         id: "Identifier",
-        moduleRef: "TsModuleRef",
+        moduleRef: "TsModuleReference",
     }),
-    TsModuleRef: Enum(["TsEntityName", "TsExternalModuleReference"]), // TODO Needs tests
+    TsModuleReference: Enum(["TsEntityName", "TsExternalModuleReference"]), // TODO Needs tests
     TsExternalModuleReference: Node({ expression: "StringLiteral" }), // TODO Needs tests
     TsExportAssignment: Node({ expression: Box("Expression") }), // TODO Needs tests
     TsNamespaceExportDeclaration: Node({ id: "Identifier" }), // TODO Needs tests
@@ -337,19 +347,19 @@ module.exports = {
      * TypeScript exprs
      */
     // TODO Needs tests
-    TsAsExpression: Node({
+    TsAsExpression: ExpressionNode({
         // TODO Needs tests
         expression: Box("Expression"),
         typeAnnotation: Box("TsType"),
     }),
-    TsTypeAssertion: Node({
+    TsTypeAssertion: ExpressionNode({
         // TODO Needs tests
         expression: Box("Expression"),
         typeAnnotation: Box("TsType"),
     }),
-    TsNonNullExpression: Node({ expression: Box("Expression") }), // TODO Needs tests
+    TsNonNullExpression: ExpressionNode({ expression: Box("Expression") }), // TODO Needs tests
     Accessibility: EnumValue(["public", "protected", "private"]), // TODO Needs tests
-    TsConstAssertion: Node({ expression: Box("Expression") }), // TODO Needs tests
+    TsConstAssertion: ExpressionNode({ expression: Box("Expression") }), // TODO Needs tests
     TsInstantiation: Node({
         // TODO Needs tests
         expression: Box("Expression"),

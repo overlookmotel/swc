@@ -5,6 +5,9 @@ const { Node, Enum, Option, Box, Vec } = require("../kinds/index.js");
 
 // Exports
 
+const PatternNode = (props, options) =>
+    Node(props, { inheritFrom: "PatternBase", ...options });
+
 module.exports = {
     Pattern: Enum([
         "BindingIdentifier",
@@ -16,31 +19,38 @@ module.exports = {
         Box("Expression"),
     ]),
 
-    BindingIdentifier: Node(
+    PatternBase: Node(
+        { typeAnnotation: Option("TsTypeAnnotation") },
+        {
+            generateDeserializer() {},
+            generateSerializer() {},
+            noType: true,
+            tsExtends: ["Node", "HasSpan"],
+            tsNoExport: true,
+        }
+    ),
+
+    BindingIdentifier: PatternNode(
         {
             value: "JsWord",
             optional: "Boolean", // TODO Needs tests
-            typeAnnotation: Option("TsTypeAnnotation"),
         },
-        { nodeName: "Identifier" }
+        { nodeName: "Identifier", tsName: "BindingIdentifier" }
     ),
 
-    ArrayPattern: Node({
+    ArrayPattern: PatternNode({
         elements: Vec(Option("Pattern")),
         optional: "Boolean", // TODO Needs tests
-        typeAnnotation: Option("TsTypeAnnotation"),
     }),
 
-    RestElement: Node({
+    RestElement: PatternNode({
         rest: "Span",
         argument: Box("Pattern"),
-        typeAnnotation: Option("TsTypeAnnotation"),
     }),
 
-    ObjectPattern: Node({
+    ObjectPattern: PatternNode({
         properties: Vec("ObjectPatternProperty"),
         optional: "Boolean", // TODO Needs tests
-        typeAnnotation: Option("TsTypeAnnotation"),
     }),
     ObjectPatternProperty: Enum([
         "KeyValuePatternProperty",
@@ -56,9 +66,8 @@ module.exports = {
         value: Option(Box("Expression")),
     }),
 
-    AssignmentPattern: Node({
+    AssignmentPattern: PatternNode({
         left: Box("Pattern"),
         right: Box("Expression"),
-        typeAnnotation: Option("TsTypeAnnotation"),
     }),
 };

@@ -27,7 +27,13 @@ module.exports = {
         { key: "PropertyName", value: Box("Expression") },
         { noSpan: true }
     ),
-    AssignmentProperty: Node({ key: "Identifier", value: Box("Expression") }),
+    AssignmentProperty: Node(
+        // TODO Needs tests. However, I can't see how this can be valid.
+        // A comment in `prop.rs` says "This is **invalid** for object literal."
+        // but only place `AssignmentProperty` is used is as a property of `ObjectExpression`.
+        { key: "Identifier", value: Box("Expression") },
+        { noSpan: true }
+    ),
     GetterProperty: Node({
         key: "PropertyName",
         typeAnnotation: Option("TsTypeAnnotation"),

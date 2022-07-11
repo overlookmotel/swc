@@ -1350,9 +1350,8 @@ function deserializeKeyValueProperty(pos) {
 function deserializeAssignmentProperty(pos) {
     return {
         type: "AssignmentProperty",
-        span: deserializeSpan(pos),
-        key: deserializeIdentifier(pos + 12),
-        value: deserializeBoxExpression(pos + 36),
+        key: deserializeIdentifier(pos),
+        value: deserializeBoxExpression(pos + 24),
     };
 }
 

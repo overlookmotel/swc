@@ -3716,17 +3716,15 @@ function finalizeKeyValueProperty(storePos32) {
 }
 
 function serializeAssignmentProperty(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.key));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.value));
+    const storePos32 = allocScratch(2);
+    writeScratchUint32(storePos32, serializeIdentifier(node.key));
+    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.value));
     return storePos32;
 }
 
 function finalizeAssignmentProperty(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
+    finalizeIdentifier(scratchUint32[storePos32]);
+    finalizeBox(scratchUint32[storePos32 + 1]);
 }
 
 function serializeGetterProperty(node) {

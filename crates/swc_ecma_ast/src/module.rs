@@ -22,7 +22,6 @@ pub struct Module {
     pub body: Vec<ModuleItem>,
 
     #[serde(default, rename = "interpreter")]
-    #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     pub shebang: Option<JsWord>,
 }
 
@@ -58,7 +57,6 @@ pub struct Script {
     pub body: Vec<Stmt>,
 
     #[serde(default, rename = "interpreter")]
-    #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     pub shebang: Option<JsWord>,
 }
 

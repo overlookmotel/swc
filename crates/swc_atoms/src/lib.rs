@@ -26,7 +26,51 @@ use std::{
 use rustc_hash::FxHashSet;
 use serde::Serializer;
 
-include!(concat!(env!("OUT_DIR"), "/js_word.rs"));
+mod js_word;
+pub use js_word::*;
+
+// rkyv serialization/deserialization
+
+#[cfg(feature = "rkyv")]
+pub struct ArchivedJsWord {
+    inner: rkyv::Archived<String>,
+}
+
+#[cfg(feature = "rkyv")]
+pub struct JsWordResolver {
+    inner: rkyv::Resolver<String>,
+}
+
+#[cfg(feature = "rkyv")]
+impl rkyv::Archive for JsWord {
+    type Archived = ArchivedJsWord;
+    type Resolver = JsWordResolver;
+
+    unsafe fn resolve(&self, pos: usize, resolver: Self::Resolver, out: *mut Self::Archived) {
+        let s = self.to_string();
+        s.resolve(
+            pos,
+            resolver.inner,
+            out as *mut rkyv::string::ArchivedString,
+        );
+    }
+}
+
+#[cfg(feature = "rkyv")]
+impl<S: rkyv::ser::Serializer + ?Sized> rkyv::Serialize<S> for JsWord {
+    fn serialize(&self, serializer: &mut S) -> Result<Self::Resolver, S::Error> {
+        rkyv::string::ArchivedString::serialize_from_str(self, serializer)
+            .map(|r| JsWordResolver { inner: r })
+    }
+}
+
+#[cfg(feature = "rkyv")]
+impl<D: rkyv::Fallible + ?Sized> rkyv::Deserialize<JsWord, D> for ArchivedJsWord {
+    fn deserialize(&self, deserializer: &mut D) -> Result<JsWord, D::Error> {
+        let s: String = self.inner.deserialize(deserializer)?;
+        Ok(JsWord::from(s))
+    }
+}
 
 /// An interned string.
 ///

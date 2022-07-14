@@ -2,6 +2,7 @@ use std::{cell::RefCell, cmp::PartialEq, rc::Rc, sync::Arc};
 
 use num_bigint::BigInt;
 use string_cache::Atom;
+use swc_atoms::JsWord;
 
 use crate::{BytePos, Span, SyntaxContext};
 
@@ -143,7 +144,21 @@ impl<S: PartialEq> EqIgnoreSpan for Atom<S> {
     }
 }
 
+impl EqIgnoreSpan for JsWord {
+    #[inline]
+    fn eq_ignore_span(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
 impl<S: PartialEq> TypeEq for Atom<S> {
+    #[inline]
+    fn type_eq(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl TypeEq for JsWord {
     #[inline]
     fn type_eq(&self, other: &Self) -> bool {
         self == other

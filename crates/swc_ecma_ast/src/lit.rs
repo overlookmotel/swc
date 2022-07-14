@@ -70,7 +70,6 @@ pub struct BigInt {
 
     /// Use `None` value only for transformations to avoid recalculate
     /// characters in big integer
-    #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     pub raw: Option<JsWord>,
 }
 
@@ -159,12 +158,10 @@ impl From<BigIntValue> for BigInt {
 pub struct Str {
     pub span: Span,
 
-    #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     pub value: JsWord,
 
     /// Use `None` value only for transformations to avoid recalculate escaped
     /// characters in strings
-    #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     pub raw: Option<JsWord>,
 }
 
@@ -273,11 +270,9 @@ pub struct Regex {
     pub span: Span,
 
     #[serde(rename = "pattern")]
-    #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     pub exp: JsWord,
 
     #[serde(default)]
-    #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     pub flags: JsWord,
 }
 
@@ -324,7 +319,6 @@ pub struct Number {
 
     /// Use `None` value only for transformations to avoid recalculate
     /// characters in number literal
-    #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     pub raw: Option<JsWord>,
 }
 

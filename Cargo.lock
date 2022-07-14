@@ -2996,6 +2996,7 @@ version = "0.2.13"
 dependencies = [
  "bytecheck",
  "once_cell",
+ "precomputed-hash",
  "rkyv",
  "rustc-hash",
  "serde",

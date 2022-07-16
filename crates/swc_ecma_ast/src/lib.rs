@@ -12,7 +12,7 @@
 // #![deny(variant_size_differences)]
 
 use serde::{Deserialize, Serialize};
-use swc_common::{ast_node, EqIgnoreSpan, Span};
+use swc_common::{ast_node, plugin::WrappedSerializer, EqIgnoreSpan, Span};
 
 pub use self::{
     class::{
@@ -166,7 +166,7 @@ impl rkyv::with::ArchiveWith<swc_atoms::JsWord> for EncodeJsWord {
 #[cfg(feature = "rkyv")]
 impl<S> rkyv::with::SerializeWith<swc_atoms::JsWord, S> for EncodeJsWord
 where
-    S: ?Sized + rkyv::ser::Serializer,
+    S: ?Sized + rkyv::ser::Serializer + WrappedSerializer,
 {
     fn serialize_with(
         field: &swc_atoms::JsWord,
@@ -214,7 +214,7 @@ impl rkyv::with::ArchiveWith<Option<swc_atoms::JsWord>> for EncodeJsWord {
 #[cfg(feature = "rkyv")]
 impl<S> rkyv::with::SerializeWith<Option<swc_atoms::JsWord>, S> for EncodeJsWord
 where
-    S: ?Sized + rkyv::ser::Serializer,
+    S: ?Sized + rkyv::ser::Serializer + WrappedSerializer,
 {
     fn serialize_with(
         value: &Option<swc_atoms::JsWord>,

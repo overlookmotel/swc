@@ -43,6 +43,7 @@ const DEBUG = !!process.env.DEBUG;
 
 constants.PROGRAM_LENGTH_PLUS_4 = types.Program.length + 4;
 constants.PROGRAM_LENGTH_PLUS_8 = types.Program.length + 8;
+constants.PROGRAM_LENGTH_PLUS_16 = types.Program.length + 16;
 constants.PROGRAM_ALIGN = Math.max(types.Program.align, 4);
 
 writeFileSync(pathJoin(__dirname, "deserialize.js"), generateDeserializer());
@@ -60,7 +61,7 @@ function generateDeserializer() {
 
             // Deserializer entry point
             "module.exports = deserialize;",
-            "let buff, int32, uint32, float64;",
+            "let buff, int32, uint32, float64, strings;",
 
             // Type deserializer functions
             ...Object.values(types).flatMap((type) => {

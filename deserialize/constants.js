@@ -29,5 +29,6 @@ module.exports = {
     AST_VERSION: 1,
     PROGRAM_LENGTH_PLUS_4: 0, // Will be set based on types
     PROGRAM_LENGTH_PLUS_8: 0, // Will be set based on types
+    PROGRAM_LENGTH_PLUS_16: 0, // Will be set based on types
     PROGRAM_ALIGN: 0, // Will be set based on types
 };

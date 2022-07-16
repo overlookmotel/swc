@@ -4,7 +4,7 @@
 
 module.exports = deserialize;
 
-let buff, int32, uint32, float64;
+let buff, int32, uint32, float64, strings;
 
 function deserializeProgram(pos) {
     switch (buff[pos]) {
@@ -2501,54 +2501,12 @@ function deserializeTsInstantiation(pos) {
 }
 
 function deserializeJsWord(pos) {
-    let len = buff[pos + 7];
-    if (len === 0) {
-        return "";
-    }
-    if (len === 1) {
-        return String.fromCharCode(buff[pos]);
-    }
-    if (len & 128) {
-        const pos32 = pos >> 2;
-        len = uint32[pos32];
-        pos += int32[pos32 + 1];
-        if (len > 24) return utf8Slice.call(buff, pos, pos + len);
-    }
-    const arr = new Array(len),
-        end = pos + len;
-    let arrPos = 0;
-    do {
-        const c = buff[pos];
-        if (c >= 128) return utf8Slice.call(buff, pos - arrPos, end);
-        arr[arrPos++] = c;
-    } while (++pos < end);
-    return String.fromCharCode(...arr);
+    return strings[uint32[pos >> 2]];
 }
-const { utf8Slice } = Buffer.prototype;
 
 function deserializeAsciiJsWord(pos) {
-    let len = buff[pos + 7];
-    if (len === 0) {
-        return "";
-    }
-    if (len === 1) {
-        return String.fromCharCode(buff[pos]);
-    }
-    if (len & 128) {
-        const pos32 = pos >> 2;
-        len = uint32[pos32];
-        pos += int32[pos32 + 1];
-        if (len > 28) return asciiSlice.call(buff, pos, pos + len);
-    }
-    const arr = new Array(len),
-        end = pos + len;
-    let arrPos = 0;
-    do {
-        arr[arrPos++] = buff[pos];
-    } while (++pos < end);
-    return String.fromCharCode(...arr);
+    return strings[uint32[pos >> 2]];
 }
-const { asciiSlice } = Buffer.prototype;
 
 function deserializeOptionAsciiJsWord(pos) {
     return deserializeOption(pos, deserializeAsciiJsWord, 4);
@@ -2972,8 +2930,29 @@ function deserialize(buffIn) {
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
-    return deserializeProgram(buffIn.byteOffset + buffIn.length - 40);
+    const end = buffIn.byteOffset + buffIn.length,
+        end32 = end >> 2,
+        strPos = end + int32[end32 - 4] - 16,
+        allStrings = ucs2Slice.call(
+            buff,
+            strPos,
+            strPos + int32[end32 - 3] * 2
+        );
+    const numStrings = uint32[end32 - 1];
+    strings = Array(numStrings);
+    let lenPos32 = ((end + int32[end32 - 2]) >> 2) - 2,
+        charPos = 0;
+    for (let i = 0; i < numStrings; i++) {
+        strings[i] = slice.call(
+            allStrings,
+            charPos,
+            (charPos += uint32[lenPos32++])
+        );
+    }
+    return deserializeProgram(end - 52);
 }
+const { ucs2Slice } = Buffer.prototype,
+    { slice } = String.prototype;
 
 function deserializeOption(pos, deserialize, offset) {
     switch (buff[pos]) {

@@ -10,7 +10,7 @@ use std::{any::type_name, mem, str};
 use anyhow::Error;
 use bytecheck::CheckBytes;
 use rkyv::{ser::Serializer, with::AsBox, Archive, ArchiveUnsized, Deserialize, Serialize};
-use swc_atoms::JsWord;
+use swc_atoms::{JsWord, JsWordStaticSet};
 
 use crate::{syntax_pos::Mark, SyntaxContext};
 
@@ -132,6 +132,28 @@ impl<S: Default> Default for StandardSerializer<S> {
     }
 }
 
+// TODO Optimize for quoted strings - can return a flag for quotation
+// and avoid encoding `x` and `'x'` separately.
+// This will be really common - every string literal.
+
+const STATIC_SLOT_EMPTY: u32 = u32::MAX;
+const STATIC_SHIFT_BITS: usize = 32;
+const DYNAMIC_TAG: u8 = 0b_00;
+const INLINE_TAG: u8 = 0b_01; // len in upper nybble
+const STATIC_TAG: u8 = 0b_10;
+const TAG_MASK: u64 = 0b_11;
+
+const NB_DYNAMIC_BUCKETS: usize = 1 << 12; // 4096
+const DYNAMIC_BUCKET_MASK: u32 = (1 << 12) - 1;
+
+#[derive(Clone)]
+struct LookupEntry {
+    string: Box<str>,
+    hash: u32,
+    id: u32,
+    next_in_bucket: Option<Box<LookupEntry>>,
+}
+
 #[derive(Archive, Deserialize, Serialize, Default)]
 #[archive_attr(repr(C))]
 pub struct StringCollection {
@@ -143,6 +165,8 @@ pub struct StringCollectorSerializer<S> {
     inner: S,
     buff: Vec<u16>,
     lengths: Vec<u32>,
+    static_lookup: Vec<u32>,
+    dynamic_lookup: Vec<Option<Box<LookupEntry>>>,
     next_id: u32,
 }
 
@@ -150,14 +174,66 @@ impl<S> StringCollectorSerializer<S> {
     fn into_inner(self) -> S {
         self.inner
     }
+
+    // TODO: Make this return a Result
+    fn lookup_or_insert_string(&mut self, word: &JsWord) -> u32 {
+        // Get hash and string
+        let hash = word.get_hash();
+        let bucket_index = (hash & DYNAMIC_BUCKET_MASK) as usize;
+        let string: &str = word;
+
+        // Look up if string encountered already. Return id if so.
+        let mut ptr: Option<&mut Box<LookupEntry>> = self.dynamic_lookup[bucket_index].as_mut();
+        while let Some(lookup_entry) = ptr.take() {
+            if lookup_entry.hash == hash && *lookup_entry.string == *string {
+                return lookup_entry.id;
+            }
+            ptr = lookup_entry.next_in_bucket.as_mut();
+        }
+
+        // Create new string in collector
+        let id = self.insert_string(word as &str);
+
+        // Add string to lookup table
+        let string = string.to_owned();
+        let lookup_entry = Box::new(LookupEntry {
+            string: string.into_boxed_str(),
+            hash,
+            id,
+            next_in_bucket: self.dynamic_lookup[bucket_index].take(),
+        });
+        self.dynamic_lookup[bucket_index] = Some(lookup_entry);
+
+        id
+    }
+
+    // TODO: Make this return a Result
+    fn insert_string(&mut self, string: &str) -> u32 {
+        let mut len = 0;
+        for c in string.encode_utf16() {
+            self.buff.push(c);
+            len += 1;
+        }
+        self.lengths.push(len);
+
+        let id = self.next_id;
+        assert!(id != STATIC_SLOT_EMPTY);
+        self.next_id += 1;
+        id
+    }
 }
 
 impl<S: Default> Default for StringCollectorSerializer<S> {
     fn default() -> Self {
+        use string_cache::StaticAtomSet;
+        let num_static_strings = JsWordStaticSet::get().atoms.len();
+
         Self {
             inner: S::default(),
             buff: Vec::new(),
             lengths: Vec::new(),
+            static_lookup: vec![STATIC_SLOT_EMPTY; num_static_strings],
+            dynamic_lookup: vec![None; NB_DYNAMIC_BUCKETS],
             next_id: 0,
         }
     }
@@ -169,19 +245,26 @@ impl<S> WrappedSerializer for StringCollectorSerializer<S> {
     }
 
     fn serialize_string(&mut self, word: &JsWord) -> u32 {
-        let string: &str = word;
+        let data = word.unsafe_data();
+        match (data & TAG_MASK) as u8 {
+            STATIC_TAG => {
+                let static_index: usize = (data >> STATIC_SHIFT_BITS).try_into().unwrap();
 
-        let mut len = 0;
-        for c in string.encode_utf16() {
-            self.buff.push(c);
-            len += 1;
+                let mut id = self.static_lookup[static_index];
+                if id == STATIC_SLOT_EMPTY {
+                    id = self.insert_string(word as &str);
+                    self.static_lookup[static_index] = id;
+                }
+                id
+            }
+            DYNAMIC_TAG => self.lookup_or_insert_string(word),
+            INLINE_TAG => {
+                // TODO Optimize for single-char strings
+                // TODO Use separate lookup table for inline strings
+                self.lookup_or_insert_string(word)
+            }
+            _ => unreachable!("unexpected JsWord tag"),
         }
-        self.lengths.push(len);
-
-        let id = self.next_id;
-        assert!(id != u32::MAX);
-        self.next_id += 1;
-        id
     }
 
     fn get_string_collection(&self) -> StringCollection {

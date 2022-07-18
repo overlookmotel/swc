@@ -50,6 +50,7 @@ class EnumValue extends Kind {
                 };`
         );
 
+        // TODO Needs to be `buff[pos + 3]` on big-endian systems
         return `function ${this.deserializerName}(pos) {
             switch (buff[pos]) {
                 ${caseCodes.join("\n")}

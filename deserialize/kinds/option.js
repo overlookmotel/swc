@@ -89,6 +89,7 @@ class Option extends Kind {
  * @returns {*} - Value or `null`
  */
 function deserializeOption(pos, deserialize, offset) {
+    // TODO Maybe should be `buff[pos + 3]` on big endian systems?
     switch (buff[pos]) {
         case 0:
             return null;
@@ -124,10 +125,12 @@ function serializeOption(value, serialize) {
 function finalizeOption(finalizeData, finalize, offset, length) {
     if (finalizeData === 0) {
         // Option disabled
+        // TODO Maybe should be `buff[pos + 3]` on big endian systems?
         buff[pos] = 0;
         pos += length;
     } else {
         // Option enabled
+        // TODO Maybe should be `buff[pos + 3]` on big endian systems?
         buff[pos] = 1;
         pos += offset;
         finalize(finalizeData);

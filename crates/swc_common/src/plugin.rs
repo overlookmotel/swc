@@ -4,13 +4,77 @@
 //! `swc_common`.
 #![allow(unused)]
 
-use std::{any::type_name, mem};
+use core::{alloc::Layout, ptr::NonNull};
+use std::{any::type_name, mem, str};
 
 use anyhow::Error;
 use bytecheck::CheckBytes;
-use rkyv::{with::AsBox, Archive, Deserialize, Serialize};
+use rkyv::{ser::Serializer, with::AsBox, Archive, Deserialize, Serialize};
+use swc_atoms::{JsWord, JsWordStaticSet};
 
 use crate::{syntax_pos::Mark, SyntaxContext};
+
+pub trait WrappedSerializer {}
+
+pub struct StandardSerializer<S> {
+    inner: S,
+}
+
+impl<S> StandardSerializer<S> {
+    fn into_inner(self) -> S {
+        self.inner
+    }
+}
+
+impl<S> WrappedSerializer for StandardSerializer<S> {}
+
+impl<S: rkyv::Fallible> rkyv::Fallible for StandardSerializer<S> {
+    type Error = S::Error;
+}
+
+impl<S: rkyv::ser::Serializer> rkyv::ser::Serializer for StandardSerializer<S> {
+    #[inline]
+    fn pos(&self) -> usize {
+        self.inner.pos()
+    }
+
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) -> Result<(), S::Error> {
+        self.inner.write(bytes)
+    }
+}
+
+impl<S: rkyv::ser::ScratchSpace> rkyv::ser::ScratchSpace for StandardSerializer<S> {
+    #[inline]
+    unsafe fn push_scratch(&mut self, layout: Layout) -> Result<NonNull<[u8]>, Self::Error> {
+        self.inner.push_scratch(layout)
+    }
+
+    #[inline]
+    unsafe fn pop_scratch(&mut self, ptr: NonNull<u8>, layout: Layout) -> Result<(), Self::Error> {
+        self.inner.pop_scratch(ptr, layout)
+    }
+}
+
+impl<S: rkyv::ser::SharedSerializeRegistry> rkyv::ser::SharedSerializeRegistry
+    for StandardSerializer<S>
+{
+    fn get_shared_ptr(&self, value: *const u8) -> Option<usize> {
+        self.inner.get_shared_ptr(value)
+    }
+
+    fn add_shared_ptr(&mut self, value: *const u8, pos: usize) -> Result<(), Self::Error> {
+        self.inner.add_shared_ptr(value, pos)
+    }
+}
+
+impl<S: Default> Default for StandardSerializer<S> {
+    fn default() -> Self {
+        Self {
+            inner: S::default(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -69,19 +133,30 @@ impl PluginSerializedBytes {
      */
     pub fn try_serialize<W>(t: &VersionedSerializable<W>) -> Result<Self, Error>
     where
-        W: rkyv::Serialize<rkyv::ser::serializers::AllocSerializer<512>>,
+        W: rkyv::Serialize<
+            rkyv::ser::serializers::CompositeSerializer<
+                rkyv::ser::serializers::AlignedSerializer<rkyv::AlignedVec>,
+                rkyv::ser::serializers::FallbackScratch<
+                    rkyv::ser::serializers::HeapScratch<512_usize>,
+                    rkyv::ser::serializers::AllocScratch,
+                >,
+                rkyv::ser::serializers::SharedSerializeMap,
+            >,
+        >,
     {
-        rkyv::to_bytes::<_, 512>(t)
-            .map(|field| PluginSerializedBytes { field })
-            .map_err(|err| match err {
-                rkyv::ser::serializers::CompositeSerializerError::SerializerError(e) => e.into(),
-                rkyv::ser::serializers::CompositeSerializerError::ScratchSpaceError(e) => {
-                    Error::msg("AllocScratchError")
-                }
-                rkyv::ser::serializers::CompositeSerializerError::SharedError(e) => {
-                    Error::msg("SharedSerializeMapError")
-                }
-            })
+        let mut serializer = rkyv::ser::serializers::AllocSerializer::<512>::default();
+        serializer.serialize_value(t).map_err(|err| match err {
+            rkyv::ser::serializers::CompositeSerializerError::SerializerError(e) => e.into(),
+            rkyv::ser::serializers::CompositeSerializerError::ScratchSpaceError(e) => {
+                Error::msg("AllocScratchError")
+            }
+            rkyv::ser::serializers::CompositeSerializerError::SharedError(e) => {
+                Error::msg("SharedSerializeMapError")
+            }
+        })?;
+
+        let bytes = serializer.into_serializer().into_inner();
+        Ok(PluginSerializedBytes { field: bytes })
     }
 
     /*

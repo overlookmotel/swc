@@ -142,6 +142,8 @@ const DYNAMIC_TAG: u8 = 0b_00;
 const INLINE_TAG: u8 = 0b_01; // len in upper nybble
 const STATIC_TAG: u8 = 0b_10;
 const TAG_MASK: u64 = 0b_11;
+const LEN_OFFSET: u64 = 4;
+const LEN_MASK: u64 = 0xf0;
 
 const NB_DYNAMIC_BUCKETS: usize = 1 << 12; // 4096
 const DYNAMIC_BUCKET_MASK: u32 = (1 << 12) - 1;
@@ -167,6 +169,7 @@ pub struct StringCollectorSerializer<S> {
     lengths: Vec<u32>,
     static_lookup: Vec<u32>,
     dynamic_lookup: Vec<Option<Box<LookupEntry>>>,
+    single_byte_lookup: Vec<u32>,
     next_id: u32,
 }
 
@@ -234,6 +237,7 @@ impl<S: Default> Default for StringCollectorSerializer<S> {
             lengths: Vec::new(),
             static_lookup: vec![STATIC_SLOT_EMPTY; num_static_strings],
             dynamic_lookup: vec![None; NB_DYNAMIC_BUCKETS],
+            single_byte_lookup: vec![STATIC_SLOT_EMPTY; 256],
             next_id: 0,
         }
     }
@@ -259,9 +263,31 @@ impl<S> WrappedSerializer for StringCollectorSerializer<S> {
             }
             DYNAMIC_TAG => self.lookup_or_insert_string(word),
             INLINE_TAG => {
-                // TODO Optimize for single-char strings
-                // TODO Use separate lookup table for inline strings
-                self.lookup_or_insert_string(word)
+                let len = (data & LEN_MASK) >> LEN_OFFSET;
+                if (len == 1) {
+                    // Fast path for single-byte strings.
+                    // Single-byte strings in UTF8 are always an ASCII character.
+                    let char_code = if cfg!(target_endian = "little") {
+                        ((data & 0xff00) >> 8) as u8
+                    } else {
+                        (data & 0xff) as u8
+                    };
+
+                    let mut id = self.single_byte_lookup[char_code as usize];
+                    if id == STATIC_SLOT_EMPTY {
+                        self.buff.push(char_code as u16);
+                        self.lengths.push(1);
+
+                        id = self.next_id;
+                        assert!(id != STATIC_SLOT_EMPTY);
+                        self.single_byte_lookup[char_code as usize] = id;
+                        self.next_id += 1;
+                    }
+                    id
+                } else {
+                    // TODO Use separate lookup table for inline strings
+                    self.lookup_or_insert_string(word)
+                }
             }
             _ => unreachable!("unexpected JsWord tag"),
         }

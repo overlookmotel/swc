@@ -9,7 +9,7 @@ use std::{any::type_name, mem, str};
 
 use anyhow::Error;
 use bytecheck::CheckBytes;
-use rkyv::{ser::Serializer, with::AsBox, Archive, Deserialize, Serialize};
+use rkyv::{ser::Serializer, with::AsBox, Archive, ArchiveUnsized, Deserialize, Serialize};
 use swc_atoms::{JsWord, JsWordStaticSet};
 
 use crate::{syntax_pos::Mark, SyntaxContext};
@@ -41,6 +41,41 @@ impl<S: rkyv::ser::Serializer> rkyv::ser::Serializer for StandardSerializer<S> {
     #[inline]
     fn write(&mut self, bytes: &[u8]) -> Result<(), S::Error> {
         self.inner.write(bytes)
+    }
+
+    #[inline]
+    fn pad(&mut self, padding: usize) -> Result<(), Self::Error> {
+        self.inner.pad(padding)
+    }
+
+    #[inline]
+    fn align(&mut self, align: usize) -> Result<usize, Self::Error> {
+        self.inner.align(align)
+    }
+
+    #[inline]
+    fn align_for<T>(&mut self) -> Result<usize, Self::Error> {
+        self.inner.align_for::<T>()
+    }
+
+    #[inline]
+    unsafe fn resolve_aligned<T: Archive + ?Sized>(
+        &mut self,
+        value: &T,
+        resolver: T::Resolver,
+    ) -> Result<usize, Self::Error> {
+        self.inner.resolve_aligned::<T>(value, resolver)
+    }
+
+    #[inline]
+    unsafe fn resolve_unsized_aligned<T: ArchiveUnsized + ?Sized>(
+        &mut self,
+        value: &T,
+        to: usize,
+        metadata_resolver: T::MetadataResolver,
+    ) -> Result<usize, Self::Error> {
+        self.inner
+            .resolve_unsized_aligned(value, to, metadata_resolver)
     }
 }
 

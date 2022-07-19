@@ -59,16 +59,19 @@ impl<S: rkyv::ser::ScratchSpace> rkyv::ser::ScratchSpace for StandardSerializer<
 impl<S: rkyv::ser::SharedSerializeRegistry> rkyv::ser::SharedSerializeRegistry
     for StandardSerializer<S>
 {
+    #[inline]
     fn get_shared_ptr(&self, value: *const u8) -> Option<usize> {
         self.inner.get_shared_ptr(value)
     }
 
+    #[inline]
     fn add_shared_ptr(&mut self, value: *const u8, pos: usize) -> Result<(), Self::Error> {
         self.inner.add_shared_ptr(value, pos)
     }
 }
 
 impl<S: Default> Default for StandardSerializer<S> {
+    #[inline]
     fn default() -> Self {
         Self {
             inner: S::default(),

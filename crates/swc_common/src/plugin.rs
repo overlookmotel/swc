@@ -137,17 +137,20 @@ impl PluginSerializedBytes {
     pub fn try_serialize<W>(t: &VersionedSerializable<W>) -> Result<Self, Error>
     where
         W: rkyv::Serialize<
-            rkyv::ser::serializers::CompositeSerializer<
-                rkyv::ser::serializers::AlignedSerializer<rkyv::AlignedVec>,
-                rkyv::ser::serializers::FallbackScratch<
-                    rkyv::ser::serializers::HeapScratch<512_usize>,
-                    rkyv::ser::serializers::AllocScratch,
+            StandardSerializer<
+                rkyv::ser::serializers::CompositeSerializer<
+                    rkyv::ser::serializers::AlignedSerializer<rkyv::AlignedVec>,
+                    rkyv::ser::serializers::FallbackScratch<
+                        rkyv::ser::serializers::HeapScratch<512_usize>,
+                        rkyv::ser::serializers::AllocScratch,
+                    >,
+                    rkyv::ser::serializers::SharedSerializeMap,
                 >,
-                rkyv::ser::serializers::SharedSerializeMap,
             >,
         >,
     {
-        let mut serializer = rkyv::ser::serializers::AllocSerializer::<512>::default();
+        let mut serializer =
+            StandardSerializer::<rkyv::ser::serializers::AllocSerializer<512>>::default();
         serializer.serialize_value(t).map_err(|err| match err {
             rkyv::ser::serializers::CompositeSerializerError::SerializerError(e) => e.into(),
             rkyv::ser::serializers::CompositeSerializerError::ScratchSpaceError(e) => {
@@ -158,7 +161,7 @@ impl PluginSerializedBytes {
             }
         })?;
 
-        let bytes = serializer.into_serializer().into_inner();
+        let bytes = serializer.into_inner().into_serializer().into_inner();
         Ok(PluginSerializedBytes { field: bytes })
     }
 

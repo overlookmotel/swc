@@ -220,7 +220,7 @@ pub fn ast_node(
                 #[cfg_attr(
                     feature = "rkyv",
                     archive(bound(
-                        serialize = "__S: rkyv::ser::Serializer + rkyv::ser::ScratchSpace + rkyv::ser::SharedSerializeRegistry",
+                        serialize = "__S: rkyv::ser::Serializer + rkyv::ser::ScratchSpace + rkyv::ser::SharedSerializeRegistry + swc_common::plugin::WrappedSerializer",
                         deserialize = "__D: rkyv::de::SharedDeserializeRegistry"
                     ))
                 )]
@@ -274,7 +274,7 @@ pub fn ast_node(
                         feature = "rkyv",
                         archive(
                             bound(
-                                serialize = "__S: rkyv::ser::Serializer + rkyv::ser::ScratchSpace + rkyv::ser::SharedSerializeRegistry",
+                                serialize = "__S: rkyv::ser::Serializer + rkyv::ser::ScratchSpace + rkyv::ser::SharedSerializeRegistry + swc_common::plugin::WrappedSerializer",
                                 deserialize = "__D: rkyv::de::SharedDeserializeRegistry"
                             )
                         )

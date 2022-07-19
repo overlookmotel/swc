@@ -20,7 +20,10 @@ pub struct Tuple(#[span] HasSpan, usize, usize);
 )]
 #[cfg_attr(
     feature = "rkyv",
-    archive(bound(serialize = "__S: rkyv::ser::Serializer + rkyv::ser::ScratchSpace"))
+    archive(
+        bound(serialize = "__S: rkyv::ser::Serializer + rkyv::ser::ScratchSpace + \
+                           swc_common::plugin::WrappedSerializer")
+    )
 )]
 #[cfg_attr(feature = "rkyv", archive_attr(repr(C), derive(bytecheck::CheckBytes)))]
 pub struct HasSpan {

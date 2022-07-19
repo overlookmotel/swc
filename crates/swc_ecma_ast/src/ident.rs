@@ -21,7 +21,7 @@ use crate::typescript::TsTypeAnn;
     feature = "rkyv",
     archive(bound(
         serialize = "__S: rkyv::ser::Serializer + rkyv::ser::ScratchSpace + \
-                     rkyv::ser::SharedSerializeRegistry",
+                     rkyv::ser::SharedSerializeRegistry + swc_common::plugin::WrappedSerializer",
         deserialize = "__D: rkyv::de::SharedDeserializeRegistry"
     ))
 )]

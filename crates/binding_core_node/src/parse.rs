@@ -17,6 +17,7 @@ use swc_common::{
     plugin::{PluginSerializedBytes, VersionedSerializable},
     FileName,
 };
+use swc_ecma_ast::ProgramStringCollector;
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
 
 use crate::{get_compiler, util::try_with};
@@ -267,8 +268,9 @@ pub fn parse_sync_to_buffer(
     })
     .convert_err()?;
 
-    let versioned_program = VersionedSerializable::new(program);
-    let serialized = PluginSerializedBytes::try_serialize(&versioned_program).convert_err()?;
+    let collector = ProgramStringCollector::new(program);
+
+    let serialized = PluginSerializedBytes::try_serialize_for_js(&collector).convert_err()?;
     let slice = serialized.as_slice();
     let buffer = Buffer::from(slice);
 

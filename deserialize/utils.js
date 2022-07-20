@@ -4,6 +4,7 @@
 const {
     PROGRAM_LENGTH_PLUS_4,
     PROGRAM_LENGTH_PLUS_8,
+    PROGRAM_LENGTH_PLUS_16,
     PROGRAM_ALIGN,
     SERIALIZE_INITIAL_BUFFER_SIZE,
     SCRATCH_INITIAL_BUFFER_SIZE32,
@@ -45,12 +46,39 @@ function deserialize(buffIn) {
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
 
-    // Skip over `VersionedSerializable` data
-    return deserializeProgram(
-        buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH_PLUS_4
-    );
+    // Deserialize string cache as UTF16LE
+    const end = buffIn.byteOffset + buffIn.length,
+        end32 = end >> 2,
+        strPos = end + int32[end32 - 4] - 16,
+        allStrings = ucs2Slice.call(
+            buff,
+            strPos,
+            strPos + int32[end32 - 3] * 2
+        );
+
+    // Split into individual strings
+    const numStrings = uint32[end32 - 1];
+    strings = Array(numStrings);
+    let lenPos32 = ((end + int32[end32 - 2]) >> 2) - 2,
+        charPos = 0;
+    for (let i = 0; i < numStrings; i++) {
+        strings[i] = slice.call(
+            allStrings,
+            charPos,
+            (charPos += uint32[lenPos32++])
+        );
+    }
+
+    return deserializeProgram(end - PROGRAM_LENGTH_PLUS_16);
 }
-let buff, int32, uint32, float64;
+let buff, int32, uint32, float64, strings;
+
+const { ucs2Slice } = Buffer.prototype,
+    { slice } = String.prototype;
+
+deserialize.toString = () =>
+    Function.prototype.toString.call(deserialize) +
+    "\n\nconst { ucs2Slice } = Buffer.prototype, { slice } = String.prototype;";
 
 /**
  * Serialize AST to buffer.

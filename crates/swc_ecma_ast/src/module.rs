@@ -1,6 +1,13 @@
 use is_macro::Is;
 use swc_atoms::JsWord;
-use swc_common::{ast_node, util::take::Take, EqIgnoreSpan, Span, DUMMY_SP};
+use swc_common::{
+    ast_node,
+    plugin::{
+        ArchivedStringCollection, StringCollection, StringCollectionResolver, WrappedSerializer,
+    },
+    util::take::Take,
+    EqIgnoreSpan, Span, DUMMY_SP,
+};
 
 use crate::{module_decl::ModuleDecl, stmt::Stmt};
 
@@ -13,6 +20,77 @@ pub enum Program {
     #[tag("Script")]
     Script(Script),
 }
+
+#[derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)]
+#[archive_attr(repr(C))]
+pub struct ProgramStringCollector {
+    program: Program,
+    #[cfg_attr(feature = "rkyv", with(EncodeStringCollection))]
+    string_collection: StringCollection,
+}
+
+impl ProgramStringCollector {
+    pub fn new(program: Program) -> Self {
+        ProgramStringCollector {
+            program,
+            string_collection: StringCollection::default(),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct EncodeStringCollection;
+
+pub struct WrappedResolver {
+    resolver: StringCollectionResolver,
+    string_collection: StringCollection,
+}
+
+impl rkyv::with::ArchiveWith<StringCollection> for EncodeStringCollection {
+    type Archived = ArchivedStringCollection;
+    type Resolver = WrappedResolver;
+
+    unsafe fn resolve_with(
+        _field: &StringCollection,
+        pos: usize,
+        wrapped_resolver: Self::Resolver,
+        out: *mut Self::Archived,
+    ) {
+        use rkyv::Archive;
+
+        wrapped_resolver
+            .string_collection
+            .resolve(pos, wrapped_resolver.resolver, out)
+    }
+}
+
+impl<S> rkyv::with::SerializeWith<StringCollection, S> for EncodeStringCollection
+where
+    S: ?Sized + rkyv::ser::Serializer + rkyv::ser::ScratchSpace + WrappedSerializer,
+{
+    fn serialize_with(
+        _: &StringCollection,
+        serializer: &mut S,
+    ) -> Result<Self::Resolver, S::Error> {
+        use rkyv::Serialize;
+
+        if !serializer.is_js_serializer() {
+            unreachable!("serialize_with EncodeStringCollection for non-JS serializer");
+        } else {
+            // Substitute buff from serializer
+            let string_collection = serializer.get_string_collection();
+
+            string_collection
+                .serialize(serializer)
+                .map(|resolver| WrappedResolver {
+                    resolver,
+                    string_collection,
+                })
+        }
+    }
+}
+
+// TODO Implement DeserializeWith
 
 #[ast_node("Module")]
 #[derive(Eq, Hash, EqIgnoreSpan)]

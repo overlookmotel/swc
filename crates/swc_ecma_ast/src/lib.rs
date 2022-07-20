@@ -37,7 +37,7 @@ pub use self::{
     },
     list::ListFormat,
     lit::{BigInt, Bool, Lit, Null, Number, Regex, Str},
-    module::{Module, ModuleItem, Program, Script},
+    module::{Module, ModuleItem, Program, ProgramStringCollector, Script},
     module_decl::{
         DefaultDecl, ExportAll, ExportDecl, ExportDefaultDecl, ExportDefaultExpr,
         ExportDefaultSpecifier, ExportNamedSpecifier, ExportNamespaceSpecifier, ExportSpecifier,
@@ -146,20 +146,34 @@ impl Default for EsVersion {
 pub struct EncodeJsWord;
 
 #[cfg(feature = "rkyv")]
+pub enum WrappedResolver {
+    String(rkyv::Resolver<String>),
+    Pos(u32),
+}
+
+#[cfg(feature = "rkyv")]
 impl rkyv::with::ArchiveWith<swc_atoms::JsWord> for EncodeJsWord {
     type Archived = rkyv::Archived<String>;
-    type Resolver = rkyv::Resolver<String>;
+    type Resolver = WrappedResolver;
 
     unsafe fn resolve_with(
         field: &swc_atoms::JsWord,
         pos: usize,
-        resolver: Self::Resolver,
+        wrapped_resolver: Self::Resolver,
         out: *mut Self::Archived,
     ) {
         use rkyv::Archive;
 
-        let s = field.to_string();
-        s.resolve(pos, resolver, out);
+        match wrapped_resolver {
+            WrappedResolver::String(resolver) => {
+                let s = field.to_string();
+                s.resolve(pos, resolver, out);
+            }
+            WrappedResolver::Pos(id) => {
+                let id_padded: (u32, u32) = (id, 0);
+                id_padded.resolve(pos, ((), ()), out as *mut rkyv::Archived<(u32, u32)>);
+            }
+        }
     }
 }
 
@@ -172,7 +186,13 @@ where
         field: &swc_atoms::JsWord,
         serializer: &mut S,
     ) -> Result<Self::Resolver, S::Error> {
-        rkyv::string::ArchivedString::serialize_from_str(field, serializer)
+        if !serializer.is_js_serializer() {
+            rkyv::string::ArchivedString::serialize_from_str(field, serializer)
+                .map(WrappedResolver::String)
+        } else {
+            let id = serializer.serialize_string(field);
+            rkyv::Serialize::serialize(&id, serializer).map(|_| WrappedResolver::Pos(id))
+        }
     }
 }
 
@@ -194,20 +214,37 @@ where
 }
 
 #[cfg(feature = "rkyv")]
+pub enum WrappedOptionResolver {
+    String(rkyv::Resolver<Option<String>>),
+    Pos((Option<u32>, rkyv::Resolver<Option<u32>>)),
+}
+
+#[cfg(feature = "rkyv")]
 impl rkyv::with::ArchiveWith<Option<swc_atoms::JsWord>> for EncodeJsWord {
     type Archived = rkyv::Archived<Option<String>>;
-    type Resolver = rkyv::Resolver<Option<String>>;
+    type Resolver = WrappedOptionResolver;
 
     unsafe fn resolve_with(
         field: &Option<swc_atoms::JsWord>,
         pos: usize,
-        resolver: Self::Resolver,
+        wrapped_resolver: Self::Resolver,
         out: *mut Self::Archived,
     ) {
         use rkyv::Archive;
 
-        let s = field.as_ref().map(|s| s.to_string());
-        s.resolve(pos, resolver, out);
+        match wrapped_resolver {
+            WrappedOptionResolver::String(resolver) => {
+                let s = field.as_ref().map(|s| s.to_string());
+                s.resolve(pos, resolver, out);
+            }
+            WrappedOptionResolver::Pos((id, resolver)) => {
+                id.resolve(
+                    pos,
+                    resolver,
+                    out as *mut rkyv::option::ArchivedOption<rkyv::Archived<u32>>,
+                );
+            }
+        }
     }
 }
 
@@ -220,10 +257,26 @@ where
         value: &Option<swc_atoms::JsWord>,
         serializer: &mut S,
     ) -> Result<Self::Resolver, S::Error> {
-        value
-            .as_ref()
-            .map(|value| rkyv::string::ArchivedString::serialize_from_str(value, serializer))
-            .transpose()
+        if !serializer.is_js_serializer() {
+            value
+                .as_ref()
+                .map(|value| rkyv::string::ArchivedString::serialize_from_str(value, serializer))
+                .transpose()
+                .map(WrappedOptionResolver::String)
+        } else {
+            match value {
+                None => {
+                    let id: Option<u32> = None;
+                    rkyv::Serialize::serialize(&id, serializer)
+                        .map(|resolver| WrappedOptionResolver::Pos((id, resolver)))
+                }
+                Some(word) => {
+                    let id = Some(serializer.serialize_string(word));
+                    rkyv::Serialize::serialize(&id, serializer)
+                        .map(|resolver| WrappedOptionResolver::Pos((id, resolver)))
+                }
+            }
+        }
     }
 }
 

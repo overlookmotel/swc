@@ -5,92 +5,12 @@ const { Option, Custom } = require("../kinds/index.js");
 
 // Exports
 
-const { utf8Slice, utf8Write } = Buffer.prototype;
+const { utf8Write } = Buffer.prototype;
 
 module.exports = {
     JsWord: Custom({
-        /**
-         * Deserialize string.
-         * Strings are serialized by RYKV as follows:
-         *   - 8 bytes length, aligned on 4.
-         *   - String stored in UTF8 encoding.
-         *   - If length (in bytes) <= 7, byte 7 contains length, bytes 0-6 contain the string.
-         *   - Otherwise, bytes 0-3 contain length, and bytes 4-7 a relative pointer to string (i32).
-         *   - In latter case, relative pointer is always negative. Rel pointer is stored little-endian,
-         *     regardless of machine architecture, so sign bit is highest bit in byte 7.
-         *     Therefore if byte 7's highest bit is set, it's a string longer than 7 bytes,
-         *     if that bit is not set, it's a string with length <= 7 bytes.
-         *
-         * @param {number} pos - Position in buffer
-         * @returns {string} - Decoded string
-         */
         deserialize(pos) {
-            // Fast path for empty string
-            let len = buff[pos + 7];
-            if (len === 0) {
-                /* DEBUG_ONLY_START */
-                debugBuff("JsWord content", pos, len);
-                /* DEBUG_ONLY_END */
-
-                return "";
-            }
-
-            // Fast path for single-char strings (common in minified code)
-            if (len === 1) {
-                /* DEBUG_ONLY_START */
-                debugBuff("JsWord content", pos, len);
-                /* DEBUG_ONLY_END */
-
-                return String.fromCharCode(buff[pos]);
-            }
-
-            if (
-                len & 128
-            ) {
-                const pos32 = pos >> 2;
-                // Length always stored little-endian, regardless of machine architecture
-                // TODO Need to alter next line to read as little-endian on big-endian systems
-                len = uint32[pos32];
-                // Pointer is relative to byte containing length, not byte containing pointer
-                pos += int32[pos32 + 1];
-
-                /* DEBUG_ONLY_START */
-                debugBuff("JsWord content", pos, len);
-                /* DEBUG_ONLY_END */
-
-                // For longer strings, native method is faster.
-                // Determined that the tipping point is 24 chars on a MacBook Pro 14-inch 2021 M1 Pro.
-                // Tipping point might be a bit different on Intel etc processors as M1 seems
-                // to run JS faster, but it's not going to make a significant difference.
-                // `Buffer.prototype.utf8Slice` is undocumented but used internally by
-                // `Buffer.prototype.toString`. `.utf8Slice` is faster as skips bounds-checking.
-                // Next line is equivalent to `buff.toString("utf8", pos, pos + len)`.
-                if (len > 24) return utf8Slice.call(buff, pos, pos + len);
-            }
-            // prettier-ignore
-            /* DEBUG_ONLY_START */
-            else {
-                debugBuff("JsWord content", pos, len);
-            }
-            /* DEBUG_ONLY_END */
-
-            // String 24 chars or shorter - JS implementation is faster than call into C++.
-            // Bail out and use `buff.utf8Slice()` if unicode character found (uncommon case).
-            const arr = new Array(len),
-                end = pos + len;
-            let arrPos = 0;
-            do {
-                const c = buff[pos];
-                if (c >= 128) return utf8Slice.call(buff, pos - arrPos, end);
-                arr[arrPos++] = c;
-            } while (++pos < end);
-            return String.fromCharCode(...arr);
-        },
-        generateDeserializer() {
-            return (
-                Custom.prototype.generateDeserializer.call(this) +
-                "\n\nconst { utf8Slice } = Buffer.prototype;"
-            );
+            return strings[uint32[pos >> 2]];
         },
         serialize(str) {
             // Handle empty string
@@ -216,76 +136,8 @@ module.exports = {
     }),
 
     AsciiJsWord: Custom({
-        /**
-         * Deserialize string where it's known from context to be ASCII - no Unicode characters.
-         * This requires less overhead as each character is always represented by 1 byte in UTF8.
-         * @param {number} pos - Position in buffer
-         * @returns {string} - Decoded string
-         */
         deserialize(pos) {
-            // Fast path for empty string
-            let len = buff[pos + 7];
-            if (len === 0) {
-                /* DEBUG_ONLY_START */
-                debugBuff("JsWord content", pos, len);
-                /* DEBUG_ONLY_END */
-
-                return "";
-            }
-
-            // Fast path for single-char strings
-            if (len === 1) {
-                /* DEBUG_ONLY_START */
-                debugBuff("AsciiJsWord content", pos, len);
-                /* DEBUG_ONLY_END */
-
-                return String.fromCharCode(buff[pos]);
-            }
-
-            if (
-                len & 128
-            ) {
-                const pos32 = pos >> 2;
-                // Length always stored little-endian, regardless of machine architecture
-                // TODO Need to alter next line to read as little-endian on big-endian systems
-                len = uint32[pos32];
-                // Pointer is relative to byte containing length, not byte containing pointer
-                pos += int32[pos32 + 1];
-
-                /* DEBUG_ONLY_START */
-                debugBuff("AsciiJsWord content", pos, len);
-                /* DEBUG_ONLY_END */
-
-                // For longer strings, native method is faster.
-                // Determined that the tipping point is 28 chars on a MacBook Pro 14-inch 2021 M1 Pro.
-                // Tipping point might be a bit different on Intel etc processors as M1 seems
-                // to run JS faster, but it's not going to make a significant difference.
-                // `Buffer.prototype.asciiSlice` is undocumented but used internally by
-                // `Buffer.prototype.toString`. `.asciiSlice` is faster as skips bounds-checking.
-                // Next line is equivalent to `buff.toString("ascii", pos, pos + len)`.
-                if (len > 28) return asciiSlice.call(buff, pos, pos + len);
-            }
-            // prettier-ignore
-            /* DEBUG_ONLY_START */
-            else {
-                debugBuff("AsciiJsWord content", pos, len);
-            }
-            /* DEBUG_ONLY_END */
-
-            // String 28 chars or shorter - JS implementation is faster than call into C++
-            const arr = new Array(len),
-                end = pos + len;
-            let arrPos = 0;
-            do {
-                arr[arrPos++] = buff[pos];
-            } while (++pos < end);
-            return String.fromCharCode(...arr);
-        },
-        generateDeserializer() {
-            return (
-                Custom.prototype.generateDeserializer.call(this) +
-                "\n\nconst { asciiSlice } = Buffer.prototype;"
-            );
+            return strings[uint32[pos >> 2]];
         },
         serialize(str) {
             // Handle empty string

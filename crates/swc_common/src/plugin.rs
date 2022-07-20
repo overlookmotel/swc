@@ -5,15 +5,23 @@
 #![allow(unused)]
 
 use core::{alloc::Layout, ptr::NonNull};
-use std::{any::type_name, mem};
+use std::{any::type_name, mem, str};
 
 use anyhow::Error;
 use bytecheck::CheckBytes;
 use rkyv::{ser::Serializer, with::AsBox, Archive, ArchiveUnsized, Deserialize, Serialize};
+use swc_atoms::JsWord;
 
 use crate::{syntax_pos::Mark, SyntaxContext};
 
-pub trait WrappedSerializer {}
+pub trait WrappedSerializer {
+    fn is_js_serializer(&self) -> bool;
+
+    // TODO: Make this return a Result
+    fn serialize_string(&mut self, word: &JsWord) -> u32;
+
+    fn get_string_collection(&self) -> StringCollection;
+}
 
 pub struct StandardSerializer<S> {
     inner: S,
@@ -26,7 +34,19 @@ impl<S> StandardSerializer<S> {
     }
 }
 
-impl<S> WrappedSerializer for StandardSerializer<S> {}
+impl<S> WrappedSerializer for StandardSerializer<S> {
+    fn is_js_serializer(&self) -> bool {
+        false
+    }
+
+    fn serialize_string(&mut self, word: &JsWord) -> u32 {
+        unreachable!("serialize_string() on StandardSerializer")
+    }
+
+    fn get_string_collection(&self) -> StringCollection {
+        unreachable!("get_string_collection() on StandardSerializer")
+    }
+}
 
 impl<S: rkyv::Fallible> rkyv::Fallible for StandardSerializer<S> {
     type Error = S::Error;
@@ -114,6 +134,144 @@ impl<S: Default> Default for StandardSerializer<S> {
     }
 }
 
+#[derive(Archive, Deserialize, Serialize, Default)]
+#[archive_attr(repr(C))]
+pub struct StringCollection {
+    buff: Vec<u16>,
+    lengths: Vec<u32>,
+}
+
+pub struct StringCollectorSerializer<S> {
+    inner: S,
+    buff: Vec<u16>,
+    lengths: Vec<u32>,
+    next_id: u32,
+}
+
+impl<S> StringCollectorSerializer<S> {
+    fn into_inner(self) -> S {
+        self.inner
+    }
+}
+
+impl<S: Default> Default for StringCollectorSerializer<S> {
+    fn default() -> Self {
+        Self {
+            inner: S::default(),
+            buff: Vec::new(),
+            lengths: Vec::new(),
+            next_id: 0,
+        }
+    }
+}
+
+impl<S> WrappedSerializer for StringCollectorSerializer<S> {
+    fn is_js_serializer(&self) -> bool {
+        true
+    }
+
+    fn serialize_string(&mut self, word: &JsWord) -> u32 {
+        let string: &str = word;
+
+        let mut len = 0;
+        for c in string.encode_utf16() {
+            self.buff.push(c);
+            len += 1;
+        }
+        self.lengths.push(len);
+
+        let id = self.next_id;
+        assert!(id != u32::MAX);
+        self.next_id += 1;
+        id
+    }
+
+    fn get_string_collection(&self) -> StringCollection {
+        // TODO Avoid cloning
+        StringCollection {
+            buff: self.buff.clone(),
+            lengths: self.lengths.clone(),
+        }
+    }
+}
+
+impl<S: rkyv::Fallible> rkyv::Fallible for StringCollectorSerializer<S> {
+    type Error = S::Error;
+}
+
+impl<S: rkyv::ser::Serializer> rkyv::ser::Serializer for StringCollectorSerializer<S> {
+    #[inline]
+    fn pos(&self) -> usize {
+        self.inner.pos()
+    }
+
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) -> Result<(), S::Error> {
+        self.inner.write(bytes)
+    }
+
+    #[inline]
+    fn pad(&mut self, padding: usize) -> Result<(), Self::Error> {
+        self.inner.pad(padding)
+    }
+
+    #[inline]
+    fn align(&mut self, align: usize) -> Result<usize, Self::Error> {
+        self.inner.align(align)
+    }
+
+    #[inline]
+    fn align_for<T>(&mut self) -> Result<usize, Self::Error> {
+        self.inner.align_for::<T>()
+    }
+
+    #[inline]
+    unsafe fn resolve_aligned<T: Archive + ?Sized>(
+        &mut self,
+        value: &T,
+        resolver: T::Resolver,
+    ) -> Result<usize, Self::Error> {
+        self.inner.resolve_aligned::<T>(value, resolver)
+    }
+
+    #[inline]
+    unsafe fn resolve_unsized_aligned<T: ArchiveUnsized + ?Sized>(
+        &mut self,
+        value: &T,
+        to: usize,
+        metadata_resolver: T::MetadataResolver,
+    ) -> Result<usize, Self::Error> {
+        self.inner
+            .resolve_unsized_aligned(value, to, metadata_resolver)
+    }
+}
+
+impl<S: rkyv::ser::ScratchSpace> rkyv::ser::ScratchSpace for StringCollectorSerializer<S> {
+    #[inline]
+    unsafe fn push_scratch(&mut self, layout: Layout) -> Result<NonNull<[u8]>, Self::Error> {
+        self.inner.push_scratch(layout)
+    }
+
+    #[inline]
+    unsafe fn pop_scratch(&mut self, ptr: NonNull<u8>, layout: Layout) -> Result<(), Self::Error> {
+        self.inner.pop_scratch(ptr, layout)
+    }
+}
+
+impl<S: rkyv::ser::SharedSerializeRegistry> rkyv::ser::SharedSerializeRegistry
+    for StringCollectorSerializer<S>
+{
+    #[inline]
+    fn get_shared_ptr(&self, value: *const u8) -> Option<usize> {
+        self.inner.get_shared_ptr(value)
+    }
+
+    #[inline]
+    fn add_shared_ptr(&mut self, value: *const u8, pos: usize) -> Result<(), Self::Error> {
+        self.inner.add_shared_ptr(value, pos)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 #[cfg_attr(
@@ -186,6 +344,37 @@ impl PluginSerializedBytes {
     {
         let mut serializer =
             StandardSerializer::<rkyv::ser::serializers::AllocSerializer<512>>::default();
+        serializer.serialize_value(t).map_err(|err| match err {
+            rkyv::ser::serializers::CompositeSerializerError::SerializerError(e) => e.into(),
+            rkyv::ser::serializers::CompositeSerializerError::ScratchSpaceError(e) => {
+                Error::msg("AllocScratchError")
+            }
+            rkyv::ser::serializers::CompositeSerializerError::SharedError(e) => {
+                Error::msg("SharedSerializeMapError")
+            }
+        })?;
+
+        let bytes = serializer.into_inner().into_serializer().into_inner();
+        Ok(PluginSerializedBytes { field: bytes })
+    }
+
+    pub fn try_serialize_for_js<W>(t: &W) -> Result<Self, Error>
+    where
+        W: rkyv::Serialize<
+            StringCollectorSerializer<
+                rkyv::ser::serializers::CompositeSerializer<
+                    rkyv::ser::serializers::AlignedSerializer<rkyv::AlignedVec>,
+                    rkyv::ser::serializers::FallbackScratch<
+                        rkyv::ser::serializers::HeapScratch<512_usize>,
+                        rkyv::ser::serializers::AllocScratch,
+                    >,
+                    rkyv::ser::serializers::SharedSerializeMap,
+                >,
+            >,
+        >,
+    {
+        let mut serializer =
+            StringCollectorSerializer::<rkyv::ser::serializers::AllocSerializer<512>>::default();
         serializer.serialize_value(t).map_err(|err| match err {
             rkyv::ser::serializers::CompositeSerializerError::SerializerError(e) => e.into(),
             rkyv::ser::serializers::CompositeSerializerError::ScratchSpaceError(e) => {

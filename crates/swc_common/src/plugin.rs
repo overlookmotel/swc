@@ -212,12 +212,10 @@ impl<S> StringCollectorSerializer<S> {
 
     // TODO: Make this return a Result
     fn insert_string(&mut self, string: &str) -> u32 {
-        let mut len = 0;
-        for c in string.encode_utf16() {
-            self.buff.push(c);
-            len += 1;
-        }
-        self.lengths.push(len);
+        let pos: u32 = self.buff.len().try_into().unwrap();
+        self.buff.extend(string.encode_utf16());
+        let end_pos: u32 = self.buff.len().try_into().unwrap();
+        self.lengths.push(end_pos - pos);
 
         let id = self.next_id;
         assert!(id != STATIC_SLOT_EMPTY);

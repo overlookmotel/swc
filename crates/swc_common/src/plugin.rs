@@ -160,13 +160,13 @@ struct LookupEntry {
 #[archive_attr(repr(C))]
 pub struct StringCollection {
     buff: Vec<u16>,
-    lengths: Vec<u32>,
+    end_positions: Vec<u32>,
 }
 
 pub struct StringCollectorSerializer<S> {
     inner: S,
     buff: Vec<u16>,
-    lengths: Vec<u32>,
+    end_positions: Vec<u32>,
     static_lookup: Vec<u32>,
     dynamic_lookup: Vec<Option<Box<LookupEntry>>>,
     single_byte_lookup: Vec<u32>,
@@ -212,10 +212,8 @@ impl<S> StringCollectorSerializer<S> {
 
     // TODO: Make this return a Result
     fn insert_string(&mut self, string: &str) -> u32 {
-        let pos: u32 = self.buff.len().try_into().unwrap();
         self.buff.extend(string.encode_utf16());
-        let end_pos: u32 = self.buff.len().try_into().unwrap();
-        self.lengths.push(end_pos - pos);
+        self.end_positions.push(self.buff.len().try_into().unwrap());
 
         let id = self.next_id;
         assert!(id != STATIC_SLOT_EMPTY);
@@ -232,7 +230,7 @@ impl<S: Default> Default for StringCollectorSerializer<S> {
         Self {
             inner: S::default(),
             buff: Vec::new(),
-            lengths: Vec::new(),
+            end_positions: Vec::new(),
             static_lookup: vec![STATIC_SLOT_EMPTY; num_static_strings],
             dynamic_lookup: vec![None; NB_DYNAMIC_BUCKETS],
             single_byte_lookup: vec![STATIC_SLOT_EMPTY; 256],
@@ -274,7 +272,7 @@ impl<S> WrappedSerializer for StringCollectorSerializer<S> {
                     let mut id = self.single_byte_lookup[char_code as usize];
                     if id == STATIC_SLOT_EMPTY {
                         self.buff.push(char_code as u16);
-                        self.lengths.push(1);
+                        self.end_positions.push(self.buff.len().try_into().unwrap());
 
                         id = self.next_id;
                         assert!(id != STATIC_SLOT_EMPTY);
@@ -295,7 +293,7 @@ impl<S> WrappedSerializer for StringCollectorSerializer<S> {
         // TODO Avoid cloning
         StringCollection {
             buff: self.buff.clone(),
-            lengths: self.lengths.clone(),
+            end_positions: self.end_positions.clone(),
         }
     }
 }

@@ -59,13 +59,13 @@ function deserialize(buffIn) {
     // Split into individual strings
     const numStrings = uint32[end32 - 1];
     strings = Array(numStrings);
-    let lenPos32 = ((end + int32[end32 - 2]) >> 2) - 2,
+    let endPosPos32 = ((end + int32[end32 - 2]) >> 2) - 2,
         charPos = 0;
     for (let i = 0; i < numStrings; i++) {
         strings[i] = slice.call(
             allStrings,
             charPos,
-            (charPos += uint32[lenPos32++])
+            (charPos = uint32[endPosPos32++])
         );
     }
 

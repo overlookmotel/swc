@@ -28,6 +28,8 @@ use serde::Serializer;
 
 include!(concat!(env!("OUT_DIR"), "/js_word.rs"));
 
+mod new_jsword;
+
 /// An (optionally) interned string.
 ///
 /// Use [AtomGenerator], [`Atom::new`] or `.into()` to create [Atom]s.

@@ -1,9 +1,9 @@
-use std::{num::NonZeroU64, ptr::NonNull, sync::atomic::AtomicIsize};
+use std::{mem, num::NonZeroU64, ops::Deref, ptr::NonNull, slice, str};
 
 const HOMELESS_TAG: u8 = 0;
 const STATIC_TAG: u8 = 6;
 const DYNAMIC_TAG: u8 = 7;
-const LENGTH_MASK: u64 = 0b_111; // 3 lowest bits
+const LENGTH_MASK: u64 = 0b_0111; // 3 lowest bits
 const PREFIX_MASK: u64 = 0b_1000; // 4th bit
 const POSTFIX_MASK: u64 = (1 << 24) - 1 - 0b_1111; // 20 bit - top 4 bits of bytes 0 and bytes 1+2
 const NO_POSTFIX: u64 = POSTFIX_MASK;
@@ -11,12 +11,12 @@ const NON_POSTFIX_MASK: u64 = (1 << 64) - 1 - POSTFIX_MASK;
 const POSTFIX_SHIFT_BITS: usize = 4;
 const MAX_POSTFIX: u32 = (1 << 20) - 2; // `-2` because highest value reserved for `NO_POSTFIX`
 const PTR_MASK: u64 = (1 << 64) - (1 << 24); // 40 bit - bytes 3-7
-const PTR_ZERO_BIT_MASK: usize = 0b11; // Pointers should be aligned on 4 bytes
+const PTR_ZERO_BIT_MASK: u64 = 0b11; // Pointers should be aligned on 4 bytes
 const PTR_SHIFT_BITS: usize = 22; // 24 bits minus 2 which should always be zero
 const MAX_PTR: u64 = (1 << 42) - 1; // 4 TiB
 
 const MAX_INLINE_LEN: usize = 5;
-const INLINE_LITTLE_ENDIAN_OFFSET: usize = 3;
+const INLINE_LITTLE_ENDIAN_OFFSET: isize = 3;
 const STATIC_SHIFT_BITS: usize = 32;
 
 const NB_BUCKETS: usize = 1 << 12; // 4096
@@ -29,7 +29,7 @@ struct DynamicEntry {
 }
 
 struct HomelessEntry {
-    string: Box<Str>,
+    string: Box<str>,
 }
 
 impl HomelessEntry {
@@ -75,6 +75,13 @@ struct DynamicSet {
     buckets: Box<[Option<Box<DynamicEntry>>; NB_BUCKETS]>,
 }
 
+impl DynamicSet {
+    fn insert(&self, string: &str, hash: u32) -> NonNull<DynamicEntry> {
+        // TODO
+        unimplemented!();
+    }
+}
+
 pub struct JsWord {
     unsafe_data: NonZeroU64,
 }
@@ -82,15 +89,15 @@ pub struct JsWord {
 impl JsWord {
     pub fn new_from_str(string: &str, dynamic_set: Option<DynamicSet>) -> Self {
         let static_set = StaticSet::get();
-        let hash = phf_shared::hash(&*string_to_add, &static_set.key);
+        let hash = phf_shared::hash(&*string, &static_set.key);
         let mut static_index =
             phf_shared::get_index(&hash, static_set.disps, static_set.atoms.len());
 
-        let mut data = if static_set.atoms[index as usize] == string_to_add {
+        let mut data: u64 = if static_set.atoms[static_index as usize] == string {
             // Static string
             // Safety: Cannot be zero due to STATIC_TAG
             debug_assert!(STATIC_TAG != 0);
-            (static_index << STATIC_SHIFT_BITS) | (STATIC_TAG as u64)
+            ((static_index as u64) << STATIC_SHIFT_BITS) | (STATIC_TAG as u64)
         } else {
             let len = string.len();
 
@@ -101,25 +108,25 @@ impl JsWord {
                 let mut data = len as u64;
                 {
                     let dest = inline_atom_slice_mut(&mut data);
-                    dest[..len].copy_from_slice(string_to_add.as_bytes())
+                    dest[..len].copy_from_slice(string.as_bytes())
                 }
                 // Safety: `data` cannot be zero because length is non-zero
                 data
             } else {
                 match dynamic_set {
                     Some(dynamic_set) => {
-                        let ptr: std::ptr::NonNull<Entry> =
-                            dynamic_set.insert(string_to_add, hash.g);
+                        let ptr: std::ptr::NonNull<DynamicEntry> =
+                            dynamic_set.insert(string, hash.g);
                         // Safety: Cannot be zero because pointer is non-null
-                        pointer_to_data(ptr.as_ptr()) | (DYNAMIC_TAG as u64)
+                        pointer_to_data(ptr.as_ptr() as u64) | (DYNAMIC_TAG as u64)
                     }
                     None => {
                         // TODO Do we need to explicitly put `HomelessEntry` on the heap?
                         let entry = *Box::new(HomelessEntry::new(string));
-                        let ptr = NonNull::from(&mut *entry);
+                        let ptr = NonNull::from(&mut entry);
                         // Safety: Cannot be zero because pointer is non-null
                         debug_assert!(HOMELESS_TAG == 0);
-                        pointer_to_data(ptr.as_ptr())
+                        pointer_to_data(ptr.as_ptr() as u64)
                     }
                 }
             }
@@ -130,18 +137,18 @@ impl JsWord {
 
     pub fn with_prefix(&self) -> Self {
         let data = self.unsafe_data();
-        assert(data & PREFIX_MASK == 0);
+        assert!(data & PREFIX_MASK == 0);
         // Safety: `data` cannot be zero because `self.unsafe_data` cannot be zero
         unsafe { Self::from_unsafe_data(data | PREFIX_MASK) }
     }
 
     pub fn with_postfix(&self, postfix: u32) -> Self {
-        assert(postfix <= MAX_POSTFIX);
+        assert!(postfix <= MAX_POSTFIX);
 
         // Safety: `data` cannot be zero because `self.unsafe_data` cannot be zero
         unsafe {
             Self::from_unsafe_data(
-                (self.unsafe_data() & NON_POSTFIX_MASK) | (postfix << POSTFIX_SHIFT_BITS),
+                (self.unsafe_data() & NON_POSTFIX_MASK) | ((postfix as u64) << POSTFIX_SHIFT_BITS),
             )
         }
     }
@@ -180,12 +187,12 @@ impl JsWord {
     #[inline(always)]
     fn add_prefix_and_postfix(&self, string: &str) -> &str {
         let mut string = string;
-        if (self.unsafe_data() & PREFIX_MASK == PREFIX_MASK) {
+        if self.unsafe_data() & PREFIX_MASK == PREFIX_MASK {
             string = "_".to_owned() + string.to_owned();
         }
 
         let postfix_data = self.unsafe_data() & POSTFIX_MASK;
-        if (postfix_data != NO_POSTFIX) {
+        if postfix_data != NO_POSTFIX {
             string.to_owned() + format!("{}", postfix_data >> POSTFIX_SHIFT_BITS)
         }
         string
@@ -193,37 +200,37 @@ impl JsWord {
 
     // Caller must ensure `data` is not zero
     #[inline(always)]
-    unsafe fn from_unsafe_data(data: u64) {
+    unsafe fn from_unsafe_data(data: u64) -> Self {
         Self {
             unsafe_data: NonZeroU64::new_unchecked(data),
         }
     }
 }
 
-impl ops::Deref for JsWord {
+impl Deref for JsWord {
     type Target = str;
 
     #[inline]
     fn deref(&self) -> &str {
         let len = self.len();
 
-        if (len == STATIC_TAG) {
+        if len == STATIC_TAG {
             StaticSet::get().atoms[self.static_index() as usize]
         } else {
-            let string = match self.len() {
+            let string = match len {
                 DYNAMIC_TAG => {
                     let entry = self.ptr() as *const DynamicEntry;
-                    &(*entry).string
+                    &*(unsafe { *entry }).string
                 }
                 HOMELESS_TAG => {
                     let entry = self.ptr() as *const HomelessEntry;
-                    &(*entry).string
+                    &*(unsafe { *entry }).string
                 }
                 len => {
                     // Inline string
-                    debug_assert!(len > 0 && len <= MAX_INLINE_LEN);
+                    debug_assert!(len > 0 && len <= (MAX_INLINE_LEN as u8));
                     let src = inline_atom_slice(&self.unsafe_data);
-                    str::from_utf8_unchecked(&src[..(len as usize)])
+                    unsafe { str::from_utf8_unchecked(&src[..(len as usize)]) }
                 }
             };
 
@@ -243,8 +250,8 @@ impl Drop for JsWord {
 }
 
 #[inline(always)]
-fn pointer_to_data(ptr_address: usize) -> u64 {
-    if (mem::sizeof::<usize>() > 5) {
+fn pointer_to_data(ptr_address: u64) -> u64 {
+    if mem::size_of::<usize>() > 5 {
         assert!((ptr_address as u64) <= MAX_PTR);
     }
     debug_assert!(ptr_address != 0);

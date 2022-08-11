@@ -72,6 +72,9 @@ describe("Literals", () => {
         "'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'", // 62 length
         "'string_longer_than_7_chars'",
         "'😀'",
+        "'😀😂'",
+        "'😀😂😇'",
+        "'😀😂😇😍'",
         "'abc😀def'",
         "'😀😂😇😍🤪💩abc😀😂😇😍🤪💩def😀😂😇😍🤪💩'",
         "'a', 'b', 'c', 'string_longer_than_7_chars', '😀', 'd', 'e'",

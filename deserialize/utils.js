@@ -82,7 +82,7 @@ function serialize(ast) {
 
     return buff.subarray(0, pos + 4);
 }
-let pos, scratchPos;
+let pos, scratchPos32;
 
 /**
  * Reset serialization buffers.

@@ -8058,8 +8058,9 @@ function serialize(ast) {
     pos += 4;
     finalizeProgram(storePos32);
     int32[pos >> 2] = -40;
-    return buff.subarray(0, pos + 4);
+    return subarray.call(buff, 0, pos + 4);
 }
+const { subarray } = Buffer.prototype;
 
 function serializeOption(value, serialize) {
     return value === null ? 0 : serialize(value);
@@ -8166,8 +8167,9 @@ function growBuffer(minLen) {
     }
     const oldBuff = buff;
     initBuffer();
-    buff.set(oldBuff);
+    setBuff.call(buff, oldBuff);
 }
+const setBuff = Buffer.prototype.set;
 
 function alignPos(align) {
     if (align !== 1) {

@@ -80,9 +80,13 @@ function serialize(ast) {
     // Add pointer to `VersionedSerializable` version as final Int32
     int32[pos >> 2] = -PROGRAM_LENGTH_PLUS_4;
 
-    return buff.subarray(0, pos + 4);
+    return subarray.call(buff, 0, pos + 4);
 }
 let pos, scratchPos32;
+
+serialize.toString = () =>
+    Function.prototype.toString.call(serialize) +
+    "\n\nconst { subarray } = Buffer.prototype;";
 
 /**
  * Reset serialization buffers.
@@ -143,8 +147,12 @@ function growBuffer(minLen) {
 
     const oldBuff = buff;
     initBuffer();
-    buff.set(oldBuff);
+    setBuff.call(buff, oldBuff);
 }
+
+growBuffer.toString = () =>
+    Function.prototype.toString.call(growBuffer) +
+    "\n\nconst setBuff = Buffer.prototype.set;";
 
 /**
  * Align pos to specified alignment.

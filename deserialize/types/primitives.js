@@ -312,7 +312,7 @@ module.exports = {
                 // `Buffer.prototype.asciiWrite` is undocumented but used internally by
                 // `Buffer.prototype.write`. `.asciiWrite` is faster as skips bounds-checking.
                 // `asciiWrite.call(buff, str, pos)` is equivalent to `buff.write(str, pos, 'ascii')`.
-                // NB `asciiWrite()` cab be passed a `len` argument, but it's 2% faster if omitted.
+                // NB `asciiWrite()` can be passed a `len` argument, but it's 2% faster if omitted.
                 if (len < 48) {
                     writeAsciiStringToBuffer(str, buff, len, pos);
                 } else {

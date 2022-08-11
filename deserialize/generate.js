@@ -246,7 +246,7 @@ function format(code) {
 
 /**
  * Create function to replace `finalizeJsWord` function with the debug code left in.
- * This debug code which is retained zeros out unallocted bytes which would otherwise
+ * This debug code which is retained zeros out unallocated bytes which would otherwise
  * contain random data.
  * This is for use in tests only, where tests compare buffers and these random bytes,
  * even though they don't actually affect operation, cause the buffer comparisons to fail.

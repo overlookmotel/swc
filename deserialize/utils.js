@@ -70,6 +70,13 @@ function serialize(ast) {
     // Ensure start of buffer is aligned on 8
     alignPos(8);
 
+    /* DEBUG_ONLY_START */
+    console.log("Serialize trace:");
+    for (const line of debugLines) {
+        console.log(line.typeName, buffLen - buffPos - line.pos);
+    }
+    /* DEBUG_ONLY_END */
+
     return subarray.call(buff, buffPos);
 }
 let buffPos;
@@ -287,5 +294,9 @@ function debugBuff(typeName, pos, length) {
  * @returns {undefined}
  */
 function debugAst(typeName, pos) {
-    console.log(`${typeName}:`, pos, pos % 16);
+    console.log(`> ${typeName}:`, pos, pos % 16);
+    debugLines.push({ typeName, pos: buffLen - pos });
 }
+
+debugAst.toString = () =>
+    Function.prototype.toString.call(debugAst) + "\n\nconst debugLines = [];";

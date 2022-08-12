@@ -8195,7 +8195,7 @@ function allocScratch(bytes32) {
 
 function allocScratchAligned(bytes) {
     const mod = bytes & 7;
-    return allocScratch(mod === 0 ? bytes : (bytes + 8 - mod) >> 2);
+    return allocScratch((mod === 0 ? bytes : bytes + 8 - mod) >> 2);
 }
 
 function growScratch() {

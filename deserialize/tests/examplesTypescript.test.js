@@ -10,6 +10,8 @@ const { itParsesAndPrintsOne, getOptions } = require("./utils.js"),
 
 // Tests
 
+const describeIfNotSkipped = process.env.SKIP_FIXTURES ? describe.skip : describe;
+
 const rootPath = pathJoin(__dirname, "../..");
 const fixturePaths = [];
 getFixtures("");
@@ -48,7 +50,7 @@ function getFixtures(dirPath) {
     }
 }
 
-describe("TypeScript example files", () => {
+describeIfNotSkipped("TypeScript example files", () => {
     for (const path of fixturePaths) {
         const code = readFileSync(pathJoin(rootPath, path), "utf8");
 

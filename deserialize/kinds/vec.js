@@ -54,19 +54,11 @@ class Vec extends Kind {
      * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
-        const {
-            serializerName,
-            finalizerName,
-            length: valueLength,
-            align: valueAlign,
-        } = this.valueType;
-        return `function ${this.serializerName}(values) {
-            return serializeVec(values, ${serializerName}, ${finalizerName}, ${valueLength}, ${valueAlign});
+        const { valueType } = this;
+        return `function ${this.serializerName}(values, pos) {
+            serializeVec(values, pos, ${valueType.serializerName}, ${valueType.length}, ${valueType.align});
         }`;
     }
-
-    // Use `finalizeVec` as finalizer for all Vec types
-    finalizerName = "finalizeVec";
 }
 
 /**
@@ -96,73 +88,33 @@ function deserializeVec(pos, deserialize, length) {
 
 /**
  * Serialize Vec.
- * Store in scratch:
- *   - Bytes 0-3: Position of start of values in buffer (Uint32)
- *   - Bytes 4-7: Number of values (Uint32)
- * Return scratch position (in multiples of 4 bytes).
- *
- * @param {Array<*>} values - Values to serialize
+ * @param {Array<*>} values - Values
+ * @param {number} pos - Position to write at
  * @param {Function} serialize - Serialize function for type
- * @param {Function} finalize - Finalize function for type
  * @param {number} valueLength - Length of value type
  * @param {number} valueAlign - Alignment of value type
- * @returns {number} - Scratch position (in multiples of 4 bytes)
- */
-function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
-    // Allocate 8 bytes scratch
-    const storePos32 = allocScratch(2);
-
-    // Store number of values in scratch bytes 4-7
-    const numValues = values.length;
-    scratchUint32[storePos32 + 1] = numValues;
-
-    if (numValues === 0) {
-        // NB No need to alloc for extra bytes required to obtain alignment, as buffer is grown
-        // in 8-byte multiples. So there will always be enough space already allocated.
-        alignPos(valueAlign);
-        scratchUint32[storePos32] = pos;
-        return storePos32;
-    }
-
-    const scratchPos32Before = scratchPos32;
-
-    // Serialize values
-    const finalizeData = new Array(numValues);
-    for (let i = 0; i < numValues; i++) {
-        finalizeData[i] = serialize(values[i]);
-    }
-
-    // Finalize values.
-    // Store position of values in scratch bytes 0-3.
-    alignPos(valueAlign);
-    alloc(valueLength * numValues);
-    scratchUint32[storePos32] = pos;
-    for (let i = 0; i < numValues; i++) {
-        finalize(finalizeData[i]);
-    }
-
-    // Free scratch space
-    scratchPos32 = scratchPos32Before;
-
-    // Return Uint32 position in scratch store
-    return storePos32;
-}
-
-/**
- * Finalize Vec.
- * Retrieve number of values and position of values in output buffer from scratch.
- * Write to output buffer:
- *   - Bytes 0-3: Relative pointer to location of values as Int32
- *   - Bytes 4-7: Number of values as Uint32
- *
- * @param {number} storePos32 - Position of scratch data (in multiple of 4 bytes)
  * @returns {undefined}
  */
-function finalizeVec(storePos32) {
-    const pos32 = pos >>> 2;
-    int32[pos32] = scratchUint32[storePos32] - pos;
-    uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
-    pos += 8;
+function serializeVec(values, pos, serialize, valueLength, valueAlign) {
+    const numValues = values.length,
+        pos32 = pos >>> 2;
+    if (numValues === 0) {
+        alignPos(valueAlign);
+        uint32[pos32] = buffPos - pos; // Always positive number, so safe to use `uint32`
+        uint32[pos32 + 1] = 0;
+        return;
+    }
+
+    let valuePos = allocAligned(valueLength * numValues, valueAlign);
+    uint32[pos32] = valuePos - pos; // Always positive number, so safe to use `uint32`
+    uint32[pos32 + 1] = numValues;
+
+    let i = 0;
+    while (true) {
+        serialize(values[i], valuePos);
+        if (++i === numValues) break;
+        valuePos += valueLength;
+    }
 }
 
-module.exports = { Vec, deserializeVec, serializeVec, finalizeVec };
+module.exports = { Vec, deserializeVec, serializeVec };

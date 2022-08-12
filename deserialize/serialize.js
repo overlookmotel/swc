@@ -4,89 +4,36 @@
 
 module.exports = serialize;
 
-let pos, buffLen, buff, uint16, int32, uint32, float64;
+let buffPos, buffLen, buff, uint32, float64;
 
-let scratchPos32,
-    scratchLen32,
-    scratchBuff,
-    scratchUint16,
-    scratchUint32,
-    scratchFloat64;
+resetBuffer();
 
-resetBuffers();
-
-function serializeProgram(node) {
-    const storePos32 = allocScratch(2);
+function serializeProgram(node, pos) {
     switch (node.type) {
         case "Module":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeModule(node));
+            serializeEnum(node, pos, 0, serializeModule, 4);
             break;
         case "Script":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeScript(node));
+            serializeEnum(node, pos, 1, serializeScript, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for Program");
     }
-    return storePos32;
 }
 
-function finalizeProgram(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeModule,
-                4,
-                36
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeScript,
-                4,
-                36
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for Program");
-    }
+function serializeModule(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecModuleItem(node.body, pos + 12);
+    serializeOptionJsWord(node.interpreter, pos + 20);
 }
 
-function serializeModule(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecModuleItem(node.body));
-    writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.interpreter));
-    return storePos32;
+function serializeScript(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecStatement(node.body, pos + 12);
+    serializeOptionJsWord(node.interpreter, pos + 20);
 }
 
-function finalizeModule(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeOptionJsWord(scratchUint32[storePos32 + 2]);
-}
-
-function serializeScript(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecStatement(node.body));
-    writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.interpreter));
-    return storePos32;
-}
-
-function finalizeScript(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeOptionJsWord(scratchUint32[storePos32 + 2]);
-}
-
-function serializeModuleItem(node) {
-    const storePos32 = allocScratch(2);
+function serializeModuleItem(node, pos) {
     switch (node.type) {
         case "ImportDeclaration":
         case "ExportDeclaration":
@@ -97,11 +44,7 @@ function serializeModuleItem(node) {
         case "TsImportEqualsDeclaration":
         case "TsExportAssignment":
         case "TsNamespaceExportDeclaration":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeModuleDeclaration(node)
-            );
+            serializeEnum(node, pos, 0, serializeModuleDeclaration, 4);
             break;
         case "BlockStatement":
         case "EmptyStatement":
@@ -128,104 +71,46 @@ function serializeModuleItem(node) {
         case "TsEnumDeclaration":
         case "TsModuleDeclaration":
         case "ExpressionStatement":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeStatement(node));
+            serializeEnum(node, pos, 1, serializeStatement, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for ModuleItem");
     }
-    return storePos32;
 }
 
-function finalizeModuleItem(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeModuleDeclaration,
-                4,
-                156
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeStatement,
-                4,
-                156
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for ModuleItem");
-    }
-}
-
-function serializeModuleDeclaration(node) {
-    const storePos32 = allocScratch(2);
+function serializeModuleDeclaration(node, pos) {
     switch (node.type) {
         case "ImportDeclaration":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeImportDeclaration(node)
-            );
+            serializeEnum(node, pos, 0, serializeImportDeclaration, 4);
             break;
         case "ExportDeclaration":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExportDeclaration(node)
-            );
+            serializeEnum(node, pos, 1, serializeExportDeclaration, 4);
             break;
         case "ExportNamedDeclaration":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExportNamedDeclaration(node)
-            );
+            serializeEnum(node, pos, 2, serializeExportNamedDeclaration, 4);
             break;
         case "ExportDefaultDeclaration":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExportDefaultDeclaration(node)
-            );
+            serializeEnum(node, pos, 3, serializeExportDefaultDeclaration, 4);
             break;
         case "ExportDefaultExpression":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExportDefaultExpression(node)
-            );
+            serializeEnum(node, pos, 4, serializeExportDefaultExpression, 4);
             break;
         case "ExportAllDeclaration":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExportAllDeclaration(node)
-            );
+            serializeEnum(node, pos, 5, serializeExportAllDeclaration, 4);
             break;
         case "TsImportEqualsDeclaration":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsImportEqualsDeclaration(node)
-            );
+            serializeEnum(node, pos, 6, serializeTsImportEqualsDeclaration, 4);
             break;
         case "TsExportAssignment":
-            scratchBuff[storePos32 << 2] = 7;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsExportAssignment(node)
-            );
+            serializeEnum(node, pos, 7, serializeTsExportAssignment, 4);
             break;
         case "TsNamespaceExportDeclaration":
-            scratchBuff[storePos32 << 2] = 8;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsNamespaceExportDeclaration(node)
+            serializeEnum(
+                node,
+                pos,
+                8,
+                serializeTsNamespaceExportDeclaration,
+                4
             );
             break;
         default:
@@ -233,544 +118,179 @@ function serializeModuleDeclaration(node) {
                 "Unexpected enum option type for ModuleDeclaration"
             );
     }
-    return storePos32;
 }
 
-function finalizeModuleDeclaration(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeImportDeclaration,
-                4,
-                148
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeExportDeclaration,
-                4,
-                148
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeExportNamedDeclaration,
-                4,
-                148
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeExportDefaultDeclaration,
-                4,
-                148
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeExportDefaultExpression,
-                4,
-                148
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeExportAllDeclaration,
-                4,
-                148
-            );
-            break;
-        case 6:
-            finalizeEnum(
-                6,
-                scratchUint32[storePos32 + 1],
-                finalizeTsImportEqualsDeclaration,
-                4,
-                148
-            );
-            break;
-        case 7:
-            finalizeEnum(
-                7,
-                scratchUint32[storePos32 + 1],
-                finalizeTsExportAssignment,
-                4,
-                148
-            );
-            break;
-        case 8:
-            finalizeEnum(
-                8,
-                scratchUint32[storePos32 + 1],
-                finalizeTsNamespaceExportDeclaration,
-                4,
-                148
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for ModuleDeclaration");
-    }
+function serializeImportDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecImportSpecifier(node.specifiers, pos + 12);
+    serializeStringLiteral(node.source, pos + 20);
+    serializeBoolean(node.typeOnly, pos + 52);
+    serializeOptionObjectExpression(node.asserts, pos + 56);
 }
 
-function serializeImportDeclaration(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecImportSpecifier(node.specifiers)
-    );
-    writeScratchUint32(storePos32 + 2, serializeStringLiteral(node.source));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.typeOnly));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionObjectExpression(node.asserts)
-    );
-    return storePos32;
-}
-
-function finalizeImportDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeStringLiteral(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 3;
-    finalizeOptionObjectExpression(scratchUint32[storePos32 + 4]);
-}
-
-function serializeImportSpecifier(node) {
-    const storePos32 = allocScratch(2);
+function serializeImportSpecifier(node, pos) {
     switch (node.type) {
         case "ImportSpecifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeImportNamedSpecifier(node)
-            );
+            serializeEnum(node, pos, 0, serializeImportNamedSpecifier, 4);
             break;
         case "ImportDefaultSpecifier":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeImportDefaultSpecifier(node)
-            );
+            serializeEnum(node, pos, 1, serializeImportDefaultSpecifier, 4);
             break;
         case "ImportNamespaceSpecifier":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeImportNamespaceSpecifier(node)
-            );
+            serializeEnum(node, pos, 2, serializeImportNamespaceSpecifier, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for ImportSpecifier");
     }
-    return storePos32;
 }
 
-function finalizeImportSpecifier(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeImportNamedSpecifier,
-                4,
-                84
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeImportDefaultSpecifier,
-                4,
-                84
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeImportNamespaceSpecifier,
-                4,
-                84
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for ImportSpecifier");
-    }
+function serializeImportNamedSpecifier(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.local, pos + 12);
+    serializeOptionTsModuleName(node.imported, pos + 36);
+    serializeBoolean(node.isTypeOnly, pos + 76);
 }
 
-function serializeImportNamedSpecifier(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.local));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsModuleName(node.imported)
-    );
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.isTypeOnly));
-    return storePos32;
+function serializeImportDefaultSpecifier(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.local, pos + 12);
 }
 
-function finalizeImportNamedSpecifier(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsModuleName(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 3;
+function serializeImportNamespaceSpecifier(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.local, pos + 12);
 }
 
-function serializeImportDefaultSpecifier(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.local));
-    return storePos32;
+function serializeExportDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeDeclaration(node.declaration, pos + 12);
 }
 
-function finalizeImportDefaultSpecifier(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
+function serializeExportNamedDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecExportSpecifier(node.specifiers, pos + 12);
+    serializeOptionStringLiteral(node.source, pos + 20);
+    serializeBoolean(node.typeOnly, pos + 56);
+    serializeOptionObjectExpression(node.asserts, pos + 60);
 }
 
-function serializeImportNamespaceSpecifier(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.local));
-    return storePos32;
-}
-
-function finalizeImportNamespaceSpecifier(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-}
-
-function serializeExportDeclaration(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeDeclaration(node.declaration));
-    return storePos32;
-}
-
-function finalizeExportDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeDeclaration(scratchUint32[storePos32 + 1]);
-}
-
-function serializeExportNamedDeclaration(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecExportSpecifier(node.specifiers)
-    );
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionStringLiteral(node.source)
-    );
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.typeOnly));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionObjectExpression(node.asserts)
-    );
-    return storePos32;
-}
-
-function finalizeExportNamedDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeOptionStringLiteral(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 3;
-    finalizeOptionObjectExpression(scratchUint32[storePos32 + 4]);
-}
-
-function serializeExportSpecifier(node) {
-    const storePos32 = allocScratch(2);
+function serializeExportSpecifier(node, pos) {
     switch (node.type) {
         case "ExportNamespaceSpecifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExportNamespaceSpecifier(node)
-            );
+            serializeEnum(node, pos, 0, serializeExportNamespaceSpecifier, 4);
             break;
         case "ExportDefaultSpecifier":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExportDefaultSpecifier(node)
-            );
+            serializeEnum(node, pos, 1, serializeExportDefaultSpecifier, 4);
             break;
         case "ExportSpecifier":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExportNamedSpecifier(node)
-            );
+            serializeEnum(node, pos, 2, serializeExportNamedSpecifier, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for ExportSpecifier");
     }
-    return storePos32;
 }
 
-function finalizeExportSpecifier(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeExportNamespaceSpecifier,
-                4,
-                96
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeExportDefaultSpecifier,
-                4,
-                96
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeExportNamedSpecifier,
-                4,
-                96
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for ExportSpecifier");
-    }
+function serializeExportNamespaceSpecifier(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsModuleName(node.name, pos + 12);
 }
 
-function serializeExportNamespaceSpecifier(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeTsModuleName(node.name));
-    return storePos32;
+function serializeExportDefaultSpecifier(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.exported, pos + 12);
 }
 
-function finalizeExportNamespaceSpecifier(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeTsModuleName(scratchUint32[storePos32 + 1]);
+function serializeExportNamedSpecifier(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsModuleName(node.orig, pos + 12);
+    serializeOptionTsModuleName(node.exported, pos + 48);
+    serializeBoolean(node.isTypeOnly, pos + 88);
 }
 
-function serializeExportDefaultSpecifier(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.exported));
-    return storePos32;
-}
-
-function finalizeExportDefaultSpecifier(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-}
-
-function serializeExportNamedSpecifier(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeTsModuleName(node.orig));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsModuleName(node.exported)
-    );
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.isTypeOnly));
-    return storePos32;
-}
-
-function finalizeExportNamedSpecifier(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeTsModuleName(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsModuleName(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 3;
-}
-
-function serializeExportDefaultDeclaration(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
-            node.decl
-        )
-    );
-    return storePos32;
-}
-
-function finalizeExportDefaultDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
-        scratchUint32[storePos32 + 1]
+function serializeExportDefaultDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
+        node.decl,
+        pos + 12
     );
 }
 
-function serializeExportDefaultExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
+function serializeExportDefaultExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function finalizeExportDefaultExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
+function serializeExportAllDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeStringLiteral(node.source, pos + 12);
+    serializeOptionObjectExpression(node.asserts, pos + 44);
 }
 
-function serializeExportAllDeclaration(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeStringLiteral(node.source));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionObjectExpression(node.asserts)
-    );
-    return storePos32;
-}
-
-function finalizeExportAllDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeStringLiteral(scratchUint32[storePos32 + 1]);
-    finalizeOptionObjectExpression(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsModuleName(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsModuleName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "StringLiteral":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeStringLiteral(node));
+            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsModuleName");
     }
-    return storePos32;
 }
 
-function finalizeTsModuleName(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                36
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeStringLiteral,
-                4,
-                36
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsModuleName");
-    }
-}
-
-function serializeStatement(node) {
-    const storePos32 = allocScratch(2);
+function serializeStatement(node, pos) {
     switch (node.type) {
         case "BlockStatement":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeBlockStatement(node));
+            serializeEnum(node, pos, 0, serializeBlockStatement, 4);
             break;
         case "EmptyStatement":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeEmptyStatement(node));
+            serializeEnum(node, pos, 1, serializeEmptyStatement, 4);
             break;
         case "DebuggerStatement":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeDebuggerStatement(node)
-            );
+            serializeEnum(node, pos, 2, serializeDebuggerStatement, 4);
             break;
         case "WithStatement":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeWithStatement(node));
+            serializeEnum(node, pos, 3, serializeWithStatement, 4);
             break;
         case "ReturnStatement":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(storePos32 + 1, serializeReturnStatement(node));
+            serializeEnum(node, pos, 4, serializeReturnStatement, 4);
             break;
         case "LabeledStatement":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(storePos32 + 1, serializeLabeledStatement(node));
+            serializeEnum(node, pos, 5, serializeLabeledStatement, 4);
             break;
         case "BreakStatement":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(storePos32 + 1, serializeBreakStatement(node));
+            serializeEnum(node, pos, 6, serializeBreakStatement, 4);
             break;
         case "ContinueStatement":
-            scratchBuff[storePos32 << 2] = 7;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeContinueStatement(node)
-            );
+            serializeEnum(node, pos, 7, serializeContinueStatement, 4);
             break;
         case "IfStatement":
-            scratchBuff[storePos32 << 2] = 8;
-            writeScratchUint32(storePos32 + 1, serializeIfStatement(node));
+            serializeEnum(node, pos, 8, serializeIfStatement, 4);
             break;
         case "SwitchStatement":
-            scratchBuff[storePos32 << 2] = 9;
-            writeScratchUint32(storePos32 + 1, serializeSwitchStatement(node));
+            serializeEnum(node, pos, 9, serializeSwitchStatement, 4);
             break;
         case "ThrowStatement":
-            scratchBuff[storePos32 << 2] = 10;
-            writeScratchUint32(storePos32 + 1, serializeThrowStatement(node));
+            serializeEnum(node, pos, 10, serializeThrowStatement, 4);
             break;
         case "TryStatement":
-            scratchBuff[storePos32 << 2] = 11;
-            writeScratchUint32(storePos32 + 1, serializeTryStatement(node));
+            serializeEnum(node, pos, 11, serializeTryStatement, 4);
             break;
         case "WhileStatement":
-            scratchBuff[storePos32 << 2] = 12;
-            writeScratchUint32(storePos32 + 1, serializeWhileStatement(node));
+            serializeEnum(node, pos, 12, serializeWhileStatement, 4);
             break;
         case "DoWhileStatement":
-            scratchBuff[storePos32 << 2] = 13;
-            writeScratchUint32(storePos32 + 1, serializeDoWhileStatement(node));
+            serializeEnum(node, pos, 13, serializeDoWhileStatement, 4);
             break;
         case "ForStatement":
-            scratchBuff[storePos32 << 2] = 14;
-            writeScratchUint32(storePos32 + 1, serializeForStatement(node));
+            serializeEnum(node, pos, 14, serializeForStatement, 4);
             break;
         case "ForInStatement":
-            scratchBuff[storePos32 << 2] = 15;
-            writeScratchUint32(storePos32 + 1, serializeForInStatement(node));
+            serializeEnum(node, pos, 15, serializeForInStatement, 4);
             break;
         case "ForOfStatement":
-            scratchBuff[storePos32 << 2] = 16;
-            writeScratchUint32(storePos32 + 1, serializeForOfStatement(node));
+            serializeEnum(node, pos, 16, serializeForOfStatement, 4);
             break;
         case "ClassDeclaration":
         case "FunctionDeclaration":
@@ -779,659 +299,179 @@ function serializeStatement(node) {
         case "TsTypeAliasDeclaration":
         case "TsEnumDeclaration":
         case "TsModuleDeclaration":
-            scratchBuff[storePos32 << 2] = 17;
-            writeScratchUint32(storePos32 + 1, serializeDeclaration(node));
+            serializeEnum(node, pos, 17, serializeDeclaration, 4);
             break;
         case "ExpressionStatement":
-            scratchBuff[storePos32 << 2] = 18;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeExpressionStatement(node)
-            );
+            serializeEnum(node, pos, 18, serializeExpressionStatement, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for Statement");
     }
-    return storePos32;
 }
 
-function finalizeStatement(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeBlockStatement,
-                4,
-                152
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeEmptyStatement,
-                4,
-                152
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeDebuggerStatement,
-                4,
-                152
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeWithStatement,
-                4,
-                152
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeReturnStatement,
-                4,
-                152
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeLabeledStatement,
-                4,
-                152
-            );
-            break;
-        case 6:
-            finalizeEnum(
-                6,
-                scratchUint32[storePos32 + 1],
-                finalizeBreakStatement,
-                4,
-                152
-            );
-            break;
-        case 7:
-            finalizeEnum(
-                7,
-                scratchUint32[storePos32 + 1],
-                finalizeContinueStatement,
-                4,
-                152
-            );
-            break;
-        case 8:
-            finalizeEnum(
-                8,
-                scratchUint32[storePos32 + 1],
-                finalizeIfStatement,
-                4,
-                152
-            );
-            break;
-        case 9:
-            finalizeEnum(
-                9,
-                scratchUint32[storePos32 + 1],
-                finalizeSwitchStatement,
-                4,
-                152
-            );
-            break;
-        case 10:
-            finalizeEnum(
-                10,
-                scratchUint32[storePos32 + 1],
-                finalizeThrowStatement,
-                4,
-                152
-            );
-            break;
-        case 11:
-            finalizeEnum(
-                11,
-                scratchUint32[storePos32 + 1],
-                finalizeTryStatement,
-                4,
-                152
-            );
-            break;
-        case 12:
-            finalizeEnum(
-                12,
-                scratchUint32[storePos32 + 1],
-                finalizeWhileStatement,
-                4,
-                152
-            );
-            break;
-        case 13:
-            finalizeEnum(
-                13,
-                scratchUint32[storePos32 + 1],
-                finalizeDoWhileStatement,
-                4,
-                152
-            );
-            break;
-        case 14:
-            finalizeEnum(
-                14,
-                scratchUint32[storePos32 + 1],
-                finalizeForStatement,
-                4,
-                152
-            );
-            break;
-        case 15:
-            finalizeEnum(
-                15,
-                scratchUint32[storePos32 + 1],
-                finalizeForInStatement,
-                4,
-                152
-            );
-            break;
-        case 16:
-            finalizeEnum(
-                16,
-                scratchUint32[storePos32 + 1],
-                finalizeForOfStatement,
-                4,
-                152
-            );
-            break;
-        case 17:
-            finalizeEnum(
-                17,
-                scratchUint32[storePos32 + 1],
-                finalizeDeclaration,
-                4,
-                152
-            );
-            break;
-        case 18:
-            finalizeEnum(
-                18,
-                scratchUint32[storePos32 + 1],
-                finalizeExpressionStatement,
-                4,
-                152
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for Statement");
-    }
+function serializeBlockStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecStatement(node.stmts, pos + 12);
 }
 
-function serializeBlockStatement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecStatement(node.stmts));
-    return storePos32;
+function serializeEmptyStatement(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function finalizeBlockStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
+function serializeDebuggerStatement(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function serializeEmptyStatement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
+function serializeWithStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.object, pos + 12);
+    serializeBoxStatement(node.body, pos + 16);
 }
 
-function finalizeEmptyStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
+function serializeReturnStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionBoxExpression(node.argument, pos + 12);
 }
 
-function serializeDebuggerStatement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
+function serializeLabeledStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.label, pos + 12);
+    serializeBoxStatement(node.body, pos + 36);
 }
 
-function finalizeDebuggerStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
+function serializeBreakStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionIdentifier(node.label, pos + 12);
 }
 
-function serializeWithStatement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.object));
-    writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.body));
-    return storePos32;
+function serializeContinueStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionIdentifier(node.label, pos + 12);
 }
 
-function finalizeWithStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
+function serializeIfStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.test, pos + 12);
+    serializeBoxStatement(node.consequent, pos + 16);
+    serializeOptionBoxStatement(node.alternate, pos + 20);
 }
 
-function serializeReturnStatement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeOptionBoxExpression(node.argument)
-    );
-    return storePos32;
+function serializeSwitchStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.discriminant, pos + 12);
+    serializeVecSwitchCase(node.cases, pos + 16);
 }
 
-function finalizeReturnStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 1]);
+function serializeSwitchCase(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionBoxExpression(node.test, pos + 12);
+    serializeVecStatement(node.consequent, pos + 20);
 }
 
-function serializeLabeledStatement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.label));
-    writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.body));
-    return storePos32;
+function serializeThrowStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.argument, pos + 12);
 }
 
-function finalizeLabeledStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
+function serializeTryStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBlockStatement(node.block, pos + 12);
+    serializeOptionCatchClause(node.handler, pos + 32);
+    serializeOptionBlockStatement(node.finalizer, pos + 124);
 }
 
-function serializeBreakStatement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeOptionIdentifier(node.label));
-    return storePos32;
+function serializeCatchClause(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionPattern(node.param, pos + 12);
+    serializeBlockStatement(node.body, pos + 68);
 }
 
-function finalizeBreakStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionIdentifier(scratchUint32[storePos32 + 1]);
+function serializeWhileStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.test, pos + 12);
+    serializeBoxStatement(node.body, pos + 16);
 }
 
-function serializeContinueStatement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeOptionIdentifier(node.label));
-    return storePos32;
+function serializeDoWhileStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.test, pos + 12);
+    serializeBoxStatement(node.body, pos + 16);
 }
 
-function finalizeContinueStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionIdentifier(scratchUint32[storePos32 + 1]);
+function serializeForStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionVariableDeclarationOrBoxExpression(node.init, pos + 12);
+    serializeOptionBoxExpression(node.test, pos + 48);
+    serializeOptionBoxExpression(node.update, pos + 56);
+    serializeBoxStatement(node.body, pos + 64);
 }
 
-function serializeIfStatement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.test));
-    writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.consequent));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionBoxStatement(node.alternate)
-    );
-    return storePos32;
+function serializeForInStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVariableDeclarationOrPattern(node.left, pos + 12);
+    serializeBoxExpression(node.right, pos + 68);
+    serializeBoxStatement(node.body, pos + 72);
 }
 
-function finalizeIfStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeOptionBoxStatement(scratchUint32[storePos32 + 3]);
+function serializeForOfStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionSpan(node.await, pos + 12);
+    serializeVariableDeclarationOrPattern(node.left, pos + 28);
+    serializeBoxExpression(node.right, pos + 84);
+    serializeBoxStatement(node.body, pos + 88);
 }
 
-function serializeSwitchStatement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeBoxExpression(node.discriminant)
-    );
-    writeScratchUint32(storePos32 + 2, serializeVecSwitchCase(node.cases));
-    return storePos32;
+function serializeExpressionStatement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function finalizeSwitchStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-}
-
-function serializeSwitchCase(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeOptionBoxExpression(node.test));
-    writeScratchUint32(storePos32 + 2, serializeVecStatement(node.consequent));
-    return storePos32;
-}
-
-function finalizeSwitchCase(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-}
-
-function serializeThrowStatement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.argument));
-    return storePos32;
-}
-
-function finalizeThrowStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTryStatement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBlockStatement(node.block));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionCatchClause(node.handler)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionBlockStatement(node.finalizer)
-    );
-    return storePos32;
-}
-
-function finalizeTryStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBlockStatement(scratchUint32[storePos32 + 1]);
-    finalizeOptionCatchClause(scratchUint32[storePos32 + 2]);
-    finalizeOptionBlockStatement(scratchUint32[storePos32 + 3]);
-}
-
-function serializeCatchClause(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeOptionPattern(node.param));
-    writeScratchUint32(storePos32 + 2, serializeBlockStatement(node.body));
-    return storePos32;
-}
-
-function finalizeCatchClause(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionPattern(scratchUint32[storePos32 + 1]);
-    finalizeBlockStatement(scratchUint32[storePos32 + 2]);
-}
-
-function serializeWhileStatement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.test));
-    writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.body));
-    return storePos32;
-}
-
-function finalizeWhileStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-}
-
-function serializeDoWhileStatement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.test));
-    writeScratchUint32(storePos32 + 2, serializeBoxStatement(node.body));
-    return storePos32;
-}
-
-function finalizeDoWhileStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-}
-
-function serializeForStatement(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeOptionVariableDeclarationOrBoxExpression(node.init)
-    );
-    writeScratchUint32(storePos32 + 2, serializeOptionBoxExpression(node.test));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionBoxExpression(node.update)
-    );
-    writeScratchUint32(storePos32 + 4, serializeBoxStatement(node.body));
-    return storePos32;
-}
-
-function finalizeForStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionVariableDeclarationOrBoxExpression(
-        scratchUint32[storePos32 + 1]
-    );
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 2]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 3]);
-    finalizeBox(scratchUint32[storePos32 + 4]);
-}
-
-function serializeForInStatement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVariableDeclarationOrPattern(node.left)
-    );
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.right));
-    writeScratchUint32(storePos32 + 3, serializeBoxStatement(node.body));
-    return storePos32;
-}
-
-function finalizeForInStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVariableDeclarationOrPattern(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBox(scratchUint32[storePos32 + 3]);
-}
-
-function serializeForOfStatement(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeOptionSpan(node.await));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVariableDeclarationOrPattern(node.left)
-    );
-    writeScratchUint32(storePos32 + 3, serializeBoxExpression(node.right));
-    writeScratchUint32(storePos32 + 4, serializeBoxStatement(node.body));
-    return storePos32;
-}
-
-function finalizeForOfStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionSpan(scratchUint32[storePos32 + 1]);
-    finalizeVariableDeclarationOrPattern(scratchUint32[storePos32 + 2]);
-    finalizeBox(scratchUint32[storePos32 + 3]);
-    finalizeBox(scratchUint32[storePos32 + 4]);
-}
-
-function serializeExpressionStatement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
-}
-
-function finalizeExpressionStatement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeDeclaration(node) {
-    const storePos32 = allocScratch(2);
+function serializeDeclaration(node, pos) {
     switch (node.type) {
         case "ClassDeclaration":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeClassDeclaration(node));
+            serializeEnum(node, pos, 0, serializeClassDeclaration, 4);
             break;
         case "FunctionDeclaration":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeFunctionDeclaration(node)
-            );
+            serializeEnum(node, pos, 1, serializeFunctionDeclaration, 4);
             break;
         case "VariableDeclaration":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeVariableDeclaration(node)
-            );
+            serializeEnum(node, pos, 2, serializeVariableDeclaration, 4);
             break;
         case "TsInterfaceDeclaration":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsInterfaceDeclaration(node)
-            );
+            serializeEnum(node, pos, 3, serializeTsInterfaceDeclaration, 4);
             break;
         case "TsTypeAliasDeclaration":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsTypeAliasDeclaration(node)
-            );
+            serializeEnum(node, pos, 4, serializeTsTypeAliasDeclaration, 4);
             break;
         case "TsEnumDeclaration":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsEnumDeclaration(node)
-            );
+            serializeEnum(node, pos, 5, serializeTsEnumDeclaration, 4);
             break;
         case "TsModuleDeclaration":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsModuleDeclaration(node)
-            );
+            serializeEnum(node, pos, 6, serializeTsModuleDeclaration, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for Declaration");
     }
-    return storePos32;
 }
 
-function finalizeDeclaration(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeClassDeclaration,
-                4,
-                132
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeFunctionDeclaration,
-                4,
-                132
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeVariableDeclaration,
-                4,
-                132
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeTsInterfaceDeclaration,
-                4,
-                132
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTypeAliasDeclaration,
-                4,
-                132
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeTsEnumDeclaration,
-                4,
-                132
-            );
-            break;
-        case 6:
-            finalizeEnum(
-                6,
-                scratchUint32[storePos32 + 1],
-                finalizeTsModuleDeclaration,
-                4,
-                132
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for Declaration");
-    }
+function serializeVariableDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVariableDeclarationKind(node.kind, pos + 12);
+    serializeBoolean(node.declare, pos + 16);
+    serializeVecVariableDeclarator(node.declarations, pos + 20);
 }
 
-function serializeVariableDeclaration(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVariableDeclarationKind(node.kind)
-    );
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.declare));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeVecVariableDeclarator(node.declarations)
-    );
-    return storePos32;
-}
-
-function finalizeVariableDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeEnumValue(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 3;
-    finalizeVec(scratchUint32[storePos32 + 3]);
-}
-
-function serializeVariableDeclarationKind(value) {
+function serializeVariableDeclarationKind(value, pos) {
     switch (value) {
         case "var":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "let":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "const":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         default:
             throw new Error(
                 "Unexpected enum value for VariableDeclarationKind"
@@ -1439,628 +479,229 @@ function serializeVariableDeclarationKind(value) {
     }
 }
 
-function serializeVariableDeclarator(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializePattern(node.id));
-    writeScratchUint32(storePos32 + 2, serializeOptionBoxExpression(node.init));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.definite));
-    return storePos32;
+function serializeVariableDeclarator(node, pos) {
+    serializeSpan(node.span, pos);
+    serializePattern(node.id, pos + 12);
+    serializeOptionBoxExpression(node.init, pos + 64);
+    serializeBoolean(node.definite, pos + 72);
 }
 
-function finalizeVariableDeclarator(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizePattern(scratchUint32[storePos32 + 1]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 3;
+function serializeFunctionDeclaration(node, pos) {
+    serializeIdentifier(node.identifier, pos);
+    serializeBoolean(node.declare, pos + 24);
+    serializeVecParameter(node.params, pos + 28);
+    serializeVecDecorator(node.decorators, pos + 36);
+    serializeSpan(node.span, pos + 44);
+    serializeOptionBlockStatement(node.body, pos + 56);
+    serializeBoolean(node.generator, pos + 80);
+    serializeBoolean(node.async, pos + 81);
+    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 84);
+    serializeOptionTsTypeAnnotation(node.returnType, pos + 108);
 }
 
-function serializeFunctionDeclaration(node) {
-    const storePos32 = allocScratch(10);
-    writeScratchUint32(storePos32, serializeIdentifier(node.identifier));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.declare));
-    writeScratchUint32(storePos32 + 2, serializeVecParameter(node.params));
-    writeScratchUint32(storePos32 + 3, serializeVecDecorator(node.decorators));
-    writeScratchUint32(storePos32 + 4, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 5,
-        serializeOptionBlockStatement(node.body)
-    );
-    writeScratchUint32(storePos32 + 6, serializeBoolean(node.generator));
-    writeScratchUint32(storePos32 + 7, serializeBoolean(node.async));
-    writeScratchUint32(
-        storePos32 + 8,
-        serializeOptionTsTypeParameterDeclaration(node.typeParameters)
-    );
-    writeScratchUint32(
-        storePos32 + 9,
-        serializeOptionTsTypeAnnotation(node.returnType)
-    );
-    return storePos32;
+function serializeFunctionExpression(node, pos) {
+    serializeOptionIdentifier(node.identifier, pos);
+    serializeVecParameter(node.params, pos + 28);
+    serializeVecDecorator(node.decorators, pos + 36);
+    serializeSpan(node.span, pos + 44);
+    serializeOptionBlockStatement(node.body, pos + 56);
+    serializeBoolean(node.generator, pos + 80);
+    serializeBoolean(node.async, pos + 81);
+    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 84);
+    serializeOptionTsTypeAnnotation(node.returnType, pos + 108);
 }
 
-function finalizeFunctionDeclaration(storePos32) {
-    finalizeIdentifier(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeVec(scratchUint32[storePos32 + 3]);
-    finalizeSpan(scratchUint32[storePos32 + 4]);
-    finalizeOptionBlockStatement(scratchUint32[storePos32 + 5]);
-    finalizeBoolean(scratchUint32[storePos32 + 6]);
-    finalizeBoolean(scratchUint32[storePos32 + 7]);
-    pos += 2;
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 8]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 9]);
+function serializeArrowFunctionExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecPattern(node.params, pos + 12);
+    serializeBlockStatementOrBoxExpression(node.body, pos + 20);
+    serializeBoolean(node.async, pos + 44);
+    serializeBoolean(node.generator, pos + 45);
+    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 48);
+    serializeOptionTsTypeAnnotation(node.returnType, pos + 72);
 }
 
-function serializeFunctionExpression(node) {
-    const storePos32 = allocScratch(10);
-    writeScratchUint32(storePos32, serializeOptionIdentifier(node.identifier));
-    writeScratchUint32(storePos32 + 1, serializeVecParameter(node.params));
-    writeScratchUint32(storePos32 + 2, serializeVecDecorator(node.decorators));
-    writeScratchUint32(storePos32 + 3, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionBlockStatement(node.body)
-    );
-    writeScratchUint32(storePos32 + 5, serializeBoolean(node.generator));
-    writeScratchUint32(storePos32 + 6, serializeBoolean(node.async));
-    writeScratchUint32(
-        storePos32 + 7,
-        serializeOptionTsTypeParameterDeclaration(node.typeParameters)
-    );
-    writeScratchUint32(
-        storePos32 + 8,
-        serializeOptionTsTypeAnnotation(node.returnType)
-    );
-    return storePos32;
+function serializeParameter(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecDecorator(node.decorators, pos + 12);
+    serializePattern(node.pat, pos + 20);
 }
 
-function finalizeFunctionExpression(storePos32) {
-    finalizeOptionIdentifier(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeSpan(scratchUint32[storePos32 + 3]);
-    finalizeOptionBlockStatement(scratchUint32[storePos32 + 4]);
-    finalizeBoolean(scratchUint32[storePos32 + 5]);
-    finalizeBoolean(scratchUint32[storePos32 + 6]);
-    pos += 2;
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 7]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 8]);
+function serializeDecorator(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function serializeArrowFunctionExpression(node) {
-    const storePos32 = allocScratch(8);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecPattern(node.params));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeBlockStatementOrBoxExpression(node.body)
-    );
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.async));
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.generator));
-    writeScratchUint32(
-        storePos32 + 5,
-        serializeOptionTsTypeParameterDeclaration(node.typeParameters)
-    );
-    writeScratchUint32(
-        storePos32 + 6,
-        serializeOptionTsTypeAnnotation(node.returnType)
-    );
-    return storePos32;
+function serializeClassDeclaration(node, pos) {
+    serializeIdentifier(node.identifier, pos);
+    serializeBoolean(node.declare, pos + 24);
+    serializeSpan(node.span, pos + 28);
+    serializeVecDecorator(node.decorators, pos + 40);
+    serializeVecClassMember(node.body, pos + 48);
+    serializeOptionBoxExpression(node.superClass, pos + 56);
+    serializeBoolean(node.isAbstract, pos + 64);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 68);
+    serializeOptionTsTypeParameterInstantiation(node.superTypeParams, pos + 92);
+    serializeVecTsExpressionWithTypeArguments(node.implements, pos + 116);
 }
 
-function finalizeArrowFunctionExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeBlockStatementOrBoxExpression(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 2;
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 5]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 6]);
+function serializeClassExpression(node, pos) {
+    serializeOptionIdentifier(node.identifier, pos);
+    serializeSpan(node.span, pos + 28);
+    serializeVecDecorator(node.decorators, pos + 40);
+    serializeVecClassMember(node.body, pos + 48);
+    serializeOptionBoxExpression(node.superClass, pos + 56);
+    serializeBoolean(node.isAbstract, pos + 64);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 68);
+    serializeOptionTsTypeParameterInstantiation(node.superTypeParams, pos + 92);
+    serializeVecTsExpressionWithTypeArguments(node.implements, pos + 116);
 }
 
-function serializeParameter(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecDecorator(node.decorators));
-    writeScratchUint32(storePos32 + 2, serializePattern(node.pat));
-    return storePos32;
-}
-
-function finalizeParameter(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizePattern(scratchUint32[storePos32 + 2]);
-}
-
-function serializeDecorator(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
-}
-
-function finalizeDecorator(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeClassDeclaration(node) {
-    const storePos32 = allocScratch(10);
-    writeScratchUint32(storePos32, serializeIdentifier(node.identifier));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.declare));
-    writeScratchUint32(storePos32 + 2, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 3, serializeVecDecorator(node.decorators));
-    writeScratchUint32(storePos32 + 4, serializeVecClassMember(node.body));
-    writeScratchUint32(
-        storePos32 + 5,
-        serializeOptionBoxExpression(node.superClass)
-    );
-    writeScratchUint32(storePos32 + 6, serializeBoolean(node.isAbstract));
-    writeScratchUint32(
-        storePos32 + 7,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    writeScratchUint32(
-        storePos32 + 8,
-        serializeOptionTsTypeParameterInstantiation(node.superTypeParams)
-    );
-    writeScratchUint32(
-        storePos32 + 9,
-        serializeVecTsExpressionWithTypeArguments(node.implements)
-    );
-    return storePos32;
-}
-
-function finalizeClassDeclaration(storePos32) {
-    finalizeIdentifier(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeSpan(scratchUint32[storePos32 + 2]);
-    finalizeVec(scratchUint32[storePos32 + 3]);
-    finalizeVec(scratchUint32[storePos32 + 4]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 5]);
-    finalizeBoolean(scratchUint32[storePos32 + 6]);
-    pos += 3;
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 7]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 8]);
-    finalizeVec(scratchUint32[storePos32 + 9]);
-}
-
-function serializeClassExpression(node) {
-    const storePos32 = allocScratch(10);
-    writeScratchUint32(storePos32, serializeOptionIdentifier(node.identifier));
-    writeScratchUint32(storePos32 + 1, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 2, serializeVecDecorator(node.decorators));
-    writeScratchUint32(storePos32 + 3, serializeVecClassMember(node.body));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionBoxExpression(node.superClass)
-    );
-    writeScratchUint32(storePos32 + 5, serializeBoolean(node.isAbstract));
-    writeScratchUint32(
-        storePos32 + 6,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    writeScratchUint32(
-        storePos32 + 7,
-        serializeOptionTsTypeParameterInstantiation(node.superTypeParams)
-    );
-    writeScratchUint32(
-        storePos32 + 8,
-        serializeVecTsExpressionWithTypeArguments(node.implements)
-    );
-    return storePos32;
-}
-
-function finalizeClassExpression(storePos32) {
-    finalizeOptionIdentifier(scratchUint32[storePos32]);
-    finalizeSpan(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeVec(scratchUint32[storePos32 + 3]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 4]);
-    finalizeBoolean(scratchUint32[storePos32 + 5]);
-    pos += 3;
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 6]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 7]);
-    finalizeVec(scratchUint32[storePos32 + 8]);
-}
-
-function serializeClassMember(node) {
-    const storePos32 = allocScratch(2);
+function serializeClassMember(node, pos) {
     switch (node.type) {
         case "Constructor":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeConstructor(node));
+            serializeEnum(node, pos, 0, serializeConstructor, 8);
             break;
         case "ClassMethod":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeClassMethod(node));
+            serializeEnum(node, pos, 1, serializeClassMethod, 8);
             break;
         case "PrivateMethod":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializePrivateMethod(node));
+            serializeEnum(node, pos, 2, serializePrivateMethod, 4);
             break;
         case "ClassProperty":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeClassProperty(node));
+            serializeEnum(node, pos, 3, serializeClassProperty, 8);
             break;
         case "PrivateProperty":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(storePos32 + 1, serializePrivateProperty(node));
+            serializeEnum(node, pos, 4, serializePrivateProperty, 4);
             break;
         case "TsIndexSignature":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(storePos32 + 1, serializeTsIndexSignature(node));
+            serializeEnum(node, pos, 5, serializeTsIndexSignature, 4);
             break;
         case "EmptyStatement":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(storePos32 + 1, serializeEmptyStatement(node));
+            serializeEnum(node, pos, 6, serializeEmptyStatement, 4);
             break;
         case "StaticBlock":
-            scratchBuff[storePos32 << 2] = 7;
-            writeScratchUint32(storePos32 + 1, serializeStaticBlock(node));
+            serializeEnum(node, pos, 7, serializeStaticBlock, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for ClassMember");
     }
-    return storePos32;
 }
 
-function finalizeClassMember(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeConstructor,
-                8,
-                192
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeClassMethod,
-                8,
-                192
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizePrivateMethod,
-                4,
-                192
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeClassProperty,
-                8,
-                192
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizePrivateProperty,
-                4,
-                192
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeTsIndexSignature,
-                4,
-                192
-            );
-            break;
-        case 6:
-            finalizeEnum(
-                6,
-                scratchUint32[storePos32 + 1],
-                finalizeEmptyStatement,
-                4,
-                192
-            );
-            break;
-        case 7:
-            finalizeEnum(
-                7,
-                scratchUint32[storePos32 + 1],
-                finalizeStaticBlock,
-                4,
-                192
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for ClassMember");
-    }
+function serializeConstructor(node, pos) {
+    serializeSpan(node.span, pos);
+    serializePropertyName(node.key, pos + 16);
+    serializeVecTsParameterPropertyOrParameter(node.params, pos + 64);
+    serializeOptionBlockStatement(node.body, pos + 72);
+    serializeOptionAccessibility(node.accessibility, pos + 96);
+    serializeBoolean(node.isOptional, pos + 104);
 }
 
-function serializeConstructor(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializePropertyName(node.key));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVecTsParameterPropertyOrParameter(node.params)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionBlockStatement(node.body)
-    );
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionAccessibility(node.accessibility)
-    );
-    writeScratchUint32(storePos32 + 5, serializeBoolean(node.isOptional));
-    return storePos32;
+function serializeClassMethod(node, pos) {
+    serializeSpan(node.span, pos);
+    serializePropertyName(node.key, pos + 16);
+    serializeFunction(node.function, pos + 64);
+    serializeMethodKind(node.kind, pos + 164);
+    serializeBoolean(node.isStatic, pos + 168);
+    serializeOptionAccessibility(node.accessibility, pos + 172);
+    serializeBoolean(node.isAbstract, pos + 180);
+    serializeBoolean(node.isOptional, pos + 181);
+    serializeBoolean(node.isOverride, pos + 182);
 }
 
-function finalizeConstructor(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    pos += 4;
-    finalizePropertyName(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeOptionBlockStatement(scratchUint32[storePos32 + 3]);
-    finalizeOptionAccessibility(scratchUint32[storePos32 + 4]);
-    finalizeBoolean(scratchUint32[storePos32 + 5]);
-    pos += 7;
+function serializePrivateMethod(node, pos) {
+    serializeSpan(node.span, pos);
+    serializePrivateName(node.key, pos + 12);
+    serializeFunction(node.function, pos + 48);
+    serializeMethodKind(node.kind, pos + 148);
+    serializeBoolean(node.isStatic, pos + 152);
+    serializeOptionAccessibility(node.accessibility, pos + 156);
+    serializeBoolean(node.isAbstract, pos + 164);
+    serializeBoolean(node.isOptional, pos + 165);
+    serializeBoolean(node.isOverride, pos + 166);
 }
 
-function serializeClassMethod(node) {
-    const storePos32 = allocScratch(10);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializePropertyName(node.key));
-    writeScratchUint32(storePos32 + 2, serializeFunction(node.function));
-    writeScratchUint32(storePos32 + 3, serializeMethodKind(node.kind));
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.isStatic));
-    writeScratchUint32(
-        storePos32 + 5,
-        serializeOptionAccessibility(node.accessibility)
-    );
-    writeScratchUint32(storePos32 + 6, serializeBoolean(node.isAbstract));
-    writeScratchUint32(storePos32 + 7, serializeBoolean(node.isOptional));
-    writeScratchUint32(storePos32 + 8, serializeBoolean(node.isOverride));
-    return storePos32;
+function serializeClassProperty(node, pos) {
+    serializeSpan(node.span, pos);
+    serializePropertyName(node.key, pos + 16);
+    serializeOptionBoxExpression(node.value, pos + 64);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 72);
+    serializeBoolean(node.isStatic, pos + 92);
+    serializeVecDecorator(node.decorators, pos + 96);
+    serializeOptionAccessibility(node.accessibility, pos + 104);
+    serializeBoolean(node.isAbstract, pos + 112);
+    serializeBoolean(node.isOptional, pos + 113);
+    serializeBoolean(node.isOverride, pos + 114);
+    serializeBoolean(node.readonly, pos + 115);
+    serializeBoolean(node.declare, pos + 116);
+    serializeBoolean(node.definite, pos + 117);
 }
 
-function finalizeClassMethod(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    pos += 4;
-    finalizePropertyName(scratchUint32[storePos32 + 1]);
-    finalizeFunction(scratchUint32[storePos32 + 2]);
-    finalizeEnumValue(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 3;
-    finalizeOptionAccessibility(scratchUint32[storePos32 + 5]);
-    finalizeBoolean(scratchUint32[storePos32 + 6]);
-    finalizeBoolean(scratchUint32[storePos32 + 7]);
-    finalizeBoolean(scratchUint32[storePos32 + 8]);
-    pos += 1;
+function serializePrivateProperty(node, pos) {
+    serializeSpan(node.span, pos);
+    serializePrivateName(node.key, pos + 12);
+    serializeOptionBoxExpression(node.value, pos + 48);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 56);
+    serializeBoolean(node.isStatic, pos + 76);
+    serializeVecDecorator(node.decorators, pos + 80);
+    serializeOptionAccessibility(node.accessibility, pos + 88);
+    serializeBoolean(node.isOptional, pos + 96);
+    serializeBoolean(node.isOverride, pos + 97);
+    serializeBoolean(node.readonly, pos + 98);
+    serializeBoolean(node.definite, pos + 99);
 }
 
-function serializePrivateMethod(node) {
-    const storePos32 = allocScratch(10);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializePrivateName(node.key));
-    writeScratchUint32(storePos32 + 2, serializeFunction(node.function));
-    writeScratchUint32(storePos32 + 3, serializeMethodKind(node.kind));
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.isStatic));
-    writeScratchUint32(
-        storePos32 + 5,
-        serializeOptionAccessibility(node.accessibility)
-    );
-    writeScratchUint32(storePos32 + 6, serializeBoolean(node.isAbstract));
-    writeScratchUint32(storePos32 + 7, serializeBoolean(node.isOptional));
-    writeScratchUint32(storePos32 + 8, serializeBoolean(node.isOverride));
-    return storePos32;
+function serializeStaticBlock(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBlockStatement(node.body, pos + 12);
 }
 
-function finalizePrivateMethod(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizePrivateName(scratchUint32[storePos32 + 1]);
-    finalizeFunction(scratchUint32[storePos32 + 2]);
-    finalizeEnumValue(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 3;
-    finalizeOptionAccessibility(scratchUint32[storePos32 + 5]);
-    finalizeBoolean(scratchUint32[storePos32 + 6]);
-    finalizeBoolean(scratchUint32[storePos32 + 7]);
-    finalizeBoolean(scratchUint32[storePos32 + 8]);
-    pos += 1;
-}
-
-function serializeClassProperty(node) {
-    const storePos32 = allocScratch(14);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializePropertyName(node.key));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionBoxExpression(node.value)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.isStatic));
-    writeScratchUint32(storePos32 + 5, serializeVecDecorator(node.decorators));
-    writeScratchUint32(
-        storePos32 + 6,
-        serializeOptionAccessibility(node.accessibility)
-    );
-    writeScratchUint32(storePos32 + 7, serializeBoolean(node.isAbstract));
-    writeScratchUint32(storePos32 + 8, serializeBoolean(node.isOptional));
-    writeScratchUint32(storePos32 + 9, serializeBoolean(node.isOverride));
-    writeScratchUint32(storePos32 + 10, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 11, serializeBoolean(node.declare));
-    writeScratchUint32(storePos32 + 12, serializeBoolean(node.definite));
-    return storePos32;
-}
-
-function finalizeClassProperty(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    pos += 4;
-    finalizePropertyName(scratchUint32[storePos32 + 1]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 3;
-    finalizeVec(scratchUint32[storePos32 + 5]);
-    finalizeOptionAccessibility(scratchUint32[storePos32 + 6]);
-    finalizeBoolean(scratchUint32[storePos32 + 7]);
-    finalizeBoolean(scratchUint32[storePos32 + 8]);
-    finalizeBoolean(scratchUint32[storePos32 + 9]);
-    finalizeBoolean(scratchUint32[storePos32 + 10]);
-    finalizeBoolean(scratchUint32[storePos32 + 11]);
-    finalizeBoolean(scratchUint32[storePos32 + 12]);
-    pos += 2;
-}
-
-function serializePrivateProperty(node) {
-    const storePos32 = allocScratch(12);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializePrivateName(node.key));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionBoxExpression(node.value)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.isStatic));
-    writeScratchUint32(storePos32 + 5, serializeVecDecorator(node.decorators));
-    writeScratchUint32(
-        storePos32 + 6,
-        serializeOptionAccessibility(node.accessibility)
-    );
-    writeScratchUint32(storePos32 + 7, serializeBoolean(node.isOptional));
-    writeScratchUint32(storePos32 + 8, serializeBoolean(node.isOverride));
-    writeScratchUint32(storePos32 + 9, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 10, serializeBoolean(node.definite));
-    return storePos32;
-}
-
-function finalizePrivateProperty(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizePrivateName(scratchUint32[storePos32 + 1]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 3;
-    finalizeVec(scratchUint32[storePos32 + 5]);
-    finalizeOptionAccessibility(scratchUint32[storePos32 + 6]);
-    finalizeBoolean(scratchUint32[storePos32 + 7]);
-    finalizeBoolean(scratchUint32[storePos32 + 8]);
-    finalizeBoolean(scratchUint32[storePos32 + 9]);
-    finalizeBoolean(scratchUint32[storePos32 + 10]);
-}
-
-function serializeStaticBlock(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBlockStatement(node.body));
-    return storePos32;
-}
-
-function finalizeStaticBlock(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBlockStatement(scratchUint32[storePos32 + 1]);
-}
-
-function serializeMethodKind(value) {
+function serializeMethodKind(value, pos) {
     switch (value) {
         case "method":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "getter":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "setter":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         default:
             throw new Error("Unexpected enum value for MethodKind");
     }
 }
 
-function serializeFunction(node) {
-    const storePos32 = allocScratch(8);
-    writeScratchUint32(storePos32, serializeVecParameter(node.params));
-    writeScratchUint32(storePos32 + 1, serializeVecDecorator(node.decorators));
-    writeScratchUint32(storePos32 + 2, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionBlockStatement(node.body)
-    );
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.generator));
-    writeScratchUint32(storePos32 + 5, serializeBoolean(node.async));
-    writeScratchUint32(
-        storePos32 + 6,
-        serializeOptionTsTypeParameterDeclaration(node.typeParameters)
-    );
-    writeScratchUint32(
-        storePos32 + 7,
-        serializeOptionTsTypeAnnotation(node.returnType)
-    );
-    return storePos32;
+function serializeFunction(node, pos) {
+    serializeVecParameter(node.params, pos);
+    serializeVecDecorator(node.decorators, pos + 8);
+    serializeSpan(node.span, pos + 16);
+    serializeOptionBlockStatement(node.body, pos + 28);
+    serializeBoolean(node.generator, pos + 52);
+    serializeBoolean(node.async, pos + 53);
+    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 56);
+    serializeOptionTsTypeAnnotation(node.returnType, pos + 80);
 }
 
-function finalizeFunction(storePos32) {
-    finalizeVec(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeSpan(scratchUint32[storePos32 + 2]);
-    finalizeOptionBlockStatement(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    finalizeBoolean(scratchUint32[storePos32 + 5]);
-    pos += 2;
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 6]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 7]);
-}
-
-function serializePattern(node) {
-    const storePos32 = allocScratch(2);
+function serializePattern(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeBindingIdentifier(node)
-            );
+            serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
             break;
         case "ArrayPattern":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeArrayPattern(node));
+            serializeEnum(node, pos, 1, serializeArrayPattern, 4);
             break;
         case "RestElement":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeRestElement(node));
+            serializeEnum(node, pos, 2, serializeRestElement, 4);
             break;
         case "ObjectPattern":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeObjectPattern(node));
+            serializeEnum(node, pos, 3, serializeObjectPattern, 4);
             break;
         case "AssignmentPattern":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeAssignmentPattern(node)
-            );
+            serializeEnum(node, pos, 4, serializeAssignmentPattern, 4);
             break;
         case "Invalid":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(storePos32 + 1, serializeInvalid(node));
+            serializeEnum(node, pos, 5, serializeInvalid, 4);
             break;
         case "ThisExpression":
         case "ArrayExpression":
@@ -2103,355 +744,123 @@ function serializePattern(node) {
         case "TsInstantiation":
         case "PrivateName":
         case "OptionalChainingExpression":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(storePos32 + 1, serializeBoxExpression(node));
+            serializeEnum(node, pos, 6, serializeBoxExpression, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for Pattern");
     }
-    return storePos32;
 }
 
-function finalizePattern(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeBindingIdentifier,
-                4,
-                52
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeArrayPattern,
-                4,
-                52
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeRestElement,
-                4,
-                52
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeObjectPattern,
-                4,
-                52
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeAssignmentPattern,
-                4,
-                52
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeInvalid,
-                4,
-                52
-            );
-            break;
-        case 6:
-            finalizeEnum(6, scratchUint32[storePos32 + 1], finalizeBox, 4, 52);
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for Pattern");
-    }
+function serializeBindingIdentifier(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJsWord(node.value, pos + 12);
+    serializeBoolean(node.optional, pos + 20);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 24);
 }
 
-function serializeBindingIdentifier(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeJsWord(node.value));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.optional));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    return storePos32;
+function serializeArrayPattern(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecOptionPattern(node.elements, pos + 12);
+    serializeBoolean(node.optional, pos + 20);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 24);
 }
 
-function finalizeBindingIdentifier(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJsWord(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 3;
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 3]);
+function serializeRestElement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeSpan(node.rest, pos + 12);
+    serializeBoxPattern(node.argument, pos + 24);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 28);
 }
 
-function serializeArrayPattern(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecOptionPattern(node.elements)
-    );
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.optional));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    return storePos32;
+function serializeObjectPattern(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecObjectPatternProperty(node.properties, pos + 12);
+    serializeBoolean(node.optional, pos + 20);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 24);
 }
 
-function finalizeArrayPattern(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 3;
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 3]);
-}
-
-function serializeRestElement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeSpan(node.rest));
-    writeScratchUint32(storePos32 + 2, serializeBoxPattern(node.argument));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    return storePos32;
-}
-
-function finalizeRestElement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeSpan(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 3]);
-}
-
-function serializeObjectPattern(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecObjectPatternProperty(node.properties)
-    );
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.optional));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    return storePos32;
-}
-
-function finalizeObjectPattern(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 3;
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 3]);
-}
-
-function serializeObjectPatternProperty(node) {
-    const storePos32 = allocScratch(2);
+function serializeObjectPatternProperty(node, pos) {
     switch (node.type) {
         case "KeyValuePatternProperty":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeKeyValuePatternProperty(node)
-            );
+            serializeEnum(node, pos, 0, serializeKeyValuePatternProperty, 8);
             break;
         case "AssignmentPatternProperty":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeAssignmentPatternProperty(node)
-            );
+            serializeEnum(node, pos, 1, serializeAssignmentPatternProperty, 4);
             break;
         case "RestElement":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeRestElement(node));
+            serializeEnum(node, pos, 2, serializeRestElement, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for ObjectPatternProperty"
             );
     }
-    return storePos32;
 }
 
-function finalizeObjectPatternProperty(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeKeyValuePatternProperty,
-                8,
-                64
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeAssignmentPatternProperty,
-                4,
-                64
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeRestElement,
-                4,
-                64
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for ObjectPatternProperty"
-            );
-    }
+function serializeKeyValuePatternProperty(node, pos) {
+    serializePropertyName(node.key, pos);
+    serializeBoxPattern(node.value, pos + 48);
 }
 
-function serializeKeyValuePatternProperty(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializePropertyName(node.key));
-    writeScratchUint32(storePos32 + 1, serializeBoxPattern(node.value));
-    return storePos32;
+function serializeAssignmentPatternProperty(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.key, pos + 12);
+    serializeOptionBoxExpression(node.value, pos + 36);
 }
 
-function finalizeKeyValuePatternProperty(storePos32) {
-    finalizePropertyName(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    pos += 4;
+function serializeAssignmentPattern(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxPattern(node.left, pos + 12);
+    serializeBoxExpression(node.right, pos + 16);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 20);
 }
 
-function serializeAssignmentPatternProperty(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.key));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionBoxExpression(node.value)
-    );
-    return storePos32;
-}
-
-function finalizeAssignmentPatternProperty(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 2]);
-}
-
-function serializeAssignmentPattern(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxPattern(node.left));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.right));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    return storePos32;
-}
-
-function finalizeAssignmentPattern(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 3]);
-}
-
-function serializeExpression(node) {
-    const storePos32 = allocScratch(2);
+function serializeExpression(node, pos) {
     switch (node.type) {
         case "ThisExpression":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeThisExpression(node));
+            serializeEnum(node, pos, 0, serializeThisExpression, 4);
             break;
         case "ArrayExpression":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeArrayExpression(node));
+            serializeEnum(node, pos, 1, serializeArrayExpression, 4);
             break;
         case "ObjectExpression":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeObjectExpression(node));
+            serializeEnum(node, pos, 2, serializeObjectExpression, 4);
             break;
         case "FunctionExpression":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeFunctionExpression(node)
-            );
+            serializeEnum(node, pos, 3, serializeFunctionExpression, 4);
             break;
         case "UnaryExpression":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(storePos32 + 1, serializeUnaryExpression(node));
+            serializeEnum(node, pos, 4, serializeUnaryExpression, 4);
             break;
         case "UpdateExpression":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(storePos32 + 1, serializeUpdateExpression(node));
+            serializeEnum(node, pos, 5, serializeUpdateExpression, 4);
             break;
         case "BinaryExpression":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(storePos32 + 1, serializeBinaryExpression(node));
+            serializeEnum(node, pos, 6, serializeBinaryExpression, 4);
             break;
         case "AssignmentExpression":
-            scratchBuff[storePos32 << 2] = 7;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeAssignmentExpression(node)
-            );
+            serializeEnum(node, pos, 7, serializeAssignmentExpression, 4);
             break;
         case "MemberExpression":
-            scratchBuff[storePos32 << 2] = 8;
-            writeScratchUint32(storePos32 + 1, serializeMemberExpression(node));
+            serializeEnum(node, pos, 8, serializeMemberExpression, 4);
             break;
         case "SuperPropExpression":
-            scratchBuff[storePos32 << 2] = 9;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeSuperPropExpression(node)
-            );
+            serializeEnum(node, pos, 9, serializeSuperPropExpression, 4);
             break;
         case "ConditionalExpression":
-            scratchBuff[storePos32 << 2] = 10;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeConditionalExpression(node)
-            );
+            serializeEnum(node, pos, 10, serializeConditionalExpression, 4);
             break;
         case "CallExpression":
-            scratchBuff[storePos32 << 2] = 11;
-            writeScratchUint32(storePos32 + 1, serializeCallExpression(node));
+            serializeEnum(node, pos, 11, serializeCallExpression, 4);
             break;
         case "NewExpression":
-            scratchBuff[storePos32 << 2] = 12;
-            writeScratchUint32(storePos32 + 1, serializeNewExpression(node));
+            serializeEnum(node, pos, 12, serializeNewExpression, 4);
             break;
         case "SequenceExpression":
-            scratchBuff[storePos32 << 2] = 13;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeSequenceExpression(node)
-            );
+            serializeEnum(node, pos, 13, serializeSequenceExpression, 4);
             break;
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 14;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 14, serializeIdentifier, 4);
             break;
         case "StringLiteral":
         case "BooleanLiteral":
@@ -2460,650 +869,244 @@ function serializeExpression(node) {
         case "BigIntLiteral":
         case "RegExpLiteral":
         case "JSXText":
-            scratchBuff[storePos32 << 2] = 15;
-            writeScratchUint32(storePos32 + 1, serializeLiteral(node));
+            serializeEnum(node, pos, 15, serializeLiteral, 8);
             break;
         case "TemplateLiteral":
-            scratchBuff[storePos32 << 2] = 16;
-            writeScratchUint32(storePos32 + 1, serializeTemplateLiteral(node));
+            serializeEnum(node, pos, 16, serializeTemplateLiteral, 4);
             break;
         case "TaggedTemplateExpression":
-            scratchBuff[storePos32 << 2] = 17;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTaggedTemplateExpression(node)
-            );
+            serializeEnum(node, pos, 17, serializeTaggedTemplateExpression, 4);
             break;
         case "ArrowFunctionExpression":
-            scratchBuff[storePos32 << 2] = 18;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeArrowFunctionExpression(node)
-            );
+            serializeEnum(node, pos, 18, serializeArrowFunctionExpression, 4);
             break;
         case "ClassExpression":
-            scratchBuff[storePos32 << 2] = 19;
-            writeScratchUint32(storePos32 + 1, serializeClassExpression(node));
+            serializeEnum(node, pos, 19, serializeClassExpression, 4);
             break;
         case "YieldExpression":
-            scratchBuff[storePos32 << 2] = 20;
-            writeScratchUint32(storePos32 + 1, serializeYieldExpression(node));
+            serializeEnum(node, pos, 20, serializeYieldExpression, 4);
             break;
         case "MetaProperty":
-            scratchBuff[storePos32 << 2] = 21;
-            writeScratchUint32(storePos32 + 1, serializeMetaProperty(node));
+            serializeEnum(node, pos, 21, serializeMetaProperty, 4);
             break;
         case "AwaitExpression":
-            scratchBuff[storePos32 << 2] = 22;
-            writeScratchUint32(storePos32 + 1, serializeAwaitExpression(node));
+            serializeEnum(node, pos, 22, serializeAwaitExpression, 4);
             break;
         case "ParenthesisExpression":
-            scratchBuff[storePos32 << 2] = 23;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeParenthesisExpression(node)
-            );
+            serializeEnum(node, pos, 23, serializeParenthesisExpression, 4);
             break;
         case "JSXMemberExpression":
-            scratchBuff[storePos32 << 2] = 24;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXMemberExpression(node)
-            );
+            serializeEnum(node, pos, 24, serializeJSXMemberExpression, 4);
             break;
         case "JSXNamespacedName":
-            scratchBuff[storePos32 << 2] = 25;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXNamespacedName(node)
-            );
+            serializeEnum(node, pos, 25, serializeJSXNamespacedName, 4);
             break;
         case "JSXEmptyExpression":
-            scratchBuff[storePos32 << 2] = 26;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXEmptyExpression(node)
-            );
+            serializeEnum(node, pos, 26, serializeJSXEmptyExpression, 4);
             break;
         case "JSXElement":
-            scratchBuff[storePos32 << 2] = 27;
-            writeScratchUint32(storePos32 + 1, serializeBoxJSXElement(node));
+            serializeEnum(node, pos, 27, serializeBoxJSXElement, 4);
             break;
         case "JSXFragment":
-            scratchBuff[storePos32 << 2] = 28;
-            writeScratchUint32(storePos32 + 1, serializeJSXFragment(node));
+            serializeEnum(node, pos, 28, serializeJSXFragment, 4);
             break;
         case "TsTypeAssertion":
-            scratchBuff[storePos32 << 2] = 29;
-            writeScratchUint32(storePos32 + 1, serializeTsTypeAssertion(node));
+            serializeEnum(node, pos, 29, serializeTsTypeAssertion, 4);
             break;
         case "TsConstAssertion":
-            scratchBuff[storePos32 << 2] = 30;
-            writeScratchUint32(storePos32 + 1, serializeTsConstAssertion(node));
+            serializeEnum(node, pos, 30, serializeTsConstAssertion, 4);
             break;
         case "TsNonNullExpression":
-            scratchBuff[storePos32 << 2] = 31;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsNonNullExpression(node)
-            );
+            serializeEnum(node, pos, 31, serializeTsNonNullExpression, 4);
             break;
         case "TsAsExpression":
-            scratchBuff[storePos32 << 2] = 32;
-            writeScratchUint32(storePos32 + 1, serializeTsAsExpression(node));
+            serializeEnum(node, pos, 32, serializeTsAsExpression, 4);
             break;
         case "TsInstantiation":
-            scratchBuff[storePos32 << 2] = 33;
-            writeScratchUint32(storePos32 + 1, serializeTsInstantiation(node));
+            serializeEnum(node, pos, 33, serializeTsInstantiation, 4);
             break;
         case "PrivateName":
-            scratchBuff[storePos32 << 2] = 34;
-            writeScratchUint32(storePos32 + 1, serializePrivateName(node));
+            serializeEnum(node, pos, 34, serializePrivateName, 4);
             break;
         case "OptionalChainingExpression":
-            scratchBuff[storePos32 << 2] = 35;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeOptionalChainingExpression(node)
+            serializeEnum(
+                node,
+                pos,
+                35,
+                serializeOptionalChainingExpression,
+                4
             );
             break;
         case "Invalid":
-            scratchBuff[storePos32 << 2] = 36;
-            writeScratchUint32(storePos32 + 1, serializeInvalid(node));
+            serializeEnum(node, pos, 36, serializeInvalid, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for Expression");
     }
-    return storePos32;
 }
 
-function finalizeExpression(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeThisExpression,
-                4,
-                136
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeArrayExpression,
-                4,
-                136
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeObjectExpression,
-                4,
-                136
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeFunctionExpression,
-                4,
-                136
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeUnaryExpression,
-                4,
-                136
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeUpdateExpression,
-                4,
-                136
-            );
-            break;
-        case 6:
-            finalizeEnum(
-                6,
-                scratchUint32[storePos32 + 1],
-                finalizeBinaryExpression,
-                4,
-                136
-            );
-            break;
-        case 7:
-            finalizeEnum(
-                7,
-                scratchUint32[storePos32 + 1],
-                finalizeAssignmentExpression,
-                4,
-                136
-            );
-            break;
-        case 8:
-            finalizeEnum(
-                8,
-                scratchUint32[storePos32 + 1],
-                finalizeMemberExpression,
-                4,
-                136
-            );
-            break;
-        case 9:
-            finalizeEnum(
-                9,
-                scratchUint32[storePos32 + 1],
-                finalizeSuperPropExpression,
-                4,
-                136
-            );
-            break;
-        case 10:
-            finalizeEnum(
-                10,
-                scratchUint32[storePos32 + 1],
-                finalizeConditionalExpression,
-                4,
-                136
-            );
-            break;
-        case 11:
-            finalizeEnum(
-                11,
-                scratchUint32[storePos32 + 1],
-                finalizeCallExpression,
-                4,
-                136
-            );
-            break;
-        case 12:
-            finalizeEnum(
-                12,
-                scratchUint32[storePos32 + 1],
-                finalizeNewExpression,
-                4,
-                136
-            );
-            break;
-        case 13:
-            finalizeEnum(
-                13,
-                scratchUint32[storePos32 + 1],
-                finalizeSequenceExpression,
-                4,
-                136
-            );
-            break;
-        case 14:
-            finalizeEnum(
-                14,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                136
-            );
-            break;
-        case 15:
-            finalizeEnum(
-                15,
-                scratchUint32[storePos32 + 1],
-                finalizeLiteral,
-                8,
-                136
-            );
-            break;
-        case 16:
-            finalizeEnum(
-                16,
-                scratchUint32[storePos32 + 1],
-                finalizeTemplateLiteral,
-                4,
-                136
-            );
-            break;
-        case 17:
-            finalizeEnum(
-                17,
-                scratchUint32[storePos32 + 1],
-                finalizeTaggedTemplateExpression,
-                4,
-                136
-            );
-            break;
-        case 18:
-            finalizeEnum(
-                18,
-                scratchUint32[storePos32 + 1],
-                finalizeArrowFunctionExpression,
-                4,
-                136
-            );
-            break;
-        case 19:
-            finalizeEnum(
-                19,
-                scratchUint32[storePos32 + 1],
-                finalizeClassExpression,
-                4,
-                136
-            );
-            break;
-        case 20:
-            finalizeEnum(
-                20,
-                scratchUint32[storePos32 + 1],
-                finalizeYieldExpression,
-                4,
-                136
-            );
-            break;
-        case 21:
-            finalizeEnum(
-                21,
-                scratchUint32[storePos32 + 1],
-                finalizeMetaProperty,
-                4,
-                136
-            );
-            break;
-        case 22:
-            finalizeEnum(
-                22,
-                scratchUint32[storePos32 + 1],
-                finalizeAwaitExpression,
-                4,
-                136
-            );
-            break;
-        case 23:
-            finalizeEnum(
-                23,
-                scratchUint32[storePos32 + 1],
-                finalizeParenthesisExpression,
-                4,
-                136
-            );
-            break;
-        case 24:
-            finalizeEnum(
-                24,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXMemberExpression,
-                4,
-                136
-            );
-            break;
-        case 25:
-            finalizeEnum(
-                25,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXNamespacedName,
-                4,
-                136
-            );
-            break;
-        case 26:
-            finalizeEnum(
-                26,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXEmptyExpression,
-                4,
-                136
-            );
-            break;
-        case 27:
-            finalizeEnum(
-                27,
-                scratchUint32[storePos32 + 1],
-                finalizeBox,
-                4,
-                136
-            );
-            break;
-        case 28:
-            finalizeEnum(
-                28,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXFragment,
-                4,
-                136
-            );
-            break;
-        case 29:
-            finalizeEnum(
-                29,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTypeAssertion,
-                4,
-                136
-            );
-            break;
-        case 30:
-            finalizeEnum(
-                30,
-                scratchUint32[storePos32 + 1],
-                finalizeTsConstAssertion,
-                4,
-                136
-            );
-            break;
-        case 31:
-            finalizeEnum(
-                31,
-                scratchUint32[storePos32 + 1],
-                finalizeTsNonNullExpression,
-                4,
-                136
-            );
-            break;
-        case 32:
-            finalizeEnum(
-                32,
-                scratchUint32[storePos32 + 1],
-                finalizeTsAsExpression,
-                4,
-                136
-            );
-            break;
-        case 33:
-            finalizeEnum(
-                33,
-                scratchUint32[storePos32 + 1],
-                finalizeTsInstantiation,
-                4,
-                136
-            );
-            break;
-        case 34:
-            finalizeEnum(
-                34,
-                scratchUint32[storePos32 + 1],
-                finalizePrivateName,
-                4,
-                136
-            );
-            break;
-        case 35:
-            finalizeEnum(
-                35,
-                scratchUint32[storePos32 + 1],
-                finalizeOptionalChainingExpression,
-                4,
-                136
-            );
-            break;
-        case 36:
-            finalizeEnum(
-                36,
-                scratchUint32[storePos32 + 1],
-                finalizeInvalid,
-                4,
-                136
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for Expression");
-    }
+function serializeThisExpression(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function serializeThisExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
+function serializeArrayExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecOptionExpressionOrSpread(node.elements, pos + 12);
 }
 
-function finalizeThisExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
+function serializeUnaryExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeUnaryOperator(node.operator, pos + 12);
+    serializeBoxExpression(node.argument, pos + 16);
 }
 
-function serializeArrayExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecOptionExpressionOrSpread(node.elements)
-    );
-    return storePos32;
-}
-
-function finalizeArrayExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-}
-
-function serializeUnaryExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeUnaryOperator(node.operator));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.argument));
-    return storePos32;
-}
-
-function finalizeUnaryExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeEnumValue(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-}
-
-function serializeUnaryOperator(value) {
+function serializeUnaryOperator(value, pos) {
     switch (value) {
         case "-":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "+":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "!":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         case "~":
-            return 259;
+            uint32[pos >>> 2] = 3;
+            break;
         case "typeof":
-            return 260;
+            uint32[pos >>> 2] = 4;
+            break;
         case "void":
-            return 261;
+            uint32[pos >>> 2] = 5;
+            break;
         case "delete":
-            return 262;
+            uint32[pos >>> 2] = 6;
+            break;
         default:
             throw new Error("Unexpected enum value for UnaryOperator");
     }
 }
 
-function serializeUpdateExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeUpdateOperator(node.operator));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.prefix));
-    writeScratchUint32(storePos32 + 3, serializeBoxExpression(node.argument));
-    return storePos32;
+function serializeUpdateExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeUpdateOperator(node.operator, pos + 12);
+    serializeBoolean(node.prefix, pos + 16);
+    serializeBoxExpression(node.argument, pos + 20);
 }
 
-function finalizeUpdateExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeEnumValue(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 3;
-    finalizeBox(scratchUint32[storePos32 + 3]);
-}
-
-function serializeUpdateOperator(value) {
+function serializeUpdateOperator(value, pos) {
     switch (value) {
         case "++":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "--":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         default:
             throw new Error("Unexpected enum value for UpdateOperator");
     }
 }
 
-function serializeBinaryExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBinaryOperator(node.operator));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.left));
-    writeScratchUint32(storePos32 + 3, serializeBoxExpression(node.right));
-    return storePos32;
+function serializeBinaryExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBinaryOperator(node.operator, pos + 12);
+    serializeBoxExpression(node.left, pos + 16);
+    serializeBoxExpression(node.right, pos + 20);
 }
 
-function finalizeBinaryExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeEnumValue(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBox(scratchUint32[storePos32 + 3]);
-}
-
-function serializeBinaryOperator(value) {
+function serializeBinaryOperator(value, pos) {
     switch (value) {
         case "==":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "!=":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "===":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         case "!==":
-            return 259;
+            uint32[pos >>> 2] = 3;
+            break;
         case "<":
-            return 260;
+            uint32[pos >>> 2] = 4;
+            break;
         case "<=":
-            return 261;
+            uint32[pos >>> 2] = 5;
+            break;
         case ">":
-            return 262;
+            uint32[pos >>> 2] = 6;
+            break;
         case ">=":
-            return 263;
+            uint32[pos >>> 2] = 7;
+            break;
         case "<<":
-            return 264;
+            uint32[pos >>> 2] = 8;
+            break;
         case ">>":
-            return 265;
+            uint32[pos >>> 2] = 9;
+            break;
         case ">>>":
-            return 266;
+            uint32[pos >>> 2] = 10;
+            break;
         case "+":
-            return 267;
+            uint32[pos >>> 2] = 11;
+            break;
         case "-":
-            return 268;
+            uint32[pos >>> 2] = 12;
+            break;
         case "*":
-            return 269;
+            uint32[pos >>> 2] = 13;
+            break;
         case "/":
-            return 270;
+            uint32[pos >>> 2] = 14;
+            break;
         case "%":
-            return 271;
+            uint32[pos >>> 2] = 15;
+            break;
         case "|":
-            return 272;
+            uint32[pos >>> 2] = 16;
+            break;
         case "^":
-            return 273;
+            uint32[pos >>> 2] = 17;
+            break;
         case "&":
-            return 274;
+            uint32[pos >>> 2] = 18;
+            break;
         case "||":
-            return 275;
+            uint32[pos >>> 2] = 19;
+            break;
         case "&&":
-            return 276;
+            uint32[pos >>> 2] = 20;
+            break;
         case "in":
-            return 277;
+            uint32[pos >>> 2] = 21;
+            break;
         case "instanceof":
-            return 278;
+            uint32[pos >>> 2] = 22;
+            break;
         case "**":
-            return 279;
+            uint32[pos >>> 2] = 23;
+            break;
         case "??":
-            return 280;
+            uint32[pos >>> 2] = 24;
+            break;
         default:
             throw new Error("Unexpected enum value for BinaryOperator");
     }
 }
 
-function serializeAssignmentExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeAssignmentOperator(node.operator)
-    );
-    writeScratchUint32(
-        storePos32 + 2,
-        node.operator === "="
-            ? serializeAssignmentLeftEquals(node.left)
-            : serializeAssignmentLeft(node.left)
-    );
-    writeScratchUint32(storePos32 + 3, serializeBoxExpression(node.right));
-    return storePos32;
+function serializeAssignmentExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeAssignmentOperator(node.operator, pos + 12);
+    node.operator === "="
+        ? serializeAssignmentLeftEquals(node.left, pos + 16)
+        : serializeAssignmentLeft(node.left, pos + 16);
+    serializeBoxExpression(node.right, pos + 24);
 }
 
-function finalizeAssignmentExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeEnumValue(scratchUint32[storePos32 + 1]);
-    finalizeAssignmentLeft(scratchUint32[storePos32 + 2]);
-    finalizeBox(scratchUint32[storePos32 + 3]);
-}
-
-function serializeAssignmentLeft(node) {
-    const storePos32 = allocScratch(2);
+function serializeAssignmentLeft(node, pos) {
     switch (node.type) {
         case "ThisExpression":
         case "ArrayExpression":
@@ -3148,1063 +1151,422 @@ function serializeAssignmentLeft(node) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeBoxExpression(node));
+            serializeEnum(node, pos, 0, serializeBoxExpression, 4);
             break;
         case "ArrayPattern":
         case "RestElement":
         case "ObjectPattern":
         case "AssignmentPattern":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeBoxPattern(node));
+            serializeEnum(node, pos, 1, serializeBoxPattern, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for AssignmentLeft");
     }
-    return storePos32;
 }
 
-function finalizeAssignmentLeft(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(0, scratchUint32[storePos32 + 1], finalizeBox, 4, 8);
-            break;
-        case 1:
-            finalizeEnum(1, scratchUint32[storePos32 + 1], finalizeBox, 4, 8);
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for AssignmentLeft");
-    }
+function serializeAssignmentLeftEquals(node, pos) {
+    uint32[pos >>> 2] = 1;
+    serializeBoxPattern(node, pos + 4);
 }
 
-function serializeAssignmentLeftEquals(node) {
-    const storePos32 = allocScratch(2);
-    scratchBuff[storePos32 << 2] = 1;
-    writeScratchUint32(storePos32 + 1, serializeBoxPattern(node));
-    return storePos32;
-}
-
-function serializeAssignmentOperator(value) {
+function serializeAssignmentOperator(value, pos) {
     switch (value) {
         case "=":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "+=":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "-=":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         case "*=":
-            return 259;
+            uint32[pos >>> 2] = 3;
+            break;
         case "/=":
-            return 260;
+            uint32[pos >>> 2] = 4;
+            break;
         case "%=":
-            return 261;
+            uint32[pos >>> 2] = 5;
+            break;
         case "<<=":
-            return 262;
+            uint32[pos >>> 2] = 6;
+            break;
         case ">>=":
-            return 263;
+            uint32[pos >>> 2] = 7;
+            break;
         case ">>>=":
-            return 264;
+            uint32[pos >>> 2] = 8;
+            break;
         case "|=":
-            return 265;
+            uint32[pos >>> 2] = 9;
+            break;
         case "^=":
-            return 266;
+            uint32[pos >>> 2] = 10;
+            break;
         case "&=":
-            return 267;
+            uint32[pos >>> 2] = 11;
+            break;
         case "**=":
-            return 268;
+            uint32[pos >>> 2] = 12;
+            break;
         case "&&=":
-            return 269;
+            uint32[pos >>> 2] = 13;
+            break;
         case "||=":
-            return 270;
+            uint32[pos >>> 2] = 14;
+            break;
         case "??=":
-            return 271;
+            uint32[pos >>> 2] = 15;
+            break;
         default:
             throw new Error("Unexpected enum value for AssignmentOperator");
     }
 }
 
-function serializeMemberExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.object));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeIdentifierOrPrivateNameOrComputed(node.property)
-    );
-    return storePos32;
+function serializeMemberExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.object, pos + 12);
+    serializeIdentifierOrPrivateNameOrComputed(node.property, pos + 16);
 }
 
-function finalizeMemberExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeIdentifierOrPrivateNameOrComputed(scratchUint32[storePos32 + 2]);
+function serializeSuperPropExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeSuper(node.obj, pos + 12);
+    serializeIdentifierOrComputed(node.property, pos + 24);
 }
 
-function serializeSuperPropExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeSuper(node.obj));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeIdentifierOrComputed(node.property)
-    );
-    return storePos32;
+function serializeConditionalExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.test, pos + 12);
+    serializeBoxExpression(node.consequent, pos + 16);
+    serializeBoxExpression(node.alternate, pos + 20);
 }
 
-function finalizeSuperPropExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeSuper(scratchUint32[storePos32 + 1]);
-    finalizeIdentifierOrComputed(scratchUint32[storePos32 + 2]);
+function serializeCallExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeSuperOrImportOrBoxExpression(node.callee, pos + 12);
+    serializeVecExpressionOrSpread(node.arguments, pos + 28);
+    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 36);
 }
 
-function serializeConditionalExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.test));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.consequent));
-    writeScratchUint32(storePos32 + 3, serializeBoxExpression(node.alternate));
-    return storePos32;
+function serializeNewExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.callee, pos + 12);
+    serializeOptionVecExpressionOrSpread(node.arguments, pos + 16);
+    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 28);
 }
 
-function finalizeConditionalExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBox(scratchUint32[storePos32 + 3]);
+function serializeSequenceExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecBoxExpression(node.expressions, pos + 12);
 }
 
-function serializeCallExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeSuperOrImportOrBoxExpression(node.callee)
-    );
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVecExpressionOrSpread(node.arguments)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeParameterInstantiation(node.typeArguments)
-    );
-    return storePos32;
+function serializeIdentifier(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJsWord(node.value, pos + 12);
+    serializeBoolean(node.optional, pos + 20);
 }
 
-function finalizeCallExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeSuperOrImportOrBoxExpression(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 3]);
+function serializeTemplateLiteral(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecBoxExpression(node.expressions, pos + 12);
+    serializeVecTemplateElement(node.quasis, pos + 20);
 }
 
-function serializeNewExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.callee));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionVecExpressionOrSpread(node.arguments)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeParameterInstantiation(node.typeArguments)
-    );
-    return storePos32;
+function serializeTemplateElement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.tail, pos + 12);
+    serializeOptionJsWord(node.cooked, pos + 16);
+    serializeJsWord(node.raw, pos + 28);
 }
 
-function finalizeNewExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeOptionVecExpressionOrSpread(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 3]);
+function serializeTaggedTemplateExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.tag, pos + 12);
+    serializeOptionTsTypeParameterInstantiation(node.typeParameters, pos + 16);
+    serializeTemplateLiteral(node.template, pos + 40);
 }
 
-function serializeSequenceExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecBoxExpression(node.expressions)
-    );
-    return storePos32;
+function serializeYieldExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionBoxExpression(node.argument, pos + 12);
+    serializeBoolean(node.delegate, pos + 20);
 }
 
-function finalizeSequenceExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
+function serializeMetaProperty(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeMetaPropertyKind(node.kind, pos + 12);
 }
 
-function serializeIdentifier(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeJsWord(node.value));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.optional));
-    return storePos32;
-}
-
-function finalizeIdentifier(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJsWord(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 3;
-}
-
-function serializeTemplateLiteral(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecBoxExpression(node.expressions)
-    );
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVecTemplateElement(node.quasis)
-    );
-    return storePos32;
-}
-
-function finalizeTemplateLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTemplateElement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.tail));
-    writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.cooked));
-    writeScratchUint32(storePos32 + 3, serializeJsWord(node.raw));
-    return storePos32;
-}
-
-function finalizeTemplateElement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeOptionJsWord(scratchUint32[storePos32 + 2]);
-    finalizeJsWord(scratchUint32[storePos32 + 3]);
-}
-
-function serializeTaggedTemplateExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.tag));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeParameterInstantiation(node.typeParameters)
-    );
-    writeScratchUint32(storePos32 + 3, serializeTemplateLiteral(node.template));
-    return storePos32;
-}
-
-function finalizeTaggedTemplateExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 2]);
-    finalizeTemplateLiteral(scratchUint32[storePos32 + 3]);
-}
-
-function serializeYieldExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeOptionBoxExpression(node.argument)
-    );
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.delegate));
-    return storePos32;
-}
-
-function finalizeYieldExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 3;
-}
-
-function serializeMetaProperty(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeMetaPropertyKind(node.kind));
-    return storePos32;
-}
-
-function finalizeMetaProperty(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeEnumValue(scratchUint32[storePos32 + 1]);
-}
-
-function serializeMetaPropertyKind(value) {
+function serializeMetaPropertyKind(value, pos) {
     switch (value) {
         case "new.target":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "import.meta":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         default:
             throw new Error("Unexpected enum value for MetaPropertyKind");
     }
 }
 
-function serializeAwaitExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.argument));
-    return storePos32;
+function serializeAwaitExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.argument, pos + 12);
 }
 
-function finalizeAwaitExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
+function serializeParenthesisExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function serializeParenthesisExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
+function serializePrivateName(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.id, pos + 12);
 }
 
-function finalizeParenthesisExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
+function serializeOptionalChainingExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeSpan(node.questionDotToken, pos + 12);
+    serializeMemberExpressionOrOptionalChainingCall(node.base, pos + 24);
 }
 
-function serializePrivateName(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.id));
-    return storePos32;
+function serializeOptionalChainingCall(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.callee, pos + 12);
+    serializeVecExpressionOrSpread(node.arguments, pos + 16);
+    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 24);
 }
 
-function finalizePrivateName(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
+function serializeSuper(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function serializeOptionalChainingExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeSpan(node.questionDotToken));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeMemberExpressionOrOptionalChainingCall(node.base)
-    );
-    return storePos32;
+function serializeImport(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function finalizeOptionalChainingExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeSpan(scratchUint32[storePos32 + 1]);
-    finalizeMemberExpressionOrOptionalChainingCall(
-        scratchUint32[storePos32 + 2]
-    );
+function serializeInvalid(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function serializeOptionalChainingCall(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.callee));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVecExpressionOrSpread(node.arguments)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeParameterInstantiation(node.typeArguments)
-    );
-    return storePos32;
+function serializeComputed(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function finalizeOptionalChainingCall(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 3]);
+function serializeExpressionOrSpread(node, pos) {
+    serializeOptionSpan(node.spread, pos);
+    serializeBoxExpression(node.expression, pos + 16);
 }
 
-function serializeSuper(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
+function serializeObjectExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecSpreadElementOrBoxObjectProperty(node.properties, pos + 12);
 }
 
-function finalizeSuper(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
+function serializeSpreadElement(node, pos) {
+    serializeSpan(node.spread, pos);
+    serializeBoxExpression(node.arguments, pos + 12);
 }
 
-function serializeImport(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
-}
-
-function finalizeImport(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-}
-
-function serializeInvalid(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
-}
-
-function finalizeInvalid(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-}
-
-function serializeComputed(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
-}
-
-function finalizeComputed(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeExpressionOrSpread(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeOptionSpan(node.spread));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
-}
-
-function finalizeExpressionOrSpread(storePos32) {
-    finalizeOptionSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeObjectExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecSpreadElementOrBoxObjectProperty(node.properties)
-    );
-    return storePos32;
-}
-
-function finalizeObjectExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-}
-
-function serializeSpreadElement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.spread));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.arguments));
-    return storePos32;
-}
-
-function finalizeSpreadElement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeObjectProperty(node) {
-    const storePos32 = allocScratch(2);
+function serializeObjectProperty(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "KeyValueProperty":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeKeyValueProperty(node));
+            serializeEnum(node, pos, 1, serializeKeyValueProperty, 8);
             break;
         case "AssignmentProperty":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeAssignmentProperty(node)
-            );
+            serializeEnum(node, pos, 2, serializeAssignmentProperty, 4);
             break;
         case "GetterProperty":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeGetterProperty(node));
+            serializeEnum(node, pos, 3, serializeGetterProperty, 8);
             break;
         case "SetterProperty":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(storePos32 + 1, serializeSetterProperty(node));
+            serializeEnum(node, pos, 4, serializeSetterProperty, 8);
             break;
         case "MethodProperty":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(storePos32 + 1, serializeMethodProperty(node));
+            serializeEnum(node, pos, 5, serializeMethodProperty, 8);
             break;
         default:
             throw new Error("Unexpected enum option type for ObjectProperty");
     }
-    return storePos32;
 }
 
-function finalizeObjectProperty(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                160
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeKeyValueProperty,
-                8,
-                160
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeAssignmentProperty,
-                4,
-                160
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeGetterProperty,
-                8,
-                160
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeSetterProperty,
-                8,
-                160
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeMethodProperty,
-                8,
-                160
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for ObjectProperty");
-    }
+function serializeKeyValueProperty(node, pos) {
+    serializePropertyName(node.key, pos);
+    serializeBoxExpression(node.value, pos + 48);
 }
 
-function serializeKeyValueProperty(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializePropertyName(node.key));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.value));
-    return storePos32;
+function serializeAssignmentProperty(node, pos) {
+    serializeIdentifier(node.key, pos);
+    serializeBoxExpression(node.value, pos + 24);
 }
 
-function finalizeKeyValueProperty(storePos32) {
-    finalizePropertyName(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    pos += 4;
+function serializeGetterProperty(node, pos) {
+    serializeSpan(node.span, pos);
+    serializePropertyName(node.key, pos + 16);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 64);
+    serializeOptionBlockStatement(node.body, pos + 84);
 }
 
-function serializeAssignmentProperty(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeIdentifier(node.key));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.value));
-    return storePos32;
+function serializeSetterProperty(node, pos) {
+    serializeSpan(node.span, pos);
+    serializePropertyName(node.key, pos + 16);
+    serializePattern(node.param, pos + 64);
+    serializeOptionBlockStatement(node.body, pos + 116);
 }
 
-function finalizeAssignmentProperty(storePos32) {
-    finalizeIdentifier(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
+function serializeMethodProperty(node, pos) {
+    serializePropertyName(node.key, pos);
+    serializeVecParameter(node.params, pos + 48);
+    serializeVecDecorator(node.decorators, pos + 56);
+    serializeSpan(node.span, pos + 64);
+    serializeOptionBlockStatement(node.body, pos + 76);
+    serializeBoolean(node.generator, pos + 100);
+    serializeBoolean(node.async, pos + 101);
+    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 104);
+    serializeOptionTsTypeAnnotation(node.returnType, pos + 128);
 }
 
-function serializeGetterProperty(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializePropertyName(node.key));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionBlockStatement(node.body)
-    );
-    return storePos32;
-}
-
-function finalizeGetterProperty(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    pos += 4;
-    finalizePropertyName(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 2]);
-    finalizeOptionBlockStatement(scratchUint32[storePos32 + 3]);
-    pos += 4;
-}
-
-function serializeSetterProperty(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializePropertyName(node.key));
-    writeScratchUint32(storePos32 + 2, serializePattern(node.param));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionBlockStatement(node.body)
-    );
-    return storePos32;
-}
-
-function finalizeSetterProperty(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    pos += 4;
-    finalizePropertyName(scratchUint32[storePos32 + 1]);
-    finalizePattern(scratchUint32[storePos32 + 2]);
-    finalizeOptionBlockStatement(scratchUint32[storePos32 + 3]);
-    pos += 4;
-}
-
-function serializeMethodProperty(node) {
-    const storePos32 = allocScratch(10);
-    writeScratchUint32(storePos32, serializePropertyName(node.key));
-    writeScratchUint32(storePos32 + 1, serializeVecParameter(node.params));
-    writeScratchUint32(storePos32 + 2, serializeVecDecorator(node.decorators));
-    writeScratchUint32(storePos32 + 3, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionBlockStatement(node.body)
-    );
-    writeScratchUint32(storePos32 + 5, serializeBoolean(node.generator));
-    writeScratchUint32(storePos32 + 6, serializeBoolean(node.async));
-    writeScratchUint32(
-        storePos32 + 7,
-        serializeOptionTsTypeParameterDeclaration(node.typeParameters)
-    );
-    writeScratchUint32(
-        storePos32 + 8,
-        serializeOptionTsTypeAnnotation(node.returnType)
-    );
-    return storePos32;
-}
-
-function finalizeMethodProperty(storePos32) {
-    finalizePropertyName(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeSpan(scratchUint32[storePos32 + 3]);
-    finalizeOptionBlockStatement(scratchUint32[storePos32 + 4]);
-    finalizeBoolean(scratchUint32[storePos32 + 5]);
-    finalizeBoolean(scratchUint32[storePos32 + 6]);
-    pos += 2;
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 7]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 8]);
-    pos += 4;
-}
-
-function serializePropertyName(node) {
-    const storePos32 = allocScratch(2);
+function serializePropertyName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "StringLiteral":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeStringLiteral(node));
+            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
             break;
         case "NumericLiteral":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeNumericLiteral(node));
+            serializeEnum(node, pos, 2, serializeNumericLiteral, 8);
             break;
         case "Computed":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeComputed(node));
+            serializeEnum(node, pos, 3, serializeComputed, 4);
             break;
         case "BigIntLiteral":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(storePos32 + 1, serializeBigIntLiteral(node));
+            serializeEnum(node, pos, 4, serializeBigIntLiteral, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for PropertyName");
     }
-    return storePos32;
 }
 
-function finalizePropertyName(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                48
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeStringLiteral,
-                4,
-                48
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeNumericLiteral,
-                8,
-                48
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeComputed,
-                4,
-                48
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeBigIntLiteral,
-                4,
-                48
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for PropertyName");
-    }
-}
-
-function serializeLiteral(node) {
-    const storePos32 = allocScratch(2);
+function serializeLiteral(node, pos) {
     switch (node.type) {
         case "StringLiteral":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeStringLiteral(node));
+            serializeEnum(node, pos, 0, serializeStringLiteral, 4);
             break;
         case "BooleanLiteral":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeBooleanLiteral(node));
+            serializeEnum(node, pos, 1, serializeBooleanLiteral, 4);
             break;
         case "NullLiteral":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeNullLiteral(node));
+            serializeEnum(node, pos, 2, serializeNullLiteral, 4);
             break;
         case "NumericLiteral":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeNumericLiteral(node));
+            serializeEnum(node, pos, 3, serializeNumericLiteral, 8);
             break;
         case "BigIntLiteral":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(storePos32 + 1, serializeBigIntLiteral(node));
+            serializeEnum(node, pos, 4, serializeBigIntLiteral, 4);
             break;
         case "RegExpLiteral":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(storePos32 + 1, serializeRegExpLiteral(node));
+            serializeEnum(node, pos, 5, serializeRegExpLiteral, 4);
             break;
         case "JSXText":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(storePos32 + 1, serializeJSXText(node));
+            serializeEnum(node, pos, 6, serializeJSXText, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for Literal");
     }
-    return storePos32;
 }
 
-function finalizeLiteral(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeStringLiteral,
-                4,
-                48
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeBooleanLiteral,
-                4,
-                48
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeNullLiteral,
-                4,
-                48
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeNumericLiteral,
-                8,
-                48
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeBigIntLiteral,
-                4,
-                48
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeRegExpLiteral,
-                4,
-                48
-            );
-            break;
-        case 6:
-            finalizeEnum(
-                6,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXText,
-                4,
-                48
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for Literal");
+function serializeStringLiteral(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJsWord(node.value, pos + 12);
+    serializeOptionJsWord(node.raw, pos + 20);
+}
+
+function serializeBooleanLiteral(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.value, pos + 12);
+}
+
+function serializeNullLiteral(node, pos) {
+    serializeSpan(node.span, pos);
+}
+
+function serializeNumericLiteral(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeNumber(node.value, pos + 16);
+    serializeOptionAsciiJsWord(node.raw, pos + 24);
+}
+
+function serializeBigIntLiteral(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBigIntValue(node.value, pos + 12);
+    serializeOptionAsciiJsWord(node.raw, pos + 20);
+}
+
+function serializeBigIntValue(value, pos) {
+    if (value[0] === 0) {
+        serializeAsciiJsWord("0", pos);
+    } else {
+        const parts = value[1];
+        let num = 0n;
+        for (let i = parts.length - 1; i >= 0; i--) {
+            num <<= 32n;
+            num += BigInt(parts[i]);
+        }
+        let str = num.toString();
+        if (value[0] === -1) str = `-${str}`;
+        serializeAsciiJsWord(str, pos);
     }
 }
 
-function serializeStringLiteral(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeJsWord(node.value));
-    writeScratchUint32(storePos32 + 2, serializeOptionJsWord(node.raw));
-    return storePos32;
+function serializeRegExpLiteral(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJsWord(node.pattern, pos + 12);
+    serializeAsciiJsWord(node.flags, pos + 20);
 }
 
-function finalizeStringLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJsWord(scratchUint32[storePos32 + 1]);
-    finalizeOptionJsWord(scratchUint32[storePos32 + 2]);
+function serializeJSXElement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJSXOpeningElement(node.opening, pos + 12);
+    serializeVecJSXElementChild(node.children, pos + 116);
+    serializeOptionJSXClosingElement(node.closing, pos + 124);
 }
 
-function serializeBooleanLiteral(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.value));
-    return storePos32;
+function serializeJSXOpeningElement(node, pos) {
+    serializeJSXElementName(node.name, pos);
+    serializeSpan(node.span, pos + 56);
+    serializeVecJSXAttributeOrSpreadElement(node.attributes, pos + 68);
+    serializeBoolean(node.selfClosing, pos + 76);
+    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 80);
 }
 
-function finalizeBooleanLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
+function serializeJSXAttribute(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJSXAttributeName(node.name, pos + 12);
+    serializeOptionJSXAttributeValue(node.value, pos + 64);
 }
 
-function serializeNullLiteral(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
-}
-
-function finalizeNullLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-}
-
-function serializeNumericLiteral(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeNumber(node.value));
-    writeScratchUint32(storePos32 + 2, serializeOptionAsciiJsWord(node.raw));
-    return storePos32;
-}
-
-function finalizeNumericLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    pos += 4;
-    finalizeNumber(scratchUint32[storePos32 + 1]);
-    finalizeOptionJsWord(scratchUint32[storePos32 + 2]);
-    pos += 4;
-}
-
-function serializeBigIntLiteral(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBigIntValue(node.value));
-    writeScratchUint32(storePos32 + 2, serializeOptionAsciiJsWord(node.raw));
-    return storePos32;
-}
-
-function finalizeBigIntLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJsWord(scratchUint32[storePos32 + 1]);
-    finalizeOptionJsWord(scratchUint32[storePos32 + 2]);
-}
-
-function serializeBigIntValue(value) {
-    if (value[0] === 0) return serializeAsciiJsWord("0");
-    const parts = value[1];
-    let num = 0n;
-    for (let i = parts.length - 1; i >= 0; i--) {
-        num <<= 32n;
-        num += BigInt(parts[i]);
-    }
-    let str = num.toString();
-    if (value[0] === -1) str = `-${str}`;
-    return serializeAsciiJsWord(str);
-}
-
-function serializeRegExpLiteral(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeJsWord(node.pattern));
-    writeScratchUint32(storePos32 + 2, serializeAsciiJsWord(node.flags));
-    return storePos32;
-}
-
-function finalizeRegExpLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJsWord(scratchUint32[storePos32 + 1]);
-    finalizeJsWord(scratchUint32[storePos32 + 2]);
-}
-
-function serializeJSXElement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeJSXOpeningElement(node.opening)
-    );
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVecJSXElementChild(node.children)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionJSXClosingElement(node.closing)
-    );
-    return storePos32;
-}
-
-function finalizeJSXElement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJSXOpeningElement(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeOptionJSXClosingElement(scratchUint32[storePos32 + 3]);
-}
-
-function serializeJSXOpeningElement(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeJSXElementName(node.name));
-    writeScratchUint32(storePos32 + 1, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVecJSXAttributeOrSpreadElement(node.attributes)
-    );
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.selfClosing));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionTsTypeParameterInstantiation(node.typeArguments)
-    );
-    return storePos32;
-}
-
-function finalizeJSXOpeningElement(storePos32) {
-    finalizeJSXElementName(scratchUint32[storePos32]);
-    finalizeSpan(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 3;
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 4]);
-}
-
-function serializeJSXAttribute(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeJSXAttributeName(node.name));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionJSXAttributeValue(node.value)
-    );
-    return storePos32;
-}
-
-function finalizeJSXAttribute(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJSXAttributeName(scratchUint32[storePos32 + 1]);
-    finalizeOptionJSXAttributeValue(scratchUint32[storePos32 + 2]);
-}
-
-function serializeJSXAttributeName(node) {
-    const storePos32 = allocScratch(2);
+function serializeJSXAttributeName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "JSXNamespacedName":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXNamespacedName(node)
-            );
+            serializeEnum(node, pos, 1, serializeJSXNamespacedName, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for JSXAttributeName");
     }
-    return storePos32;
 }
 
-function finalizeJSXAttributeName(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                52
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXNamespacedName,
-                4,
-                52
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for JSXAttributeName");
-    }
-}
-
-function serializeJSXAttributeValue(node) {
-    const storePos32 = allocScratch(2);
+function serializeJSXAttributeValue(node, pos) {
     switch (node.type) {
         case "StringLiteral":
         case "BooleanLiteral":
@@ -4213,312 +1575,108 @@ function serializeJSXAttributeValue(node) {
         case "BigIntLiteral":
         case "RegExpLiteral":
         case "JSXText":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeLiteral(node));
+            serializeEnum(node, pos, 0, serializeLiteral, 8);
             break;
         case "JSXExpressionContainer":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXExpressionContainer(node)
-            );
+            serializeEnum(node, pos, 1, serializeJSXExpressionContainer, 4);
             break;
         case "JSXElement":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeBoxJSXElement(node));
+            serializeEnum(node, pos, 2, serializeBoxJSXElement, 4);
             break;
         case "JSXFragment":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeJSXFragment(node));
+            serializeEnum(node, pos, 3, serializeJSXFragment, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for JSXAttributeValue"
             );
     }
-    return storePos32;
 }
 
-function finalizeJSXAttributeValue(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeLiteral,
-                8,
-                56
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXExpressionContainer,
-                4,
-                56
-            );
-            break;
-        case 2:
-            finalizeEnum(2, scratchUint32[storePos32 + 1], finalizeBox, 4, 56);
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXFragment,
-                4,
-                56
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for JSXAttributeValue");
-    }
+function serializeJSXClosingElement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJSXElementName(node.name, pos + 12);
 }
 
-function serializeJSXClosingElement(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeJSXElementName(node.name));
-    return storePos32;
+function serializeJSXFragment(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJSXOpeningFragment(node.opening, pos + 12);
+    serializeVecJSXElementChild(node.children, pos + 24);
+    serializeJSXClosingFragment(node.closing, pos + 32);
 }
 
-function finalizeJSXClosingElement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJSXElementName(scratchUint32[storePos32 + 1]);
+function serializeJSXOpeningFragment(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function serializeJSXFragment(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeJSXOpeningFragment(node.opening)
-    );
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVecJSXElementChild(node.children)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeJSXClosingFragment(node.closing)
-    );
-    return storePos32;
+function serializeJSXClosingFragment(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function finalizeJSXFragment(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJSXOpeningFragment(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
-    finalizeJSXClosingFragment(scratchUint32[storePos32 + 3]);
+function serializeJSXMemberExpression(node, pos) {
+    serializeJSXObject(node.object, pos);
+    serializeIdentifier(node.property, pos + 28);
 }
 
-function serializeJSXOpeningFragment(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
-}
-
-function finalizeJSXOpeningFragment(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-}
-
-function serializeJSXClosingFragment(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
-}
-
-function finalizeJSXClosingFragment(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-}
-
-function serializeJSXMemberExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeJSXObject(node.object));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.property));
-    return storePos32;
-}
-
-function finalizeJSXMemberExpression(storePos32) {
-    finalizeJSXObject(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-}
-
-function serializeJSXObject(node) {
-    const storePos32 = allocScratch(2);
+function serializeJSXObject(node, pos) {
     switch (node.type) {
         case "JSXMemberExpression":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeBoxJSXMemberExpression(node)
-            );
+            serializeEnum(node, pos, 0, serializeBoxJSXMemberExpression, 4);
             break;
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 1, serializeIdentifier, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for JSXObject");
     }
-    return storePos32;
 }
 
-function finalizeJSXObject(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(0, scratchUint32[storePos32 + 1], finalizeBox, 4, 28);
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                28
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for JSXObject");
-    }
+function serializeJSXNamespacedName(node, pos) {
+    serializeIdentifier(node.namespace, pos);
+    serializeIdentifier(node.name, pos + 24);
 }
 
-function serializeJSXNamespacedName(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeIdentifier(node.namespace));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.name));
-    return storePos32;
+function serializeJSXText(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJsWord(node.value, pos + 12);
+    serializeJsWord(node.raw, pos + 20);
 }
 
-function finalizeJSXNamespacedName(storePos32) {
-    finalizeIdentifier(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
+function serializeJSXEmptyExpression(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function serializeJSXText(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeJsWord(node.value));
-    writeScratchUint32(storePos32 + 2, serializeJsWord(node.raw));
-    return storePos32;
-}
-
-function finalizeJSXText(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJsWord(scratchUint32[storePos32 + 1]);
-    finalizeJsWord(scratchUint32[storePos32 + 2]);
-}
-
-function serializeJSXEmptyExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
-}
-
-function finalizeJSXEmptyExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-}
-
-function serializeJSXElementChild(node) {
-    const storePos32 = allocScratch(2);
+function serializeJSXElementChild(node, pos) {
     switch (node.type) {
         case "JSXText":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeJSXText(node));
+            serializeEnum(node, pos, 0, serializeJSXText, 4);
             break;
         case "JSXExpressionContainer":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXExpressionContainer(node)
-            );
+            serializeEnum(node, pos, 1, serializeJSXExpressionContainer, 4);
             break;
         case "JSXSpreadChild":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeJSXSpreadChild(node));
+            serializeEnum(node, pos, 2, serializeJSXSpreadChild, 4);
             break;
         case "JSXElement":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeBoxJSXElement(node));
+            serializeEnum(node, pos, 3, serializeBoxJSXElement, 4);
             break;
         case "JSXFragment":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(storePos32 + 1, serializeJSXFragment(node));
+            serializeEnum(node, pos, 4, serializeJSXFragment, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for JSXElementChild");
     }
-    return storePos32;
 }
 
-function finalizeJSXElementChild(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXText,
-                4,
-                48
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXExpressionContainer,
-                4,
-                48
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXSpreadChild,
-                4,
-                48
-            );
-            break;
-        case 3:
-            finalizeEnum(3, scratchUint32[storePos32 + 1], finalizeBox, 4, 48);
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXFragment,
-                4,
-                48
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for JSXElementChild");
-    }
+function serializeJSXExpressionContainer(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeJSXExpression(node.expression, pos + 12);
 }
 
-function serializeJSXExpressionContainer(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeJSXExpression(node.expression));
-    return storePos32;
-}
-
-function finalizeJSXExpressionContainer(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeJSXExpression(scratchUint32[storePos32 + 1]);
-}
-
-function serializeJSXExpression(node) {
-    const storePos32 = allocScratch(2);
+function serializeJSXExpression(node, pos) {
     switch (node.type) {
         case "JSXEmptyExpression":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXEmptyExpression(node)
-            );
+            serializeEnum(node, pos, 0, serializeJSXEmptyExpression, 4);
             break;
         case "ThisExpression":
         case "ArrayExpression":
@@ -4562,2340 +1720,880 @@ function serializeJSXExpression(node) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeBoxExpression(node));
+            serializeEnum(node, pos, 1, serializeBoxExpression, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for JSXExpression");
     }
-    return storePos32;
 }
 
-function finalizeJSXExpression(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXEmptyExpression,
-                4,
-                16
-            );
-            break;
-        case 1:
-            finalizeEnum(1, scratchUint32[storePos32 + 1], finalizeBox, 4, 16);
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for JSXExpression");
-    }
+function serializeJSXSpreadChild(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function serializeJSXSpreadChild(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
-}
-
-function finalizeJSXSpreadChild(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeJSXElementName(node) {
-    const storePos32 = allocScratch(2);
+function serializeJSXElementName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "JSXMemberExpression":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXMemberExpression(node)
-            );
+            serializeEnum(node, pos, 1, serializeJSXMemberExpression, 4);
             break;
         case "JSXNamespacedName":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeJSXNamespacedName(node)
-            );
+            serializeEnum(node, pos, 2, serializeJSXNamespacedName, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for JSXElementName");
     }
-    return storePos32;
 }
 
-function finalizeJSXElementName(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                56
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXMemberExpression,
-                4,
-                56
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXNamespacedName,
-                4,
-                56
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for JSXElementName");
-    }
+function serializeTsTypeAnnotation(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxTsType(node.typeAnnotation, pos + 12);
 }
 
-function serializeTsTypeAnnotation(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxTsType(node.typeAnnotation));
-    return storePos32;
+function serializeTsTypeParameterDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecTsTypeParameter(node.parameters, pos + 12);
 }
 
-function finalizeTsTypeAnnotation(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
+function serializeTsTypeParameter(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.name, pos + 12);
+    serializeBoolean(node.in, pos + 36);
+    serializeBoolean(node.out, pos + 37);
+    serializeOptionBoxTsType(node.constraint, pos + 40);
+    serializeOptionBoxTsType(node.default, pos + 48);
 }
 
-function serializeTsTypeParameterDeclaration(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecTsTypeParameter(node.parameters)
-    );
-    return storePos32;
+function serializeTsTypeParameterInstantiation(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecBoxTsType(node.params, pos + 12);
 }
 
-function finalizeTsTypeParameterDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
+function serializeTsParameterProperty(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecDecorator(node.decorators, pos + 12);
+    serializeOptionAccessibility(node.accessibility, pos + 20);
+    serializeBoolean(node.override, pos + 28);
+    serializeBoolean(node.readonly, pos + 29);
+    serializeTsParamPropParam(node.param, pos + 32);
 }
 
-function serializeTsTypeParameter(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.name));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.in));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.out));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionBoxTsType(node.constraint)
-    );
-    writeScratchUint32(storePos32 + 5, serializeOptionBoxTsType(node.default));
-    return storePos32;
-}
-
-function finalizeTsTypeParameter(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 2;
-    finalizeOptionBoxTsType(scratchUint32[storePos32 + 4]);
-    finalizeOptionBoxTsType(scratchUint32[storePos32 + 5]);
-}
-
-function serializeTsTypeParameterInstantiation(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecBoxTsType(node.params));
-    return storePos32;
-}
-
-function finalizeTsTypeParameterInstantiation(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsParameterProperty(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecDecorator(node.decorators));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionAccessibility(node.accessibility)
-    );
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.override));
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 5, serializeTsParamPropParam(node.param));
-    return storePos32;
-}
-
-function finalizeTsParameterProperty(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeOptionAccessibility(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 2;
-    finalizeTsParamPropParam(scratchUint32[storePos32 + 5]);
-}
-
-function serializeTsParamPropParam(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsParamPropParam(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeBindingIdentifier(node)
-            );
+            serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
             break;
         case "AssignmentPattern":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeAssignmentPattern(node)
-            );
+            serializeEnum(node, pos, 1, serializeAssignmentPattern, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsParamPropParam");
     }
-    return storePos32;
 }
 
-function finalizeTsParamPropParam(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeBindingIdentifier,
-                4,
-                48
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeAssignmentPattern,
-                4,
-                48
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsParamPropParam");
-    }
+function serializeTsQualifiedName(node, pos) {
+    serializeTsEntityName(node.left, pos);
+    serializeIdentifier(node.right, pos + 28);
 }
 
-function serializeTsQualifiedName(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeTsEntityName(node.left));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.right));
-    return storePos32;
-}
-
-function finalizeTsQualifiedName(storePos32) {
-    finalizeTsEntityName(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsEntityName(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsEntityName(node, pos) {
     switch (node.type) {
         case "TsQualifiedName":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeBoxTsQualifiedName(node)
-            );
+            serializeEnum(node, pos, 0, serializeBoxTsQualifiedName, 4);
             break;
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 1, serializeIdentifier, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsEntityName");
     }
-    return storePos32;
 }
 
-function finalizeTsEntityName(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(0, scratchUint32[storePos32 + 1], finalizeBox, 4, 28);
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                28
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsEntityName");
-    }
-}
-
-function serializeTsTypeElement(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsTypeElement(node, pos) {
     switch (node.type) {
         case "TsCallSignatureDeclaration":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsCallSignatureDeclaration(node)
-            );
+            serializeEnum(node, pos, 0, serializeTsCallSignatureDeclaration, 4);
             break;
         case "TsConstructSignatureDeclaration":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsConstructSignatureDeclaration(node)
+            serializeEnum(
+                node,
+                pos,
+                1,
+                serializeTsConstructSignatureDeclaration,
+                4
             );
             break;
         case "TsPropertySignature":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsPropertySignature(node)
-            );
+            serializeEnum(node, pos, 2, serializeTsPropertySignature, 4);
             break;
         case "TsGetterSignature":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsGetterSignature(node)
-            );
+            serializeEnum(node, pos, 3, serializeTsGetterSignature, 4);
             break;
         case "TsSetterSignature":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsSetterSignature(node)
-            );
+            serializeEnum(node, pos, 4, serializeTsSetterSignature, 4);
             break;
         case "TsMethodSignature":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsMethodSignature(node)
-            );
+            serializeEnum(node, pos, 5, serializeTsMethodSignature, 4);
             break;
         case "TsIndexSignature":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(storePos32 + 1, serializeTsIndexSignature(node));
+            serializeEnum(node, pos, 6, serializeTsIndexSignature, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsTypeElement");
     }
-    return storePos32;
 }
 
-function finalizeTsTypeElement(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsCallSignatureDeclaration,
-                4,
-                88
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeTsConstructSignatureDeclaration,
-                4,
-                88
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeTsPropertySignature,
-                4,
-                88
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeTsGetterSignature,
-                4,
-                88
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeTsSetterSignature,
-                4,
-                88
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeTsMethodSignature,
-                4,
-                88
-            );
-            break;
-        case 6:
-            finalizeEnum(
-                6,
-                scratchUint32[storePos32 + 1],
-                finalizeTsIndexSignature,
-                4,
-                88
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsTypeElement");
-    }
+function serializeTsCallSignatureDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecTsFnParam(node.params, pos + 12);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 20);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 40);
 }
 
-function serializeTsCallSignatureDeclaration(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecTsFnParam(node.params));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    return storePos32;
+function serializeTsConstructSignatureDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecTsFnParam(node.params, pos + 12);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 20);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 40);
 }
 
-function finalizeTsCallSignatureDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 3]);
+function serializeTsPropertySignature(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.readonly, pos + 12);
+    serializeBoxExpression(node.key, pos + 16);
+    serializeBoolean(node.computed, pos + 20);
+    serializeBoolean(node.optional, pos + 21);
+    serializeOptionBoxExpression(node.init, pos + 24);
+    serializeVecTsFnParam(node.params, pos + 32);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 40);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 60);
 }
 
-function serializeTsConstructSignatureDeclaration(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecTsFnParam(node.params));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    return storePos32;
+function serializeTsGetterSignature(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.readonly, pos + 12);
+    serializeBoxExpression(node.key, pos + 16);
+    serializeBoolean(node.computed, pos + 20);
+    serializeBoolean(node.optional, pos + 21);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 24);
 }
 
-function finalizeTsConstructSignatureDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 3]);
+function serializeTsSetterSignature(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.readonly, pos + 12);
+    serializeBoxExpression(node.key, pos + 16);
+    serializeBoolean(node.computed, pos + 20);
+    serializeBoolean(node.optional, pos + 21);
+    serializeTsFnParam(node.param, pos + 24);
 }
 
-function serializeTsPropertySignature(node) {
-    const storePos32 = allocScratch(10);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.key));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.computed));
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.optional));
-    writeScratchUint32(storePos32 + 5, serializeOptionBoxExpression(node.init));
-    writeScratchUint32(storePos32 + 6, serializeVecTsFnParam(node.params));
-    writeScratchUint32(
-        storePos32 + 7,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    writeScratchUint32(
-        storePos32 + 8,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    return storePos32;
+function serializeTsMethodSignature(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.readonly, pos + 12);
+    serializeBoxExpression(node.key, pos + 16);
+    serializeBoolean(node.computed, pos + 20);
+    serializeBoolean(node.optional, pos + 21);
+    serializeVecTsFnParam(node.params, pos + 24);
+    serializeOptionTsTypeAnnotation(node.typeAnn, pos + 32);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 52);
 }
 
-function finalizeTsPropertySignature(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 2;
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 5]);
-    finalizeVec(scratchUint32[storePos32 + 6]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 7]);
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 8]);
+function serializeTsIndexSignature(node, pos) {
+    serializeVecTsFnParam(node.params, pos);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 8);
+    serializeBoolean(node.readonly, pos + 28);
+    serializeBoolean(node.static, pos + 29);
+    serializeSpan(node.span, pos + 32);
 }
 
-function serializeTsGetterSignature(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.key));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.computed));
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.optional));
-    writeScratchUint32(
-        storePos32 + 5,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    return storePos32;
-}
-
-function finalizeTsGetterSignature(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 2;
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 5]);
-}
-
-function serializeTsSetterSignature(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.key));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.computed));
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.optional));
-    writeScratchUint32(storePos32 + 5, serializeTsFnParam(node.param));
-    return storePos32;
-}
-
-function finalizeTsSetterSignature(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 2;
-    finalizeTsFnParam(scratchUint32[storePos32 + 5]);
-}
-
-function serializeTsMethodSignature(node) {
-    const storePos32 = allocScratch(8);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 2, serializeBoxExpression(node.key));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.computed));
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.optional));
-    writeScratchUint32(storePos32 + 5, serializeVecTsFnParam(node.params));
-    writeScratchUint32(
-        storePos32 + 6,
-        serializeOptionTsTypeAnnotation(node.typeAnn)
-    );
-    writeScratchUint32(
-        storePos32 + 7,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    return storePos32;
-}
-
-function finalizeTsMethodSignature(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 2;
-    finalizeVec(scratchUint32[storePos32 + 5]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 6]);
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 7]);
-}
-
-function serializeTsIndexSignature(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeVecTsFnParam(node.params));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.static));
-    writeScratchUint32(storePos32 + 4, serializeSpan(node.span));
-    return storePos32;
-}
-
-function finalizeTsIndexSignature(storePos32) {
-    finalizeVec(scratchUint32[storePos32]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 2;
-    finalizeSpan(scratchUint32[storePos32 + 4]);
-}
-
-function serializeTsType(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsType(node, pos) {
     switch (node.type) {
         case "TsKeywordType":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeTsKeywordType(node));
+            serializeEnum(node, pos, 0, serializeTsKeywordType, 4);
             break;
         case "TsThisType":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeTsThisType(node));
+            serializeEnum(node, pos, 1, serializeTsThisType, 4);
             break;
         case "TsFunctionType":
         case "TsConstructorType":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsFnOrConstructorType(node)
-            );
+            serializeEnum(node, pos, 2, serializeTsFnOrConstructorType, 4);
             break;
         case "TsTypeReference":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeTsTypeReference(node));
+            serializeEnum(node, pos, 3, serializeTsTypeReference, 4);
             break;
         case "TsTypeQuery":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(storePos32 + 1, serializeTsTypeQuery(node));
+            serializeEnum(node, pos, 4, serializeTsTypeQuery, 4);
             break;
         case "TsTypeLiteral":
-            scratchBuff[storePos32 << 2] = 5;
-            writeScratchUint32(storePos32 + 1, serializeTsTypeLiteral(node));
+            serializeEnum(node, pos, 5, serializeTsTypeLiteral, 4);
             break;
         case "TsArrayType":
-            scratchBuff[storePos32 << 2] = 6;
-            writeScratchUint32(storePos32 + 1, serializeTsArrayType(node));
+            serializeEnum(node, pos, 6, serializeTsArrayType, 4);
             break;
         case "TsTupleType":
-            scratchBuff[storePos32 << 2] = 7;
-            writeScratchUint32(storePos32 + 1, serializeTsTupleType(node));
+            serializeEnum(node, pos, 7, serializeTsTupleType, 4);
             break;
         case "TsOptionalType":
-            scratchBuff[storePos32 << 2] = 8;
-            writeScratchUint32(storePos32 + 1, serializeTsOptionalType(node));
+            serializeEnum(node, pos, 8, serializeTsOptionalType, 4);
             break;
         case "TsRestType":
-            scratchBuff[storePos32 << 2] = 9;
-            writeScratchUint32(storePos32 + 1, serializeTsRestType(node));
+            serializeEnum(node, pos, 9, serializeTsRestType, 4);
             break;
         case "TsUnionType":
         case "TsIntersectionType":
-            scratchBuff[storePos32 << 2] = 10;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsUnionOrIntersectionType(node)
-            );
+            serializeEnum(node, pos, 10, serializeTsUnionOrIntersectionType, 4);
             break;
         case "TsConditionalType":
-            scratchBuff[storePos32 << 2] = 11;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsConditionalType(node)
-            );
+            serializeEnum(node, pos, 11, serializeTsConditionalType, 4);
             break;
         case "TsInferType":
-            scratchBuff[storePos32 << 2] = 12;
-            writeScratchUint32(storePos32 + 1, serializeTsInferType(node));
+            serializeEnum(node, pos, 12, serializeTsInferType, 4);
             break;
         case "TsParenthesizedType":
-            scratchBuff[storePos32 << 2] = 13;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsParenthesizedType(node)
-            );
+            serializeEnum(node, pos, 13, serializeTsParenthesizedType, 4);
             break;
         case "TsTypeOperator":
-            scratchBuff[storePos32 << 2] = 14;
-            writeScratchUint32(storePos32 + 1, serializeTsTypeOperator(node));
+            serializeEnum(node, pos, 14, serializeTsTypeOperator, 4);
             break;
         case "TsIndexedAccessType":
-            scratchBuff[storePos32 << 2] = 15;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsIndexedAccessType(node)
-            );
+            serializeEnum(node, pos, 15, serializeTsIndexedAccessType, 4);
             break;
         case "TsMappedType":
-            scratchBuff[storePos32 << 2] = 16;
-            writeScratchUint32(storePos32 + 1, serializeTsMappedType(node));
+            serializeEnum(node, pos, 16, serializeTsMappedType, 4);
             break;
         case "TsLiteralType":
-            scratchBuff[storePos32 << 2] = 17;
-            writeScratchUint32(storePos32 + 1, serializeTsLiteralType(node));
+            serializeEnum(node, pos, 17, serializeTsLiteralType, 8);
             break;
         case "TsTypePredicate":
-            scratchBuff[storePos32 << 2] = 18;
-            writeScratchUint32(storePos32 + 1, serializeTsTypePredicate(node));
+            serializeEnum(node, pos, 18, serializeTsTypePredicate, 4);
             break;
         case "TsImportType":
-            scratchBuff[storePos32 << 2] = 19;
-            writeScratchUint32(storePos32 + 1, serializeTsImportType(node));
+            serializeEnum(node, pos, 19, serializeTsImportType, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsType");
     }
-    return storePos32;
 }
 
-function finalizeTsType(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsKeywordType,
-                4,
-                144
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeTsThisType,
-                4,
-                144
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeTsFnOrConstructorType,
-                4,
-                144
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTypeReference,
-                4,
-                144
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTypeQuery,
-                4,
-                144
-            );
-            break;
-        case 5:
-            finalizeEnum(
-                5,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTypeLiteral,
-                4,
-                144
-            );
-            break;
-        case 6:
-            finalizeEnum(
-                6,
-                scratchUint32[storePos32 + 1],
-                finalizeTsArrayType,
-                4,
-                144
-            );
-            break;
-        case 7:
-            finalizeEnum(
-                7,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTupleType,
-                4,
-                144
-            );
-            break;
-        case 8:
-            finalizeEnum(
-                8,
-                scratchUint32[storePos32 + 1],
-                finalizeTsOptionalType,
-                4,
-                144
-            );
-            break;
-        case 9:
-            finalizeEnum(
-                9,
-                scratchUint32[storePos32 + 1],
-                finalizeTsRestType,
-                4,
-                144
-            );
-            break;
-        case 10:
-            finalizeEnum(
-                10,
-                scratchUint32[storePos32 + 1],
-                finalizeTsUnionOrIntersectionType,
-                4,
-                144
-            );
-            break;
-        case 11:
-            finalizeEnum(
-                11,
-                scratchUint32[storePos32 + 1],
-                finalizeTsConditionalType,
-                4,
-                144
-            );
-            break;
-        case 12:
-            finalizeEnum(
-                12,
-                scratchUint32[storePos32 + 1],
-                finalizeTsInferType,
-                4,
-                144
-            );
-            break;
-        case 13:
-            finalizeEnum(
-                13,
-                scratchUint32[storePos32 + 1],
-                finalizeTsParenthesizedType,
-                4,
-                144
-            );
-            break;
-        case 14:
-            finalizeEnum(
-                14,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTypeOperator,
-                4,
-                144
-            );
-            break;
-        case 15:
-            finalizeEnum(
-                15,
-                scratchUint32[storePos32 + 1],
-                finalizeTsIndexedAccessType,
-                4,
-                144
-            );
-            break;
-        case 16:
-            finalizeEnum(
-                16,
-                scratchUint32[storePos32 + 1],
-                finalizeTsMappedType,
-                4,
-                144
-            );
-            break;
-        case 17:
-            finalizeEnum(
-                17,
-                scratchUint32[storePos32 + 1],
-                finalizeTsLiteralType,
-                8,
-                144
-            );
-            break;
-        case 18:
-            finalizeEnum(
-                18,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTypePredicate,
-                4,
-                144
-            );
-            break;
-        case 19:
-            finalizeEnum(
-                19,
-                scratchUint32[storePos32 + 1],
-                finalizeTsImportType,
-                4,
-                144
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsType");
-    }
-}
-
-function serializeTsFnOrConstructorType(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsFnOrConstructorType(node, pos) {
     switch (node.type) {
         case "TsFunctionType":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeTsFunctionType(node));
+            serializeEnum(node, pos, 0, serializeTsFunctionType, 4);
             break;
         case "TsConstructorType":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsConstructorType(node)
-            );
+            serializeEnum(node, pos, 1, serializeTsConstructorType, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for TsFnOrConstructorType"
             );
     }
-    return storePos32;
 }
 
-function finalizeTsFnOrConstructorType(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsFunctionType,
-                4,
-                68
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeTsConstructorType,
-                4,
-                68
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for TsFnOrConstructorType"
-            );
-    }
+function serializeTsKeywordType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsKeywordTypeKind(node.kind, pos + 12);
 }
 
-function serializeTsKeywordType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeTsKeywordTypeKind(node.kind));
-    return storePos32;
-}
-
-function finalizeTsKeywordType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeEnumValue(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsKeywordTypeKind(value) {
+function serializeTsKeywordTypeKind(value, pos) {
     switch (value) {
         case "any":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "unknown":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "number":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         case "object":
-            return 259;
+            uint32[pos >>> 2] = 3;
+            break;
         case "boolean":
-            return 260;
+            uint32[pos >>> 2] = 4;
+            break;
         case "bigint":
-            return 261;
+            uint32[pos >>> 2] = 5;
+            break;
         case "string":
-            return 262;
+            uint32[pos >>> 2] = 6;
+            break;
         case "symbol":
-            return 263;
+            uint32[pos >>> 2] = 7;
+            break;
         case "void":
-            return 264;
+            uint32[pos >>> 2] = 8;
+            break;
         case "undefined":
-            return 265;
+            uint32[pos >>> 2] = 9;
+            break;
         case "null":
-            return 266;
+            uint32[pos >>> 2] = 10;
+            break;
         case "never":
-            return 267;
+            uint32[pos >>> 2] = 11;
+            break;
         case "intrinsic":
-            return 268;
+            uint32[pos >>> 2] = 12;
+            break;
         default:
             throw new Error("Unexpected enum value for TsKeywordTypeKind");
     }
 }
 
-function serializeTsThisType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    return storePos32;
+function serializeTsThisType(node, pos) {
+    serializeSpan(node.span, pos);
 }
 
-function finalizeTsThisType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-}
-
-function serializeTsFnParam(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsFnParam(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeBindingIdentifier(node)
-            );
+            serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
             break;
         case "ArrayPattern":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeArrayPattern(node));
+            serializeEnum(node, pos, 1, serializeArrayPattern, 4);
             break;
         case "RestElement":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeRestElement(node));
+            serializeEnum(node, pos, 2, serializeRestElement, 4);
             break;
         case "ObjectPattern":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeObjectPattern(node));
+            serializeEnum(node, pos, 3, serializeObjectPattern, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsFnParam");
     }
-    return storePos32;
 }
 
-function finalizeTsFnParam(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeBindingIdentifier,
-                4,
-                52
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeArrayPattern,
-                4,
-                52
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeRestElement,
-                4,
-                52
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeObjectPattern,
-                4,
-                52
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsFnParam");
-    }
+function serializeTsFunctionType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecTsFnParam(node.params, pos + 12);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 20);
+    serializeTsTypeAnnotation(node.typeAnnotation, pos + 44);
 }
 
-function serializeTsFunctionType(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecTsFnParam(node.params));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeTsTypeAnnotation(node.typeAnnotation)
-    );
-    return storePos32;
+function serializeTsConstructorType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecTsFnParam(node.params, pos + 12);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 20);
+    serializeTsTypeAnnotation(node.typeAnnotation, pos + 44);
+    serializeBoolean(node.isAbstract, pos + 60);
 }
 
-function finalizeTsFunctionType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 2]);
-    finalizeTsTypeAnnotation(scratchUint32[storePos32 + 3]);
+function serializeTsTypeReference(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsEntityName(node.typeName, pos + 12);
+    serializeOptionTsTypeParameterInstantiation(node.typeParams, pos + 40);
 }
 
-function serializeTsConstructorType(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecTsFnParam(node.params));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeTsTypeAnnotation(node.typeAnnotation)
-    );
-    writeScratchUint32(storePos32 + 4, serializeBoolean(node.isAbstract));
-    return storePos32;
+function serializeTsTypePredicate(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.asserts, pos + 12);
+    serializeTsThisTypeOrIdent(node.paramName, pos + 16);
+    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 44);
 }
 
-function finalizeTsConstructorType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 2]);
-    finalizeTsTypeAnnotation(scratchUint32[storePos32 + 3]);
-    finalizeBoolean(scratchUint32[storePos32 + 4]);
-    pos += 3;
-}
-
-function serializeTsTypeReference(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeTsEntityName(node.typeName));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeParameterInstantiation(node.typeParams)
-    );
-    return storePos32;
-}
-
-function finalizeTsTypeReference(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeTsEntityName(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsTypePredicate(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.asserts));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeTsThisTypeOrIdent(node.paramName)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeAnnotation(node.typeAnnotation)
-    );
-    return storePos32;
-}
-
-function finalizeTsTypePredicate(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeTsThisTypeOrIdent(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeAnnotation(scratchUint32[storePos32 + 3]);
-}
-
-function serializeTsThisTypeOrIdent(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsThisTypeOrIdent(node, pos) {
     switch (node.type) {
         case "TsThisType":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeTsThisType(node));
+            serializeEnum(node, pos, 0, serializeTsThisType, 4);
             break;
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 1, serializeIdentifier, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for TsThisTypeOrIdent"
             );
     }
-    return storePos32;
 }
 
-function finalizeTsThisTypeOrIdent(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsThisType,
-                4,
-                28
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                28
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsThisTypeOrIdent");
-    }
+function serializeTsTypeQuery(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsTypeQueryExpr(node.exprName, pos + 12);
+    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 116);
 }
 
-function serializeTsTypeQuery(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeTsTypeQueryExpr(node.exprName));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeParameterInstantiation(node.typeArguments)
-    );
-    return storePos32;
-}
-
-function finalizeTsTypeQuery(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeTsTypeQueryExpr(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsTypeQueryExpr(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsTypeQueryExpr(node, pos) {
     switch (node.type) {
         case "TsQualifiedName":
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeTsEntityName(node));
+            serializeEnum(node, pos, 0, serializeTsEntityName, 4);
             break;
         case "TsImportType":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeTsImportType(node));
+            serializeEnum(node, pos, 1, serializeTsImportType, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsTypeQueryExpr");
     }
-    return storePos32;
 }
 
-function finalizeTsTypeQueryExpr(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsEntityName,
-                4,
-                104
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeTsImportType,
-                4,
-                104
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsTypeQueryExpr");
-    }
+function serializeTsImportType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeStringLiteral(node.argument, pos + 12);
+    serializeOptionTsEntityName(node.qualifier, pos + 44);
+    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 76);
 }
 
-function serializeTsImportType(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeStringLiteral(node.argument));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsEntityName(node.qualifier)
-    );
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeParameterInstantiation(node.typeArguments)
-    );
-    return storePos32;
+function serializeTsTypeLiteral(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecTsTypeElement(node.members, pos + 12);
 }
 
-function finalizeTsImportType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeStringLiteral(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsEntityName(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 3]);
+function serializeTsArrayType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxTsType(node.elemType, pos + 12);
 }
 
-function serializeTsTypeLiteral(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecTsTypeElement(node.members));
-    return storePos32;
+function serializeTsTupleType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecTsTupleElement(node.elemTypes, pos + 12);
 }
 
-function finalizeTsTypeLiteral(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
+function serializeTsTupleElement(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionPattern(node.label, pos + 12);
+    serializeTsType(node.ty, pos + 72);
 }
 
-function serializeTsArrayType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxTsType(node.elemType));
-    return storePos32;
+function serializeTsOptionalType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxTsType(node.typeAnnotation, pos + 12);
 }
 
-function finalizeTsArrayType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
+function serializeTsRestType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxTsType(node.typeAnnotation, pos + 12);
 }
 
-function serializeTsTupleType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeVecTsTupleElement(node.elemTypes)
-    );
-    return storePos32;
-}
-
-function finalizeTsTupleType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsTupleElement(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeOptionPattern(node.label));
-    writeScratchUint32(storePos32 + 2, serializeTsType(node.ty));
-    return storePos32;
-}
-
-function finalizeTsTupleElement(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionPattern(scratchUint32[storePos32 + 1]);
-    pos += 4;
-    finalizeTsType(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsOptionalType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxTsType(node.typeAnnotation));
-    return storePos32;
-}
-
-function finalizeTsOptionalType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsRestType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxTsType(node.typeAnnotation));
-    return storePos32;
-}
-
-function finalizeTsRestType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsUnionOrIntersectionType(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsUnionOrIntersectionType(node, pos) {
     switch (node.type) {
         case "TsUnionType":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeTsUnionType(node));
+            serializeEnum(node, pos, 0, serializeTsUnionType, 4);
             break;
         case "TsIntersectionType":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsIntersectionType(node)
-            );
+            serializeEnum(node, pos, 1, serializeTsIntersectionType, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for TsUnionOrIntersectionType"
             );
     }
-    return storePos32;
 }
 
-function finalizeTsUnionOrIntersectionType(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsUnionType,
-                4,
-                24
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeTsIntersectionType,
-                4,
-                24
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for TsUnionOrIntersectionType"
-            );
-    }
+function serializeTsUnionType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecBoxTsType(node.types, pos + 12);
 }
 
-function serializeTsUnionType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecBoxTsType(node.types));
-    return storePos32;
+function serializeTsIntersectionType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecBoxTsType(node.types, pos + 12);
 }
 
-function finalizeTsUnionType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
+function serializeTsConditionalType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxTsType(node.checkType, pos + 12);
+    serializeBoxTsType(node.extendsType, pos + 16);
+    serializeBoxTsType(node.trueType, pos + 20);
+    serializeBoxTsType(node.falseType, pos + 24);
 }
 
-function serializeTsIntersectionType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecBoxTsType(node.types));
-    return storePos32;
+function serializeTsInferType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsTypeParameter(node.typeParam, pos + 12);
 }
 
-function finalizeTsIntersectionType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
+function serializeTsParenthesizedType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxTsType(node.typeAnnotation, pos + 12);
 }
 
-function serializeTsConditionalType(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxTsType(node.checkType));
-    writeScratchUint32(storePos32 + 2, serializeBoxTsType(node.extendsType));
-    writeScratchUint32(storePos32 + 3, serializeBoxTsType(node.trueType));
-    writeScratchUint32(storePos32 + 4, serializeBoxTsType(node.falseType));
-    return storePos32;
+function serializeTsTypeOperator(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsTypeOperatorOp(node.op, pos + 12);
+    serializeBoxTsType(node.typeAnnotation, pos + 16);
 }
 
-function finalizeTsConditionalType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBox(scratchUint32[storePos32 + 3]);
-    finalizeBox(scratchUint32[storePos32 + 4]);
-}
-
-function serializeTsInferType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeTsTypeParameter(node.typeParam)
-    );
-    return storePos32;
-}
-
-function finalizeTsInferType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeTsTypeParameter(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsParenthesizedType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxTsType(node.typeAnnotation));
-    return storePos32;
-}
-
-function finalizeTsParenthesizedType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsTypeOperator(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeTsTypeOperatorOp(node.op));
-    writeScratchUint32(storePos32 + 2, serializeBoxTsType(node.typeAnnotation));
-    return storePos32;
-}
-
-function finalizeTsTypeOperator(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeEnumValue(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsTypeOperatorOp(value) {
+function serializeTsTypeOperatorOp(value, pos) {
     switch (value) {
         case "keyof":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "unique":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "readonly":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         default:
             throw new Error("Unexpected enum value for TsTypeOperatorOp");
     }
 }
 
-function serializeTsIndexedAccessType(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.readonly));
-    writeScratchUint32(storePos32 + 2, serializeBoxTsType(node.objectType));
-    writeScratchUint32(storePos32 + 3, serializeBoxTsType(node.indexType));
-    return storePos32;
+function serializeTsIndexedAccessType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.readonly, pos + 12);
+    serializeBoxTsType(node.objectType, pos + 16);
+    serializeBoxTsType(node.indexType, pos + 20);
 }
 
-function finalizeTsIndexedAccessType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeBox(scratchUint32[storePos32 + 2]);
-    finalizeBox(scratchUint32[storePos32 + 3]);
-}
-
-function serializeTruePlusMinus(value) {
+function serializeTruePlusMinus(value, pos) {
     switch (value) {
         case true:
         case "true":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "+":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "-":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         default:
             throw new Error("Unexpected enum value for TruePlusMinus");
     }
 }
 
-function serializeTsMappedType(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(
-        storePos32 + 1,
-        serializeOptionTruePlusMinus(node.readonly)
-    );
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeTsTypeParameter(node.typeParam)
-    );
-    writeScratchUint32(storePos32 + 3, serializeOptionBoxTsType(node.nameType));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionTruePlusMinus(node.optional)
-    );
-    writeScratchUint32(
-        storePos32 + 5,
-        serializeOptionBoxTsType(node.typeAnnotation)
-    );
-    return storePos32;
+function serializeTsMappedType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeOptionTruePlusMinus(node.readonly, pos + 12);
+    serializeTsTypeParameter(node.typeParam, pos + 20);
+    serializeOptionBoxTsType(node.nameType, pos + 76);
+    serializeOptionTruePlusMinus(node.optional, pos + 84);
+    serializeOptionBoxTsType(node.typeAnnotation, pos + 92);
 }
 
-function finalizeTsMappedType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeOptionTruePlusMinus(scratchUint32[storePos32 + 1]);
-    finalizeTsTypeParameter(scratchUint32[storePos32 + 2]);
-    finalizeOptionBoxTsType(scratchUint32[storePos32 + 3]);
-    finalizeOptionTruePlusMinus(scratchUint32[storePos32 + 4]);
-    finalizeOptionBoxTsType(scratchUint32[storePos32 + 5]);
+function serializeTsLiteralType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsLit(node.literal, pos + 16);
 }
 
-function serializeTsLiteralType(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeTsLit(node.literal));
-    return storePos32;
-}
-
-function finalizeTsLiteralType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    pos += 4;
-    finalizeTsLit(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsLit(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsLit(node, pos) {
     switch (node.type) {
         case "NumericLiteral":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeNumericLiteral(node));
+            serializeEnum(node, pos, 0, serializeNumericLiteral, 8);
             break;
         case "StringLiteral":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeStringLiteral(node));
+            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
             break;
         case "BooleanLiteral":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeBooleanLiteral(node));
+            serializeEnum(node, pos, 2, serializeBooleanLiteral, 4);
             break;
         case "BigIntLiteral":
-            scratchBuff[storePos32 << 2] = 3;
-            writeScratchUint32(storePos32 + 1, serializeBigIntLiteral(node));
+            serializeEnum(node, pos, 3, serializeBigIntLiteral, 4);
             break;
         case "TemplateLiteral":
-            scratchBuff[storePos32 << 2] = 4;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsTemplateLiteralType(node)
-            );
+            serializeEnum(node, pos, 4, serializeTsTemplateLiteralType, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsLit");
     }
-    return storePos32;
 }
 
-function finalizeTsLit(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeNumericLiteral,
-                8,
-                48
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeStringLiteral,
-                4,
-                48
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeBooleanLiteral,
-                4,
-                48
-            );
-            break;
-        case 3:
-            finalizeEnum(
-                3,
-                scratchUint32[storePos32 + 1],
-                finalizeBigIntLiteral,
-                4,
-                48
-            );
-            break;
-        case 4:
-            finalizeEnum(
-                4,
-                scratchUint32[storePos32 + 1],
-                finalizeTsTemplateLiteralType,
-                4,
-                48
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsLit");
-    }
+function serializeTsTemplateLiteralType(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecBoxTsType(node.types, pos + 12);
+    serializeVecTemplateElement(node.quasis, pos + 20);
 }
 
-function serializeTsTemplateLiteralType(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecBoxTsType(node.types));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeVecTemplateElement(node.quasis)
-    );
-    return storePos32;
+function serializeTsInterfaceDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.id, pos + 12);
+    serializeBoolean(node.declare, pos + 36);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 40);
+    serializeVecTsExpressionWithTypeArguments(node.extends, pos + 64);
+    serializeTsInterfaceBody(node.body, pos + 72);
 }
 
-function finalizeTsTemplateLiteralType(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-    finalizeVec(scratchUint32[storePos32 + 2]);
+function serializeTsInterfaceBody(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecTsTypeElement(node.body, pos + 12);
 }
 
-function serializeTsInterfaceDeclaration(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.id));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.declare));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeVecTsExpressionWithTypeArguments(node.extends)
-    );
-    writeScratchUint32(storePos32 + 5, serializeTsInterfaceBody(node.body));
-    return storePos32;
+function serializeTsExpressionWithTypeArguments(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
+    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 16);
 }
 
-function finalizeTsInterfaceDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 3;
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 3]);
-    finalizeVec(scratchUint32[storePos32 + 4]);
-    finalizeTsInterfaceBody(scratchUint32[storePos32 + 5]);
+function serializeTsTypeAliasDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.declare, pos + 12);
+    serializeIdentifier(node.id, pos + 16);
+    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 40);
+    serializeBoxTsType(node.typeAnnotation, pos + 64);
 }
 
-function serializeTsInterfaceBody(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecTsTypeElement(node.body));
-    return storePos32;
+function serializeTsEnumDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.declare, pos + 12);
+    serializeBoolean(node.isConst, pos + 13);
+    serializeIdentifier(node.id, pos + 16);
+    serializeVecTsEnumMember(node.members, pos + 40);
 }
 
-function finalizeTsInterfaceBody(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
+function serializeTsEnumMember(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeTsModuleName(node.id, pos + 12);
+    serializeOptionBoxExpression(node.init, pos + 48);
 }
 
-function serializeTsExpressionWithTypeArguments(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeOptionTsTypeParameterInstantiation(node.typeArguments)
-    );
-    return storePos32;
-}
-
-function finalizeTsExpressionWithTypeArguments(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeOptionTsTypeParameterInstantiation(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsTypeAliasDeclaration(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.declare));
-    writeScratchUint32(storePos32 + 2, serializeIdentifier(node.id));
-    writeScratchUint32(
-        storePos32 + 3,
-        serializeOptionTsTypeParameterDeclaration(node.typeParams)
-    );
-    writeScratchUint32(storePos32 + 4, serializeBoxTsType(node.typeAnnotation));
-    return storePos32;
-}
-
-function finalizeTsTypeAliasDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    pos += 3;
-    finalizeIdentifier(scratchUint32[storePos32 + 2]);
-    finalizeOptionTsTypeParameterDeclaration(scratchUint32[storePos32 + 3]);
-    finalizeBox(scratchUint32[storePos32 + 4]);
-}
-
-function serializeTsEnumDeclaration(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.declare));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.isConst));
-    writeScratchUint32(storePos32 + 3, serializeIdentifier(node.id));
-    writeScratchUint32(storePos32 + 4, serializeVecTsEnumMember(node.members));
-    return storePos32;
-}
-
-function finalizeTsEnumDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 2;
-    finalizeIdentifier(scratchUint32[storePos32 + 3]);
-    finalizeVec(scratchUint32[storePos32 + 4]);
-}
-
-function serializeTsEnumMember(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeTsModuleName(node.id));
-    writeScratchUint32(storePos32 + 2, serializeOptionBoxExpression(node.init));
-    return storePos32;
-}
-
-function finalizeTsEnumMember(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeTsModuleName(scratchUint32[storePos32 + 1]);
-    finalizeOptionBoxExpression(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsModuleName(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsModuleName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "StringLiteral":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeStringLiteral(node));
+            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsModuleName");
     }
-    return storePos32;
 }
 
-function finalizeTsModuleName(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                36
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeStringLiteral,
-                4,
-                36
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsModuleName");
-    }
+function serializeTsModuleDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.declare, pos + 12);
+    serializeBoolean(node.global, pos + 13);
+    serializeTsModuleName(node.id, pos + 16);
+    serializeOptionTsNamespaceBody(node.body, pos + 52);
 }
 
-function serializeTsModuleDeclaration(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.declare));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.global));
-    writeScratchUint32(storePos32 + 3, serializeTsModuleName(node.id));
-    writeScratchUint32(
-        storePos32 + 4,
-        serializeOptionTsNamespaceBody(node.body)
-    );
-    return storePos32;
-}
-
-function finalizeTsModuleDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 2;
-    finalizeTsModuleName(scratchUint32[storePos32 + 3]);
-    finalizeOptionTsNamespaceBody(scratchUint32[storePos32 + 4]);
-}
-
-function serializeTsNamespaceBody(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsNamespaceBody(node, pos) {
     switch (node.type) {
         case "TsModuleBlock":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeTsModuleBlock(node));
+            serializeEnum(node, pos, 0, serializeTsModuleBlock, 4);
             break;
         case "TsNamespaceDeclaration":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsNamespaceDeclaration(node)
-            );
+            serializeEnum(node, pos, 1, serializeTsNamespaceDeclaration, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsNamespaceBody");
     }
-    return storePos32;
 }
 
-function finalizeTsNamespaceBody(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsModuleBlock,
-                4,
-                48
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeTsNamespaceDeclaration,
-                4,
-                48
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsNamespaceBody");
-    }
+function serializeTsModuleBlock(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeVecModuleItem(node.body, pos + 12);
 }
 
-function serializeTsModuleBlock(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeVecModuleItem(node.body));
-    return storePos32;
+function serializeTsNamespaceDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.declare, pos + 12);
+    serializeBoolean(node.global, pos + 13);
+    serializeIdentifier(node.id, pos + 16);
+    serializeBoxTsNamespaceBody(node.body, pos + 40);
 }
 
-function finalizeTsModuleBlock(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeVec(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsNamespaceDeclaration(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.declare));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.global));
-    writeScratchUint32(storePos32 + 3, serializeIdentifier(node.id));
-    writeScratchUint32(storePos32 + 4, serializeBoxTsNamespaceBody(node.body));
-    return storePos32;
-}
-
-function finalizeTsNamespaceDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    pos += 2;
-    finalizeIdentifier(scratchUint32[storePos32 + 3]);
-    finalizeBox(scratchUint32[storePos32 + 4]);
-}
-
-function serializeTsModuleName(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsModuleName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "StringLiteral":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeStringLiteral(node));
+            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsModuleName");
     }
-    return storePos32;
 }
 
-function finalizeTsModuleName(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                36
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeStringLiteral,
-                4,
-                36
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsModuleName");
-    }
+function serializeTsImportEqualsDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoolean(node.declare, pos + 12);
+    serializeBoolean(node.isExport, pos + 13);
+    serializeBoolean(node.isTypeOnly, pos + 14);
+    serializeIdentifier(node.id, pos + 16);
+    serializeTsModuleRef(node.moduleRef, pos + 40);
 }
 
-function serializeTsImportEqualsDeclaration(node) {
-    const storePos32 = allocScratch(6);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoolean(node.declare));
-    writeScratchUint32(storePos32 + 2, serializeBoolean(node.isExport));
-    writeScratchUint32(storePos32 + 3, serializeBoolean(node.isTypeOnly));
-    writeScratchUint32(storePos32 + 4, serializeIdentifier(node.id));
-    writeScratchUint32(storePos32 + 5, serializeTsModuleRef(node.moduleRef));
-    return storePos32;
-}
-
-function finalizeTsImportEqualsDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBoolean(scratchUint32[storePos32 + 1]);
-    finalizeBoolean(scratchUint32[storePos32 + 2]);
-    finalizeBoolean(scratchUint32[storePos32 + 3]);
-    pos += 1;
-    finalizeIdentifier(scratchUint32[storePos32 + 4]);
-    finalizeTsModuleRef(scratchUint32[storePos32 + 5]);
-}
-
-function serializeTsModuleRef(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsModuleRef(node, pos) {
     switch (node.type) {
         case "TsQualifiedName":
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeTsEntityName(node));
+            serializeEnum(node, pos, 0, serializeTsEntityName, 4);
             break;
         case "TsExternalModuleReference":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsExternalModuleReference(node)
-            );
+            serializeEnum(node, pos, 1, serializeTsExternalModuleReference, 4);
             break;
         default:
             throw new Error("Unexpected enum option type for TsModuleRef");
     }
-    return storePos32;
 }
 
-function finalizeTsModuleRef(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsEntityName,
-                4,
-                48
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeTsExternalModuleReference,
-                4,
-                48
-            );
-            break;
-        default:
-            throw new Error("Unexpected enum option ID for TsModuleRef");
-    }
+function serializeTsExternalModuleReference(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeStringLiteral(node.expression, pos + 12);
 }
 
-function serializeTsExternalModuleReference(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeStringLiteral(node.expression));
-    return storePos32;
+function serializeTsExportAssignment(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function finalizeTsExternalModuleReference(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeStringLiteral(scratchUint32[storePos32 + 1]);
+function serializeTsNamespaceExportDeclaration(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeIdentifier(node.id, pos + 12);
 }
 
-function serializeTsExportAssignment(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
+function serializeTsAsExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
+    serializeBoxTsType(node.typeAnnotation, pos + 16);
 }
 
-function finalizeTsExportAssignment(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
+function serializeTsTypeAssertion(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
+    serializeBoxTsType(node.typeAnnotation, pos + 16);
 }
 
-function serializeTsNamespaceExportDeclaration(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeIdentifier(node.id));
-    return storePos32;
+function serializeTsNonNullExpression(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function finalizeTsNamespaceExportDeclaration(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeIdentifier(scratchUint32[storePos32 + 1]);
-}
-
-function serializeTsAsExpression(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    writeScratchUint32(storePos32 + 2, serializeBoxTsType(node.typeAnnotation));
-    return storePos32;
-}
-
-function finalizeTsAsExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsTypeAssertion(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    writeScratchUint32(storePos32 + 2, serializeBoxTsType(node.typeAnnotation));
-    return storePos32;
-}
-
-function finalizeTsTypeAssertion(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeBox(scratchUint32[storePos32 + 2]);
-}
-
-function serializeTsNonNullExpression(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
-}
-
-function finalizeTsNonNullExpression(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-}
-
-function serializeAccessibility(value) {
+function serializeAccessibility(value, pos) {
     switch (value) {
         case "public":
-            return 256;
+            uint32[pos >>> 2] = 0;
+            break;
         case "protected":
-            return 257;
+            uint32[pos >>> 2] = 1;
+            break;
         case "private":
-            return 258;
+            uint32[pos >>> 2] = 2;
+            break;
         default:
             throw new Error("Unexpected enum value for Accessibility");
     }
 }
 
-function serializeTsConstAssertion(node) {
-    const storePos32 = allocScratch(2);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    return storePos32;
+function serializeTsConstAssertion(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
 }
 
-function finalizeTsConstAssertion(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
+function serializeTsInstantiation(node, pos) {
+    serializeSpan(node.span, pos);
+    serializeBoxExpression(node.expression, pos + 12);
+    serializeTsTypeParameterInstantiation(node.typeArguments, pos + 16);
 }
 
-function serializeTsInstantiation(node) {
-    const storePos32 = allocScratch(4);
-    writeScratchUint32(storePos32, serializeSpan(node.span));
-    writeScratchUint32(storePos32 + 1, serializeBoxExpression(node.expression));
-    writeScratchUint32(
-        storePos32 + 2,
-        serializeTsTypeParameterInstantiation(node.typeArguments)
-    );
-    return storePos32;
-}
-
-function finalizeTsInstantiation(storePos32) {
-    finalizeSpan(scratchUint32[storePos32]);
-    finalizeBox(scratchUint32[storePos32 + 1]);
-    finalizeTsTypeParameterInstantiation(scratchUint32[storePos32 + 2]);
-}
-
-function serializeJsWord(str) {
+function serializeJsWord(str, pos) {
     const strLen = str.length;
     if (strLen === 0) {
-        const storePos32 = allocScratch(2);
-        scratchUint32[storePos32] = 0;
-        return storePos32;
+        buff[pos + 7] = 0;
+        return;
     }
-    if (strLen > 7) {
-        alloc(strLen * 3);
-        const len =
-            strLen < 42
-                ? writeStringToBuffer(str, buff, strLen, pos)
-                : utf8Write.call(buff, str, pos);
-        const storePos32 = allocScratch(2);
-        scratchUint32[storePos32] = len;
-        scratchUint32[storePos32 + 1] = pos;
-        pos += len;
-        return storePos32;
-    }
-    const storePos32 = allocScratchAligned(4 + strLen * 3);
-    const len = writeStringToBuffer(
-        str,
-        scratchBuff,
-        strLen,
-        (storePos32 + 1) << 2
-    );
-    scratchUint32[storePos32] = len;
-    if (len <= 7) {
-        scratchPos32 = storePos32 + (len > 4 ? 4 : 2);
-        return storePos32;
-    }
-    alloc(len);
-    copyFromScratch(storePos32 + 1, len);
-    scratchUint32[storePos32 + 1] = pos;
-    scratchPos32 = storePos32 + 2;
-    pos += len;
-    return storePos32;
-}
-
-function finalizeJsWord(storePos32) {
-    const len = scratchUint32[storePos32];
-    if (len <= 7) {
-        if (len > 0) {
-            const pos32 = pos >>> 2;
-            uint32[pos32] = scratchUint32[storePos32 + 1];
-            if (len > 4) uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
+    let strPos, len;
+    if (strLen <= 7) {
+        const isWritten = writeShortStringToBuffer(str, pos, strLen);
+        if (isWritten) {
+            buff[pos + 7] = strLen;
+            return;
         }
-        buff[pos + 7] = len;
+        if (strLen <= 2) {
+            buff[pos + 7] = utf8Write.call(buff, str, pos);
+            return;
+        }
+        strPos = alloc(strLen * 3);
+        len = utf8Write.call(buff, str, strPos);
+        if (len <= 7) {
+            buff[pos + 7] = len;
+            buffPos = strPos;
+            const endPos = pos + len;
+            do {
+                buff[pos++] = buff[strPos++];
+            } while (pos < endPos);
+            return;
+        }
     } else {
-        const pos32 = pos >>> 2;
-        uint32[pos32] = len;
-        int32[pos32 + 1] = scratchUint32[storePos32 + 1] - pos;
+        strPos = alloc(strLen * 3);
+        len =
+            strLen < 42
+                ? writeStringToBuffer(str, buff, strLen, strPos)
+                : utf8Write.call(buff, str, strPos);
     }
-    pos += 8;
+    buffPos = strPos + len;
+    const pos32 = pos >>> 2;
+    uint32[pos32] = len;
+    uint32[pos32 + 1] = strPos - pos;
 }
 const { utf8Write } = Buffer.prototype;
 
-function serializeAsciiJsWord(str) {
+function serializeAsciiJsWord(str, pos) {
     const len = str.length;
     if (len === 0) {
-        const storePos32 = allocScratch(2);
-        scratchUint32[storePos32] = 0;
-        return storePos32;
+        buff[pos + 7] = 0;
+        return;
     }
-    if (len > 7) {
-        alloc(len);
-        if (len < 48) {
-            writeAsciiStringToBuffer(str, buff, len, pos);
-        } else {
-            asciiWrite.call(buff, str, pos);
-        }
-        const storePos32 = allocScratch(2);
-        scratchUint32[storePos32] = len;
-        scratchUint32[storePos32 + 1] = pos;
-        pos += len;
-        return storePos32;
+    if (len <= 7) {
+        buff[pos + 7] = len;
+        let charIndex = 0;
+        do {
+            buff[pos++] = charCodeAt.call(str, charIndex);
+        } while (++charIndex < len);
+        return;
     }
-    const storePos32 = allocScratch(len > 4 ? 4 : 2);
-    writeAsciiStringToBuffer(str, scratchBuff, len, (storePos32 + 1) << 2);
-    scratchUint32[storePos32] = len;
-    return storePos32;
+    const strPos = alloc(len);
+    if (len < 48) {
+        writeAsciiStringToBuffer(str, buff, len, strPos);
+    } else {
+        asciiWrite.call(buff, str, strPos);
+    }
+    const pos32 = pos >>> 2;
+    uint32[pos32] = len;
+    uint32[pos32 + 1] = strPos - pos;
 }
 const { asciiWrite } = Buffer.prototype;
 
-function serializeOptionAsciiJsWord(value) {
-    return serializeOption(value, serializeAsciiJsWord);
+function serializeBoolean(value, pos) {
+    buff[pos] = value ? 1 : 0;
 }
 
-function serializeBoolean(value) {
-    return value ? 1 : 0;
+function serializeNumber(num, pos) {
+    float64[pos >>> 3] = num;
 }
 
-function finalizeBoolean(id) {
-    buff[pos] = id;
-    pos++;
-}
-
-function serializeNumber(num) {
-    const storePos64 = allocScratch(2) >>> 1;
-    scratchFloat64[storePos64] = num;
-    return storePos64;
-}
-
-function finalizeNumber(storePos64) {
-    float64[pos >>> 3] = scratchFloat64[storePos64];
-    pos += 8;
-}
-
-function serializeSpan(span) {
-    const storePos32 = allocScratch(4);
-    scratchUint32[storePos32] = span.start;
-    scratchUint32[storePos32 + 1] = span.end;
-    scratchUint32[storePos32 + 2] = span.ctxt;
-    return storePos32;
-}
-
-function finalizeSpan(storePos32) {
+function serializeSpan(span, pos) {
     const pos32 = pos >>> 2;
-    uint32[pos32] = scratchUint32[storePos32];
-    uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
-    uint32[pos32 + 2] = scratchUint32[storePos32 + 2];
-    pos += 12;
+    uint32[pos32] = span.start;
+    uint32[pos32 + 1] = span.end;
+    uint32[pos32 + 2] = span.ctxt;
 }
 
-function serializeVecModuleItem(values) {
-    return serializeVec(
-        values,
-        serializeModuleItem,
-        finalizeModuleItem,
-        156,
-        4
-    );
+function serializeVecModuleItem(values, pos) {
+    serializeVec(values, pos, serializeModuleItem, 156, 4);
 }
 
-function serializeVecImportSpecifier(values) {
-    return serializeVec(
-        values,
-        serializeImportSpecifier,
-        finalizeImportSpecifier,
-        84,
-        4
-    );
+function serializeVecImportSpecifier(values, pos) {
+    serializeVec(values, pos, serializeImportSpecifier, 84, 4);
 }
 
-function serializeOptionTsModuleName(value) {
-    return serializeOption(value, serializeTsModuleName);
+function serializeOptionTsModuleName(value, pos) {
+    serializeOption(value, pos, serializeTsModuleName, 4);
 }
 
-function finalizeOptionTsModuleName(finalizeData) {
-    return finalizeOption(finalizeData, finalizeTsModuleName, 4, 40);
+function serializeOptionJsWord(value, pos) {
+    serializeOption(value, pos, serializeJsWord, 4);
 }
 
-function serializeOptionJsWord(value) {
-    return serializeOption(value, serializeJsWord);
+function serializeOptionObjectExpression(value, pos) {
+    serializeOption(value, pos, serializeObjectExpression, 4);
 }
 
-function finalizeOptionJsWord(finalizeData) {
-    return finalizeOption(finalizeData, finalizeJsWord, 4, 12);
+function serializeVecSpreadElementOrBoxObjectProperty(values, pos) {
+    serializeVec(values, pos, serializeSpreadElementOrBoxObjectProperty, 20, 4);
 }
 
-function serializeOptionObjectExpression(value) {
-    return serializeOption(value, serializeObjectExpression);
-}
-
-function finalizeOptionObjectExpression(finalizeData) {
-    return finalizeOption(finalizeData, finalizeObjectExpression, 4, 24);
-}
-
-function serializeVecSpreadElementOrBoxObjectProperty(values) {
-    return serializeVec(
-        values,
-        serializeSpreadElementOrBoxObjectProperty,
-        finalizeSpreadElementOrBoxObjectProperty,
-        20,
-        4
-    );
-}
-
-function serializeSpreadElementOrBoxObjectProperty(node) {
-    const storePos32 = allocScratch(2);
+function serializeSpreadElementOrBoxObjectProperty(node, pos) {
     switch (node.type) {
         case "SpreadElement":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeSpreadElement(node));
+            serializeEnum(node, pos, 0, serializeSpreadElement, 4);
             break;
         case "Identifier":
         case "KeyValueProperty":
@@ -6903,305 +2601,155 @@ function serializeSpreadElementOrBoxObjectProperty(node) {
         case "GetterProperty":
         case "SetterProperty":
         case "MethodProperty":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeBoxObjectProperty(node)
-            );
+            serializeEnum(node, pos, 1, serializeBoxObjectProperty, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for SpreadElementOrBoxObjectProperty"
             );
     }
-    return storePos32;
 }
 
-function finalizeSpreadElementOrBoxObjectProperty(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeSpreadElement,
-                4,
-                20
-            );
-            break;
-        case 1:
-            finalizeEnum(1, scratchUint32[storePos32 + 1], finalizeBox, 4, 20);
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for SpreadElementOrBoxObjectProperty"
-            );
-    }
+function serializeBoxExpression(value, pos) {
+    serializeBox(value, pos, serializeExpression, 136, 8);
 }
 
-function serializeBoxExpression(value) {
-    return serializeBox(value, serializeExpression, finalizeExpression, 136, 8);
+function serializeVecOptionExpressionOrSpread(values, pos) {
+    serializeVec(values, pos, serializeOptionExpressionOrSpread, 24, 4);
 }
 
-function serializeVecOptionExpressionOrSpread(values) {
-    return serializeVec(
-        values,
-        serializeOptionExpressionOrSpread,
-        finalizeOptionExpressionOrSpread,
-        24,
-        4
-    );
+function serializeOptionExpressionOrSpread(value, pos) {
+    serializeOption(value, pos, serializeExpressionOrSpread, 4);
 }
 
-function serializeOptionExpressionOrSpread(value) {
-    return serializeOption(value, serializeExpressionOrSpread);
+function serializeOptionSpan(value, pos) {
+    serializeOption(value, pos, serializeSpan, 4);
 }
 
-function finalizeOptionExpressionOrSpread(finalizeData) {
-    return finalizeOption(finalizeData, finalizeExpressionOrSpread, 4, 24);
+function serializeOptionIdentifier(value, pos) {
+    serializeOption(value, pos, serializeIdentifier, 4);
 }
 
-function serializeOptionSpan(value) {
-    return serializeOption(value, serializeSpan);
+function serializeVecParameter(values, pos) {
+    serializeVec(values, pos, serializeParameter, 72, 4);
 }
 
-function finalizeOptionSpan(finalizeData) {
-    return finalizeOption(finalizeData, finalizeSpan, 4, 16);
+function serializeVecDecorator(values, pos) {
+    serializeVec(values, pos, serializeDecorator, 16, 4);
 }
 
-function serializeOptionIdentifier(value) {
-    return serializeOption(value, serializeIdentifier);
+function serializeOptionTsTypeAnnotation(value, pos) {
+    serializeOption(value, pos, serializeTsTypeAnnotation, 4);
 }
 
-function finalizeOptionIdentifier(finalizeData) {
-    return finalizeOption(finalizeData, finalizeIdentifier, 4, 28);
+function serializeBoxTsType(value, pos) {
+    serializeBox(value, pos, serializeTsType, 144, 8);
 }
 
-function serializeVecParameter(values) {
-    return serializeVec(values, serializeParameter, finalizeParameter, 72, 4);
+function serializeVecTsFnParam(values, pos) {
+    serializeVec(values, pos, serializeTsFnParam, 52, 4);
 }
 
-function serializeVecDecorator(values) {
-    return serializeVec(values, serializeDecorator, finalizeDecorator, 16, 4);
+function serializeVecOptionPattern(values, pos) {
+    serializeVec(values, pos, serializeOptionPattern, 56, 4);
 }
 
-function serializeOptionTsTypeAnnotation(value) {
-    return serializeOption(value, serializeTsTypeAnnotation);
+function serializeOptionPattern(value, pos) {
+    serializeOption(value, pos, serializePattern, 4);
 }
 
-function finalizeOptionTsTypeAnnotation(finalizeData) {
-    return finalizeOption(finalizeData, finalizeTsTypeAnnotation, 4, 20);
+function serializeBoxPattern(value, pos) {
+    serializeBox(value, pos, serializePattern, 52, 4);
 }
 
-function serializeBoxTsType(value) {
-    return serializeBox(value, serializeTsType, finalizeTsType, 144, 8);
+function serializeVecObjectPatternProperty(values, pos) {
+    serializeVec(values, pos, serializeObjectPatternProperty, 64, 8);
 }
 
-function serializeVecTsFnParam(values) {
-    return serializeVec(values, serializeTsFnParam, finalizeTsFnParam, 52, 4);
+function serializeOptionAsciiJsWord(value, pos) {
+    serializeOption(value, pos, serializeAsciiJsWord, 4);
 }
 
-function serializeVecOptionPattern(values) {
-    return serializeVec(
-        values,
-        serializeOptionPattern,
-        finalizeOptionPattern,
-        56,
-        4
-    );
+function serializeOptionBoxExpression(value, pos) {
+    serializeOption(value, pos, serializeBoxExpression, 4);
 }
 
-function serializeOptionPattern(value) {
-    return serializeOption(value, serializePattern);
+function serializeOptionTsTypeParameterDeclaration(value, pos) {
+    serializeOption(value, pos, serializeTsTypeParameterDeclaration, 4);
 }
 
-function finalizeOptionPattern(finalizeData) {
-    return finalizeOption(finalizeData, finalizePattern, 4, 56);
+function serializeVecTsTypeParameter(values, pos) {
+    serializeVec(values, pos, serializeTsTypeParameter, 56, 4);
 }
 
-function serializeBoxPattern(value) {
-    return serializeBox(value, serializePattern, finalizePattern, 52, 4);
+function serializeOptionBoxTsType(value, pos) {
+    serializeOption(value, pos, serializeBoxTsType, 4);
 }
 
-function serializeVecObjectPatternProperty(values) {
-    return serializeVec(
-        values,
-        serializeObjectPatternProperty,
-        finalizeObjectPatternProperty,
-        64,
-        8
-    );
+function serializeBoxTsQualifiedName(value, pos) {
+    serializeBox(value, pos, serializeTsQualifiedName, 52, 4);
 }
 
-function serializeOptionBoxExpression(value) {
-    return serializeOption(value, serializeBoxExpression);
+function serializeOptionTsTypeParameterInstantiation(value, pos) {
+    serializeOption(value, pos, serializeTsTypeParameterInstantiation, 4);
 }
 
-function finalizeOptionBoxExpression(finalizeData) {
-    return finalizeOption(finalizeData, finalizeBox, 4, 8);
+function serializeVecBoxTsType(values, pos) {
+    serializeVec(values, pos, serializeBoxTsType, 4, 4);
 }
 
-function serializeOptionTsTypeParameterDeclaration(value) {
-    return serializeOption(value, serializeTsTypeParameterDeclaration);
+function serializeOptionTsEntityName(value, pos) {
+    serializeOption(value, pos, serializeTsEntityName, 4);
 }
 
-function finalizeOptionTsTypeParameterDeclaration(finalizeData) {
-    return finalizeOption(
-        finalizeData,
-        finalizeTsTypeParameterDeclaration,
-        4,
-        24
-    );
+function serializeVecTsTypeElement(values, pos) {
+    serializeVec(values, pos, serializeTsTypeElement, 88, 4);
 }
 
-function serializeVecTsTypeParameter(values) {
-    return serializeVec(
-        values,
-        serializeTsTypeParameter,
-        finalizeTsTypeParameter,
-        56,
-        4
-    );
+function serializeVecTsTupleElement(values, pos) {
+    serializeVec(values, pos, serializeTsTupleElement, 216, 8);
 }
 
-function serializeOptionBoxTsType(value) {
-    return serializeOption(value, serializeBoxTsType);
+function serializeOptionTruePlusMinus(value, pos) {
+    serializeOption(value, pos, serializeTruePlusMinus, 4);
 }
 
-function finalizeOptionBoxTsType(finalizeData) {
-    return finalizeOption(finalizeData, finalizeBox, 4, 8);
+function serializeVecTemplateElement(values, pos) {
+    serializeVec(values, pos, serializeTemplateElement, 36, 4);
 }
 
-function serializeBoxTsQualifiedName(value) {
-    return serializeBox(
-        value,
-        serializeTsQualifiedName,
-        finalizeTsQualifiedName,
-        52,
-        4
-    );
+function serializeOptionBlockStatement(value, pos) {
+    serializeOption(value, pos, serializeBlockStatement, 4);
 }
 
-function serializeOptionTsTypeParameterInstantiation(value) {
-    return serializeOption(value, serializeTsTypeParameterInstantiation);
+function serializeVecStatement(values, pos) {
+    serializeVec(values, pos, serializeStatement, 152, 4);
 }
 
-function finalizeOptionTsTypeParameterInstantiation(finalizeData) {
-    return finalizeOption(
-        finalizeData,
-        finalizeTsTypeParameterInstantiation,
-        4,
-        24
-    );
+function serializeBoxStatement(value, pos) {
+    serializeBox(value, pos, serializeStatement, 152, 4);
 }
 
-function serializeVecBoxTsType(values) {
-    return serializeVec(values, serializeBoxTsType, finalizeBox, 4, 4);
+function serializeOptionBoxStatement(value, pos) {
+    serializeOption(value, pos, serializeBoxStatement, 4);
 }
 
-function serializeOptionTsEntityName(value) {
-    return serializeOption(value, serializeTsEntityName);
+function serializeVecSwitchCase(values, pos) {
+    serializeVec(values, pos, serializeSwitchCase, 28, 4);
 }
 
-function finalizeOptionTsEntityName(finalizeData) {
-    return finalizeOption(finalizeData, finalizeTsEntityName, 4, 32);
+function serializeOptionCatchClause(value, pos) {
+    serializeOption(value, pos, serializeCatchClause, 4);
 }
 
-function serializeVecTsTypeElement(values) {
-    return serializeVec(
-        values,
-        serializeTsTypeElement,
-        finalizeTsTypeElement,
-        88,
-        4
-    );
+function serializeOptionVariableDeclarationOrBoxExpression(value, pos) {
+    serializeOption(value, pos, serializeVariableDeclarationOrBoxExpression, 4);
 }
 
-function serializeVecTsTupleElement(values) {
-    return serializeVec(
-        values,
-        serializeTsTupleElement,
-        finalizeTsTupleElement,
-        216,
-        8
-    );
-}
-
-function serializeOptionTruePlusMinus(value) {
-    return serializeOption(value, serializeTruePlusMinus);
-}
-
-function finalizeOptionTruePlusMinus(finalizeData) {
-    return finalizeOption(finalizeData, finalizeEnumValue, 4, 8);
-}
-
-function serializeVecTemplateElement(values) {
-    return serializeVec(
-        values,
-        serializeTemplateElement,
-        finalizeTemplateElement,
-        36,
-        4
-    );
-}
-
-function serializeOptionBlockStatement(value) {
-    return serializeOption(value, serializeBlockStatement);
-}
-
-function finalizeOptionBlockStatement(finalizeData) {
-    return finalizeOption(finalizeData, finalizeBlockStatement, 4, 24);
-}
-
-function serializeVecStatement(values) {
-    return serializeVec(values, serializeStatement, finalizeStatement, 152, 4);
-}
-
-function serializeBoxStatement(value) {
-    return serializeBox(value, serializeStatement, finalizeStatement, 152, 4);
-}
-
-function serializeOptionBoxStatement(value) {
-    return serializeOption(value, serializeBoxStatement);
-}
-
-function finalizeOptionBoxStatement(finalizeData) {
-    return finalizeOption(finalizeData, finalizeBox, 4, 8);
-}
-
-function serializeVecSwitchCase(values) {
-    return serializeVec(values, serializeSwitchCase, finalizeSwitchCase, 28, 4);
-}
-
-function serializeOptionCatchClause(value) {
-    return serializeOption(value, serializeCatchClause);
-}
-
-function finalizeOptionCatchClause(finalizeData) {
-    return finalizeOption(finalizeData, finalizeCatchClause, 4, 92);
-}
-
-function serializeOptionVariableDeclarationOrBoxExpression(value) {
-    return serializeOption(value, serializeVariableDeclarationOrBoxExpression);
-}
-
-function finalizeOptionVariableDeclarationOrBoxExpression(finalizeData) {
-    return finalizeOption(
-        finalizeData,
-        finalizeVariableDeclarationOrBoxExpression,
-        4,
-        36
-    );
-}
-
-function serializeVariableDeclarationOrBoxExpression(node) {
-    const storePos32 = allocScratch(2);
+function serializeVariableDeclarationOrBoxExpression(node, pos) {
     switch (node.type) {
         case "VariableDeclaration":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeVariableDeclaration(node)
-            );
+            serializeEnum(node, pos, 0, serializeVariableDeclaration, 4);
             break;
         case "ThisExpression":
         case "ArrayExpression":
@@ -7246,57 +2794,23 @@ function serializeVariableDeclarationOrBoxExpression(node) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeBoxExpression(node));
+            serializeEnum(node, pos, 1, serializeBoxExpression, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for VariableDeclarationOrBoxExpression"
             );
     }
-    return storePos32;
 }
 
-function finalizeVariableDeclarationOrBoxExpression(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeVariableDeclaration,
-                4,
-                32
-            );
-            break;
-        case 1:
-            finalizeEnum(1, scratchUint32[storePos32 + 1], finalizeBox, 4, 32);
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for VariableDeclarationOrBoxExpression"
-            );
-    }
+function serializeVecVariableDeclarator(values, pos) {
+    serializeVec(values, pos, serializeVariableDeclarator, 76, 4);
 }
 
-function serializeVecVariableDeclarator(values) {
-    return serializeVec(
-        values,
-        serializeVariableDeclarator,
-        finalizeVariableDeclarator,
-        76,
-        4
-    );
-}
-
-function serializeVariableDeclarationOrPattern(node) {
-    const storePos32 = allocScratch(2);
+function serializeVariableDeclarationOrPattern(node, pos) {
     switch (node.type) {
         case "VariableDeclaration":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeVariableDeclaration(node)
-            );
+            serializeEnum(node, pos, 0, serializeVariableDeclaration, 4);
             break;
         case "Identifier":
         case "ArrayPattern":
@@ -7345,274 +2859,98 @@ function serializeVariableDeclarationOrPattern(node) {
         case "TsInstantiation":
         case "PrivateName":
         case "OptionalChainingExpression":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializePattern(node));
+            serializeEnum(node, pos, 1, serializePattern, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for VariableDeclarationOrPattern"
             );
     }
-    return storePos32;
 }
 
-function finalizeVariableDeclarationOrPattern(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeVariableDeclaration,
-                4,
-                56
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizePattern,
-                4,
-                56
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for VariableDeclarationOrPattern"
-            );
-    }
+function serializeVecClassMember(values, pos) {
+    serializeVec(values, pos, serializeClassMember, 192, 8);
 }
 
-function serializeVecClassMember(values) {
-    return serializeVec(
-        values,
-        serializeClassMember,
-        finalizeClassMember,
-        192,
-        8
-    );
+function serializeVecTsParameterPropertyOrParameter(values, pos) {
+    serializeVec(values, pos, serializeTsParameterPropertyOrParameter, 84, 4);
 }
 
-function serializeVecTsParameterPropertyOrParameter(values) {
-    return serializeVec(
-        values,
-        serializeTsParameterPropertyOrParameter,
-        finalizeTsParameterPropertyOrParameter,
-        84,
-        4
-    );
-}
-
-function serializeTsParameterPropertyOrParameter(node) {
-    const storePos32 = allocScratch(2);
+function serializeTsParameterPropertyOrParameter(node, pos) {
     switch (node.type) {
         case "TsParameterProperty":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsParameterProperty(node)
-            );
+            serializeEnum(node, pos, 0, serializeTsParameterProperty, 4);
             break;
         case "Parameter":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeParameter(node));
+            serializeEnum(node, pos, 1, serializeParameter, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for TsParameterPropertyOrParameter"
             );
     }
-    return storePos32;
 }
 
-function finalizeTsParameterPropertyOrParameter(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeTsParameterProperty,
-                4,
-                84
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeParameter,
-                4,
-                84
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for TsParameterPropertyOrParameter"
-            );
-    }
+function serializeOptionAccessibility(value, pos) {
+    serializeOption(value, pos, serializeAccessibility, 4);
 }
 
-function serializeOptionAccessibility(value) {
-    return serializeOption(value, serializeAccessibility);
+function serializeVecTsExpressionWithTypeArguments(values, pos) {
+    serializeVec(values, pos, serializeTsExpressionWithTypeArguments, 40, 4);
 }
 
-function finalizeOptionAccessibility(finalizeData) {
-    return finalizeOption(finalizeData, finalizeEnumValue, 4, 8);
+function serializeVecTsEnumMember(values, pos) {
+    serializeVec(values, pos, serializeTsEnumMember, 56, 4);
 }
 
-function serializeVecTsExpressionWithTypeArguments(values) {
-    return serializeVec(
-        values,
-        serializeTsExpressionWithTypeArguments,
-        finalizeTsExpressionWithTypeArguments,
-        40,
-        4
-    );
+function serializeOptionTsNamespaceBody(value, pos) {
+    serializeOption(value, pos, serializeTsNamespaceBody, 4);
 }
 
-function serializeVecTsEnumMember(values) {
-    return serializeVec(
-        values,
-        serializeTsEnumMember,
-        finalizeTsEnumMember,
-        56,
-        4
-    );
+function serializeBoxTsNamespaceBody(value, pos) {
+    serializeBox(value, pos, serializeTsNamespaceBody, 48, 4);
 }
 
-function serializeOptionTsNamespaceBody(value) {
-    return serializeOption(value, serializeTsNamespaceBody);
-}
-
-function finalizeOptionTsNamespaceBody(finalizeData) {
-    return finalizeOption(finalizeData, finalizeTsNamespaceBody, 4, 52);
-}
-
-function serializeBoxTsNamespaceBody(value) {
-    return serializeBox(
-        value,
-        serializeTsNamespaceBody,
-        finalizeTsNamespaceBody,
-        48,
-        4
-    );
-}
-
-function serializeIdentifierOrPrivateNameOrComputed(node) {
-    const storePos32 = allocScratch(2);
+function serializeIdentifierOrPrivateNameOrComputed(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "PrivateName":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializePrivateName(node));
+            serializeEnum(node, pos, 1, serializePrivateName, 4);
             break;
         case "Computed":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeComputed(node));
+            serializeEnum(node, pos, 2, serializeComputed, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for IdentifierOrPrivateNameOrComputed"
             );
     }
-    return storePos32;
 }
 
-function finalizeIdentifierOrPrivateNameOrComputed(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                40
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizePrivateName,
-                4,
-                40
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeComputed,
-                4,
-                40
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for IdentifierOrPrivateNameOrComputed"
-            );
-    }
-}
-
-function serializeIdentifierOrComputed(node) {
-    const storePos32 = allocScratch(2);
+function serializeIdentifierOrComputed(node, pos) {
     switch (node.type) {
         case "Identifier":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeIdentifier(node));
+            serializeEnum(node, pos, 0, serializeIdentifier, 4);
             break;
         case "Computed":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeComputed(node));
+            serializeEnum(node, pos, 1, serializeComputed, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for IdentifierOrComputed"
             );
     }
-    return storePos32;
 }
 
-function finalizeIdentifierOrComputed(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeIdentifier,
-                4,
-                28
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeComputed,
-                4,
-                28
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for IdentifierOrComputed"
-            );
-    }
-}
-
-function serializeSuperOrImportOrBoxExpression(node) {
-    const storePos32 = allocScratch(2);
+function serializeSuperOrImportOrBoxExpression(node, pos) {
     switch (node.type) {
         case "Super":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeSuper(node));
+            serializeEnum(node, pos, 0, serializeSuper, 4);
             break;
         case "Import":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeImport(node));
+            serializeEnum(node, pos, 1, serializeImport, 4);
             break;
         case "ThisExpression":
         case "ArrayExpression":
@@ -7657,79 +2995,35 @@ function serializeSuperOrImportOrBoxExpression(node) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(storePos32 + 1, serializeBoxExpression(node));
+            serializeEnum(node, pos, 2, serializeBoxExpression, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for SuperOrImportOrBoxExpression"
             );
     }
-    return storePos32;
 }
 
-function finalizeSuperOrImportOrBoxExpression(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeSuper,
-                4,
-                16
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeImport,
-                4,
-                16
-            );
-            break;
-        case 2:
-            finalizeEnum(2, scratchUint32[storePos32 + 1], finalizeBox, 4, 16);
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for SuperOrImportOrBoxExpression"
-            );
-    }
+function serializeVecExpressionOrSpread(values, pos) {
+    serializeVec(values, pos, serializeExpressionOrSpread, 20, 4);
 }
 
-function serializeVecExpressionOrSpread(values) {
-    return serializeVec(
-        values,
-        serializeExpressionOrSpread,
-        finalizeExpressionOrSpread,
-        20,
-        4
-    );
+function serializeOptionVecExpressionOrSpread(value, pos) {
+    serializeOption(value, pos, serializeVecExpressionOrSpread, 4);
 }
 
-function serializeOptionVecExpressionOrSpread(value) {
-    return serializeOption(value, serializeVecExpressionOrSpread);
+function serializeVecBoxExpression(values, pos) {
+    serializeVec(values, pos, serializeBoxExpression, 4, 4);
 }
 
-function finalizeOptionVecExpressionOrSpread(finalizeData) {
-    return finalizeOption(finalizeData, finalizeVec, 4, 12);
+function serializeVecPattern(values, pos) {
+    serializeVec(values, pos, serializePattern, 52, 4);
 }
 
-function serializeVecBoxExpression(values) {
-    return serializeVec(values, serializeBoxExpression, finalizeBox, 4, 4);
-}
-
-function serializeVecPattern(values) {
-    return serializeVec(values, serializePattern, finalizePattern, 52, 4);
-}
-
-function serializeBlockStatementOrBoxExpression(node) {
-    const storePos32 = allocScratch(2);
+function serializeBlockStatementOrBoxExpression(node, pos) {
     switch (node.type) {
         case "BlockStatement":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeBlockStatement(node));
+            serializeEnum(node, pos, 0, serializeBlockStatement, 4);
             break;
         case "ThisExpression":
         case "ArrayExpression":
@@ -7774,394 +3068,187 @@ function serializeBlockStatementOrBoxExpression(node) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeBoxExpression(node));
+            serializeEnum(node, pos, 1, serializeBoxExpression, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for BlockStatementOrBoxExpression"
             );
     }
-    return storePos32;
 }
 
-function finalizeBlockStatementOrBoxExpression(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeBlockStatement,
-                4,
-                24
-            );
-            break;
-        case 1:
-            finalizeEnum(1, scratchUint32[storePos32 + 1], finalizeBox, 4, 24);
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for BlockStatementOrBoxExpression"
-            );
-    }
+function serializeBoxJSXMemberExpression(value, pos) {
+    serializeBox(value, pos, serializeJSXMemberExpression, 52, 4);
 }
 
-function serializeBoxJSXMemberExpression(value) {
-    return serializeBox(
-        value,
-        serializeJSXMemberExpression,
-        finalizeJSXMemberExpression,
-        52,
-        4
-    );
+function serializeBoxJSXElement(value, pos) {
+    serializeBox(value, pos, serializeJSXElement, 196, 4);
 }
 
-function serializeBoxJSXElement(value) {
-    return serializeBox(value, serializeJSXElement, finalizeJSXElement, 196, 4);
+function serializeVecJSXAttributeOrSpreadElement(values, pos) {
+    serializeVec(values, pos, serializeJSXAttributeOrSpreadElement, 136, 8);
 }
 
-function serializeVecJSXAttributeOrSpreadElement(values) {
-    return serializeVec(
-        values,
-        serializeJSXAttributeOrSpreadElement,
-        finalizeJSXAttributeOrSpreadElement,
-        136,
-        8
-    );
-}
-
-function serializeJSXAttributeOrSpreadElement(node) {
-    const storePos32 = allocScratch(2);
+function serializeJSXAttributeOrSpreadElement(node, pos) {
     switch (node.type) {
         case "JSXAttribute":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeJSXAttribute(node));
+            serializeEnum(node, pos, 0, serializeJSXAttribute, 8);
             break;
         case "SpreadElement":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeSpreadElement(node));
+            serializeEnum(node, pos, 1, serializeSpreadElement, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for JSXAttributeOrSpreadElement"
             );
     }
-    return storePos32;
 }
 
-function finalizeJSXAttributeOrSpreadElement(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeJSXAttribute,
-                8,
-                136
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeSpreadElement,
-                4,
-                136
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for JSXAttributeOrSpreadElement"
-            );
-    }
+function serializeOptionJSXAttributeValue(value, pos) {
+    serializeOption(value, pos, serializeJSXAttributeValue, 8);
 }
 
-function serializeOptionJSXAttributeValue(value) {
-    return serializeOption(value, serializeJSXAttributeValue);
+function serializeVecJSXElementChild(values, pos) {
+    serializeVec(values, pos, serializeJSXElementChild, 48, 4);
 }
 
-function finalizeOptionJSXAttributeValue(finalizeData) {
-    return finalizeOption(finalizeData, finalizeJSXAttributeValue, 8, 64);
+function serializeOptionJSXClosingElement(value, pos) {
+    serializeOption(value, pos, serializeJSXClosingElement, 4);
 }
 
-function serializeVecJSXElementChild(values) {
-    return serializeVec(
-        values,
-        serializeJSXElementChild,
-        finalizeJSXElementChild,
-        48,
-        4
-    );
-}
-
-function serializeOptionJSXClosingElement(value) {
-    return serializeOption(value, serializeJSXClosingElement);
-}
-
-function finalizeOptionJSXClosingElement(finalizeData) {
-    return finalizeOption(finalizeData, finalizeJSXClosingElement, 4, 72);
-}
-
-function serializeMemberExpressionOrOptionalChainingCall(node) {
-    const storePos32 = allocScratch(2);
+function serializeMemberExpressionOrOptionalChainingCall(node, pos) {
     switch (node.type) {
         case "MemberExpression":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeMemberExpression(node));
+            serializeEnum(node, pos, 0, serializeMemberExpression, 4);
             break;
         case "CallExpression":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeOptionalChainingCall(node)
-            );
+            serializeEnum(node, pos, 1, serializeOptionalChainingCall, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for MemberExpressionOrOptionalChainingCall"
             );
     }
-    return storePos32;
 }
 
-function finalizeMemberExpressionOrOptionalChainingCall(storePos32) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeMemberExpression,
-                4,
-                60
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeOptionalChainingCall,
-                4,
-                60
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for MemberExpressionOrOptionalChainingCall"
-            );
-    }
+function serializeBoxObjectProperty(value, pos) {
+    serializeBox(value, pos, serializeObjectProperty, 160, 8);
 }
 
-function serializeBoxObjectProperty(value) {
-    return serializeBox(
-        value,
-        serializeObjectProperty,
-        finalizeObjectProperty,
-        160,
-        8
-    );
+function serializeVecExportSpecifier(values, pos) {
+    serializeVec(values, pos, serializeExportSpecifier, 96, 4);
 }
 
-function serializeVecExportSpecifier(values) {
-    return serializeVec(
-        values,
-        serializeExportSpecifier,
-        finalizeExportSpecifier,
-        96,
-        4
-    );
-}
-
-function serializeOptionStringLiteral(value) {
-    return serializeOption(value, serializeStringLiteral);
-}
-
-function finalizeOptionStringLiteral(finalizeData) {
-    return finalizeOption(finalizeData, finalizeStringLiteral, 4, 36);
+function serializeOptionStringLiteral(value, pos) {
+    serializeOption(value, pos, serializeStringLiteral, 4);
 }
 
 function serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
-    node
+    node,
+    pos
 ) {
-    const storePos32 = allocScratch(2);
     switch (node.type) {
         case "ClassExpression":
-            scratchBuff[storePos32 << 2] = 0;
-            writeScratchUint32(storePos32 + 1, serializeClassExpression(node));
+            serializeEnum(node, pos, 0, serializeClassExpression, 4);
             break;
         case "FunctionExpression":
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeFunctionExpression(node)
-            );
+            serializeEnum(node, pos, 1, serializeFunctionExpression, 4);
             break;
         case "TsInterfaceDeclaration":
-            scratchBuff[storePos32 << 2] = 2;
-            writeScratchUint32(
-                storePos32 + 1,
-                serializeTsInterfaceDeclaration(node)
-            );
+            serializeEnum(node, pos, 2, serializeTsInterfaceDeclaration, 4);
             break;
         default:
             throw new Error(
                 "Unexpected enum option type for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration"
             );
     }
-    return storePos32;
-}
-
-function finalizeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
-    storePos32
-) {
-    switch (scratchBuff[storePos32 << 2]) {
-        case 0:
-            finalizeEnum(
-                0,
-                scratchUint32[storePos32 + 1],
-                finalizeClassExpression,
-                4,
-                132
-            );
-            break;
-        case 1:
-            finalizeEnum(
-                1,
-                scratchUint32[storePos32 + 1],
-                finalizeFunctionExpression,
-                4,
-                132
-            );
-            break;
-        case 2:
-            finalizeEnum(
-                2,
-                scratchUint32[storePos32 + 1],
-                finalizeTsInterfaceDeclaration,
-                4,
-                132
-            );
-            break;
-        default:
-            throw new Error(
-                "Unexpected enum option ID for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration"
-            );
-    }
 }
 
 function serialize(ast) {
-    pos = 0;
-    scratchPos32 = 2;
-    const storePos32 = serializeProgram(ast);
-    alignPos(4);
-    alloc(44);
-    uint32[pos >>> 2] = 1;
-    pos += 4;
-    finalizeProgram(storePos32);
-    int32[pos >>> 2] = -40;
+    uint32[0] = 1;
+    buffPos = 40;
+    serializeProgram(ast, 4);
+    const pos = allocAligned(4, 4);
+    uint32[pos >>> 2] = 4294967296 - pos;
     return subarray.call(buff, 0, pos + 4);
 }
 const { subarray } = Buffer.prototype;
 
-function serializeOption(value, serialize) {
-    return value === null ? 0 : serialize(value);
-}
-
-function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
-    const scratchPos32Before = scratchPos32;
-    const finalizeData = serialize(value);
-    alignPos(valueAlign);
-    alloc(valueLength);
-    const valuePos = pos;
-    finalize(finalizeData);
-    scratchPos32 = scratchPos32Before;
-    return valuePos | 0x80000000;
-}
-
-function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
-    const storePos32 = allocScratch(2);
-    const numValues = values.length;
-    scratchUint32[storePos32 + 1] = numValues;
-    if (numValues === 0) {
-        alignPos(valueAlign);
-        scratchUint32[storePos32] = pos;
-        return storePos32;
-    }
-    const scratchPos32Before = scratchPos32;
-    const finalizeData = new Array(numValues);
-    for (let i = 0; i < numValues; i++) {
-        finalizeData[i] = serialize(values[i]);
-    }
-    alignPos(valueAlign);
-    alloc(valueLength * numValues);
-    scratchUint32[storePos32] = pos;
-    for (let i = 0; i < numValues; i++) {
-        finalize(finalizeData[i]);
-    }
-    scratchPos32 = scratchPos32Before;
-    return storePos32;
-}
-
-function finalizeEnum(id, finalizeData, finalize, offset, length) {
-    const startPos = pos;
+function serializeEnum(node, pos, id, serialize, offset) {
     uint32[pos >>> 2] = id;
-    pos += offset;
-    finalize(finalizeData);
-    pos = startPos + length;
+    serialize(node, pos + offset);
 }
 
-function finalizeEnumValue(id) {
-    uint32[pos >>> 2] = id & 255;
-    pos += 4;
-}
-
-function finalizeOption(finalizeData, finalize, offset, length) {
-    if (finalizeData === 0) {
+function serializeOption(value, pos, serialize, offset) {
+    if (value === null) {
         buff[pos] = 0;
-        pos += length;
     } else {
         buff[pos] = 1;
-        pos += offset;
-        finalize(finalizeData);
+        serialize(value, pos + offset);
     }
 }
 
-function finalizeBox(valuePos) {
-    int32[pos >>> 2] = (valuePos & 0x7fffffff) - pos;
-    pos += 4;
+function serializeBox(value, pos, serialize, valueLength, valueAlign) {
+    const valuePos = allocAligned(valueLength, valueAlign);
+    uint32[pos >>> 2] = valuePos - pos;
+    serialize(value, valuePos);
 }
 
-function finalizeVec(storePos32) {
-    const pos32 = pos >>> 2;
-    int32[pos32] = scratchUint32[storePos32] - pos;
-    uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
-    pos += 8;
+function serializeVec(values, pos, serialize, valueLength, valueAlign) {
+    const numValues = values.length,
+        pos32 = pos >>> 2;
+    if (numValues === 0) {
+        alignPos(valueAlign);
+        uint32[pos32] = buffPos - pos;
+        uint32[pos32 + 1] = 0;
+        return;
+    }
+    let valuePos = allocAligned(valueLength * numValues, valueAlign);
+    uint32[pos32] = valuePos - pos;
+    uint32[pos32 + 1] = numValues;
+    let i = 0;
+    while (true) {
+        serialize(values[i], valuePos);
+        if (++i === numValues) break;
+        valuePos += valueLength;
+    }
 }
 
-function resetBuffers() {
+function resetBuffer() {
     buffLen = 65536;
-    scratchLen32 = 2048;
     initBuffer();
-    initScratch();
 }
 
 function initBuffer() {
     buff = Buffer.allocUnsafeSlow(buffLen);
     const arrayBuffer = buff.buffer;
-    uint16 = new Uint16Array(arrayBuffer);
-    int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer);
 }
 
 function alloc(bytes) {
-    const end = pos + bytes;
-    if (end > buffLen) growBuffer(end);
+    const startPos = buffPos;
+    buffPos += bytes;
+    if (buffPos > buffLen) growBuffer();
+    return startPos;
 }
 
-function growBuffer(minLen) {
+function allocAligned(bytes, align) {
+    alignPos(align);
+    return alloc(bytes);
+}
+
+function alignPos(align) {
+    if (align !== 1) {
+        const modulus = buffPos & (align - 1);
+        if (modulus !== 0) buffPos += align - modulus;
+    }
+}
+
+function growBuffer() {
     do {
         buffLen *= 2;
-    } while (buffLen < minLen);
+    } while (buffLen < buffPos);
     if (buffLen > 2147483648) {
         throw new Error("Exceeded maximum serialization buffer size");
     }
@@ -8171,99 +3258,14 @@ function growBuffer(minLen) {
 }
 const setBuff = Buffer.prototype.set;
 
-function alignPos(align) {
-    if (align !== 1) {
-        const modulus = pos & (align - 1);
-        if (modulus !== 0) pos += align - modulus;
-    }
-}
-
-function initScratch() {
-    scratchBuff = Buffer.allocUnsafeSlow(scratchLen32 << 2);
-    const arrayBuffer = scratchBuff.buffer;
-    scratchUint16 = new Uint16Array(arrayBuffer);
-    scratchUint32 = new Uint32Array(arrayBuffer);
-    scratchFloat64 = new Float64Array(arrayBuffer);
-}
-
-function allocScratch(bytes32) {
-    const startPos32 = scratchPos32;
-    scratchPos32 += bytes32;
-    if (scratchPos32 > scratchLen32) growScratch();
-    return startPos32;
-}
-
-function allocScratchAligned(bytes) {
-    const mod = bytes & 7;
-    return allocScratch((mod === 0 ? bytes : bytes + 8 - mod) >>> 2);
-}
-
-function growScratch() {
+function writeShortStringToBuffer(str, pos, strLen) {
+    let strPos = 0;
     do {
-        scratchLen32 *= 2;
-    } while (scratchLen32 < scratchPos32);
-    if (scratchLen32 > 536870912) {
-        throw new Error("Exceeded maximum scratch buffer size");
-    }
-    const oldScratchBuff = scratchBuff;
-    initScratch();
-    scratchBuff.set(oldScratchBuff);
-}
-
-function writeScratchUint32(pos32, value) {
-    scratchUint32[pos32] = value;
-}
-
-function copyFromScratch(scratchPos32, len) {
-    if ((pos & 3) === 0) {
-        let pos32 = pos >>> 2;
-        const last32 = pos32 + (len >>> 2) - 1;
-        uint32[pos32] = scratchUint32[scratchPos32];
-        uint32[++pos32] = scratchUint32[++scratchPos32];
-        while (pos32 < last32) {
-            uint32[++pos32] = scratchUint32[++scratchPos32];
-        }
-        if (len & 3) {
-            if (len & 2) {
-                pos32++;
-                scratchPos32++;
-                uint16[pos32 << 1] = scratchUint16[scratchPos32 << 1];
-                if (len & 1)
-                    buff[(pos32 << 2) + 2] =
-                        scratchBuff[(scratchPos32 << 2) + 2];
-            } else {
-                buff[(pos32 + 1) << 2] = scratchBuff[(scratchPos32 + 1) << 2];
-            }
-        }
-    } else if ((pos & 1) === 0) {
-        let pos16 = pos >>> 1,
-            scratchPos16 = scratchPos32 << 1;
-        const last16 = pos16 + (len >>> 1) - 1;
-        uint16[pos16] = scratchUint16[scratchPos16];
-        uint16[++pos16] = scratchUint16[++scratchPos16];
-        uint16[++pos16] = scratchUint16[++scratchPos16];
-        uint16[++pos16] = scratchUint16[++scratchPos16];
-        while (pos16 < last16) {
-            uint16[++pos16] = scratchUint16[++scratchPos16];
-        }
-        if (len & 1)
-            buff[(pos16 + 1) << 1] = scratchBuff[(scratchPos16 + 1) << 1];
-    } else {
-        let pos8 = pos,
-            scratchPos8 = scratchPos32 << 2;
-        const last8 = pos + len - 1;
-        buff[pos8] = scratchBuff[scratchPos8];
-        buff[++pos8] = scratchBuff[++scratchPos8];
-        buff[++pos8] = scratchBuff[++scratchPos8];
-        buff[++pos8] = scratchBuff[++scratchPos8];
-        buff[++pos8] = scratchBuff[++scratchPos8];
-        buff[++pos8] = scratchBuff[++scratchPos8];
-        buff[++pos8] = scratchBuff[++scratchPos8];
-        buff[++pos8] = scratchBuff[++scratchPos8];
-        while (pos8 < last8) {
-            buff[++pos8] = scratchBuff[++scratchPos8];
-        }
-    }
+        const c = charCodeAt.call(str, strPos);
+        if (c >= 128) return false;
+        buff[pos++] = c;
+    } while (++strPos < strLen);
+    return true;
 }
 
 function writeStringToBuffer(str, buff, strLen, pos) {
@@ -8283,46 +3285,3 @@ function writeAsciiStringToBuffer(str, buff, strLen, pos) {
         buff[pos++] = charCodeAt.call(str, strPos);
     } while (++strPos < strLen);
 }
-
-serialize.resetBuffers = resetBuffers;
-
-serialize.replaceFinalizeJsWord = () => {
-    const original = finalizeJsWord;
-    finalizeJsWord = function (storePos32) {
-        const len = scratchUint32[storePos32];
-        if (len <= 7) {
-            if (len > 0) {
-                const pos32 = pos >>> 2;
-                uint32[pos32] = scratchUint32[storePos32 + 1];
-                if (len > 4) uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
-            }
-
-            /* DEBUG_ONLY_START */
-            // Zero out extra bytes which were copied after end of string.
-            // It doesn't matter that this happens, but makes it hard to validate
-            // output by comparing buffers as it introduces a random element.
-            if (len !== 0 && len !== 4 && len !== 7) {
-                for (
-                    let emptyPos = pos + len;
-                    emptyPos < pos + (len < 4 ? 4 : 7);
-                    emptyPos++
-                ) {
-                    buff[emptyPos] = 0;
-                }
-            }
-            /* DEBUG_ONLY_END */
-
-            buff[pos + 7] = len;
-        } else {
-            const pos32 = pos >>> 2;
-            // Length always stored little-endian, regardless of machine architecture
-            // TODO Need to alter next line to write as little-endian on big-endian systems
-            uint32[pos32] = len;
-            int32[pos32 + 1] = scratchUint32[storePos32 + 1] - pos;
-        }
-        pos += 8;
-    };
-    return () => {
-        finalizeJsWord = original;
-    };
-};

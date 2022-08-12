@@ -7,29 +7,20 @@ const { writeFileSync } = require("fs"),
 
 // Imports
 const { types } = require("./types/index.js"),
-    { finalizeEnum } = require("./kinds/enum.js"),
-    { finalizeEnumValue } = require("./kinds/enumValue.js"),
-    {
-        deserializeOption,
-        serializeOption,
-        finalizeOption,
-    } = require("./kinds/option.js"),
-    { deserializeBox, serializeBox, finalizeBox } = require("./kinds/box.js"),
-    { deserializeVec, serializeVec, finalizeVec } = require("./kinds/vec.js"),
+    { serializeEnum } = require("./kinds/enum.js"),
+    { deserializeOption, serializeOption } = require("./kinds/option.js"),
+    { deserializeBox, serializeBox } = require("./kinds/box.js"),
+    { deserializeVec, serializeVec } = require("./kinds/vec.js"),
     {
         deserialize,
         serialize,
-        resetBuffers,
+        resetBuffer,
         initBuffer,
         alloc,
+        allocAligned,
         growBuffer,
         alignPos,
-        initScratch,
-        allocScratch,
-        allocScratchAligned,
-        growScratch,
-        writeScratchUint32,
-        copyFromScratch,
+        writeShortStringToBuffer,
         writeStringToBuffer,
         writeAsciiStringToBuffer,
         debugBuff,
@@ -42,11 +33,25 @@ const { types } = require("./types/index.js"),
 const DEBUG = !!process.env.DEBUG;
 
 constants.PROGRAM_LENGTH_PLUS_4 = types.Program.length + 4;
-constants.PROGRAM_LENGTH_PLUS_8 = types.Program.length + 8;
 constants.PROGRAM_ALIGN = Math.max(types.Program.align, 4);
 
 writeFileSync(pathJoin(__dirname, "deserialize.js"), generateDeserializer());
 writeFileSync(pathJoin(__dirname, "serialize.js"), generateSerializer());
+
+// This branch contains a new simpler implementation of Serializer.
+// It fills buffer from start-to-end, (`Program` node at start of buffer),
+// unlike RKYV which fills buffer end-to-start.
+// It doesn't use a scratch buffer or finalizers.
+// It's almost twice as fast as previous serializer and does work, except for an
+// incompatibility with how RKYV stores strings.
+// RKYV relies on pointers to strings being negative, so uses the sign bit to interpret
+// whether the 32-bit int is a pointer or an inline string.
+// Filling the buffer in reverse order upsets that (pointers are now positive ints), so it doesn't work.
+// 2 possible solutions:
+//   1. Implement a separate deserializer in Rust for `JsWord`s which works around this.
+//   2. In JS, begin at end of the buffer and work backwards to the start, so pointers are negative.
+// The latter has the disadvantage that strings will have to be serialized and then moved in many cases,
+// as the byte length of the UTF8-encoded string cannot be known until after it's serialized.
 
 /**
  * Generate code for deserializer.
@@ -102,9 +107,8 @@ function generateSerializer() {
 
             // Serializer entry point
             "module.exports = serialize;",
-            "let pos, buffLen, buff, uint16, int32, uint32, float64;",
-            "let scratchPos32, scratchLen32, scratchBuff, scratchUint16, scratchUint32, scratchFloat64;",
-            "resetBuffers();",
+            "let buffPos, buffLen, buff, uint32, float64;",
+            "resetBuffer();",
 
             // Type serialize functions
             ...Object.values(types).flatMap((type) => {
@@ -112,54 +116,32 @@ function generateSerializer() {
                 if (!serializerCode) return [];
                 serializerCode = conformFunctionCode(serializerCode);
                 if (!DEBUG) return serializerCode;
-                return serializerCode
-                    .replace(
-                        /function serialize.+\n/,
-                        (line) => line + `debugAst("serialize ${type.name}");\n`
-                    )
-                    .replace(
-                        /function finalize.+\n/,
-                        (line) => line + `debugAst("finalize ${type.name}");\n`
-                    );
+                return serializerCode.replace(
+                    /function serialize.+\n/,
+                    (line) => line + `debugAst("${type.name}", pos);\n`
+                );
             }),
 
             // Utility functions
             ...getUtilitiesCode(
                 [
                     serialize,
+                    serializeEnum,
                     serializeOption,
                     serializeBox,
                     serializeVec,
-                    finalizeEnum,
-                    finalizeEnumValue,
-                    finalizeOption,
-                    finalizeBox,
-                    finalizeVec,
-                    resetBuffers,
+                    resetBuffer,
                     initBuffer,
                     alloc,
-                    growBuffer,
+                    allocAligned,
                     alignPos,
-                    initScratch,
-                    allocScratch,
-                    allocScratchAligned,
-                    growScratch,
-                    writeScratchUint32,
-                    copyFromScratch,
+                    growBuffer,
+                    writeShortStringToBuffer,
                     writeStringToBuffer,
                     writeAsciiStringToBuffer,
                 ],
                 debugAst
-            ).map((code) =>
-                code.replace(/function finalize(.+?)\(.+\n/, (line, name) =>
-                    DEBUG ? line + `debugAst("finalize ${name}");\n` : line
-                )
             ),
-
-            // For use in tests only
-            // TODO Find a better way to do this
-            "serialize.resetBuffers = resetBuffers;",
-            getReplaceFinalizeJsWord(),
         ].join("\n\n")
     );
 }
@@ -242,24 +224,4 @@ function removeDebugOnlyCode(code) {
  */
 function format(code) {
     return prettier.format(code, { tabWidth: 4, filepath: "/foo.js" });
-}
-
-/**
- * Create function to replace `finalizeJsWord` function with the debug code left in.
- * This debug code which is retained zeros out unallocated bytes which would otherwise
- * contain random data.
- * This is for use in tests only, where tests compare buffers and these random bytes,
- * even though they don't actually affect operation, cause the buffer comparisons to fail.
- * @returns {string}
- */
-function getReplaceFinalizeJsWord() {
-    return `serialize.replaceFinalizeJsWord = () => {
-        const original = finalizeJsWord;
-        finalizeJsWord = function${types.JsWord.finalize
-            .toString()
-            .slice("finalize".length)};
-        return () => {
-            finalizeJsWord = original;
-        };
-    }`;
 }

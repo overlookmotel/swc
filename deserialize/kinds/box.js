@@ -54,19 +54,11 @@ class Box extends Kind {
      * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
-        const {
-            serializerName,
-            finalizerName,
-            length: valueLength,
-            align: valueAlign,
-        } = this.valueType;
-        return `function ${this.serializerName}(value) {
-            return serializeBox(value, ${serializerName}, ${finalizerName}, ${valueLength}, ${valueAlign});
+        const { valueType } = this;
+        return `function ${this.serializerName}(value, pos) {
+            serializeBox(value, pos, ${valueType.serializerName}, ${valueType.length}, ${valueType.align});
         }`;
     }
-
-    // Use `finalizeBox` as finalizer for all Box types
-    finalizerName = "finalizeBox";
 }
 
 /**
@@ -81,33 +73,17 @@ function deserializeBox(pos, deserialize) {
 
 /**
  * Serialize boxed value.
- * Return position of boxed value in buffer | 0x80000000.
- * Setting highest bit is to avoid 0 being returned. 0 has special meaning for Options.
  * @param {*} value - Boxed value
+ * @param {number} pos - Position to write at
  * @param {Function} serialize - Serialize function for type
- * @param {Function} finalize - Finalize function for type
  * @param {number} valueLength - Length of value type
  * @param {number} valueAlign - Alignment of value type
- * @returns {number} - Position of boxed value in buffer | 0x80000000
+ * @returns {undefined}
  */
-function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
-    const scratchPos32Before = scratchPos32;
-
-    const finalizeData = serialize(value);
-    alignPos(valueAlign);
-    alloc(valueLength);
-    const valuePos = pos;
-    finalize(finalizeData);
-
-    // Free scratch space
-    scratchPos32 = scratchPos32Before;
-
-    return valuePos | 0x80000000;
+function serializeBox(value, pos, serialize, valueLength, valueAlign) {
+    const valuePos = allocAligned(valueLength, valueAlign);
+    uint32[pos >>> 2] = valuePos - pos; // Always positive number, so safe to use `uint32`
+    serialize(value, valuePos);
 }
 
-function finalizeBox(valuePos) {
-    int32[pos >>> 2] = (valuePos & 0x7fffffff) - pos;
-    pos += 4;
-}
-
-module.exports = { Box, deserializeBox, serializeBox, finalizeBox };
+module.exports = { Box, deserializeBox, serializeBox };

@@ -1,10 +1,5 @@
 "use strict";
 
-// Fill buffers with zeros to allow comparison of buffers
-// without failure due to random uninitialized bytes
-const { allocUnsafeSlow } = Buffer;
-Buffer.allocUnsafeSlow = (...args) => allocUnsafeSlow(...args).fill(0);
-
 // Imports
 const {
     parseSync,
@@ -16,10 +11,6 @@ const {
 } = require("../../index.js"),
     deserialize = require("../deserialize.js"),
     serialize = require("../serialize.js");
-
-// Replace `finalizeJsWord()` with a version of function which zeros out unallocated bytes.
-// This allows comparison of buffers without failure due to random uninitialized bytes.
-serialize.replaceFinalizeJsWord();
 
 // Create `itParsesAndPrints()` + `itParsesAndPrintsOne()` test functions
 module.exports = {
@@ -72,16 +63,6 @@ function itParsesAndPrintsOne(describeWrapped, testName, code, options) {
 
             expect(conformSpans(ast)).toStrictEqual(conformSpans(astOld));
             expect(JSON.stringify(ast)).toBe(JSON.stringify(astOld));
-        });
-
-        // Test `serialize()` produces identical buffer to what `parseSyncToBuffer()` produced
-        it("serializes", () => {
-            const buff = parseSyncToBuffer(code, parseOptions),
-                ast = deserialize(buff);
-
-            serialize.resetBuffers();
-            const buff2 = serialize(ast);
-            expect(buffToString(buff2)).toEqual(buffToString(buff));
         });
 
         // Test `printSyncFromBuffer()` produces same output as original SWC `printSync()`
@@ -142,26 +123,6 @@ function wrapTestFunction(test) {
     wrapped.only = (...args) => test(describe.only, ...args);
     wrapped.skip = (...args) => test(describe.skip, ...args);
     return wrapped;
-}
-
-/**
- * Stringify buffer.
- * Pretty-print content as hex, with lines 16 bytes long,
- * and with position at start of each line.
- * @param {Buffer} buff - Buffer
- * @returns {string}
- */
-function buffToString(buff) {
-    const str = buff.toString("hex");
-    let out = "";
-    for (let pos = 0; pos < str.length; pos += 8) {
-        if (pos % 32 === 0) {
-            if (pos !== 0) out += "\n";
-            out += `[${`${pos / 2}`.padStart(5, "0")}]`;
-        }
-        out += " " + str.slice(pos, pos + 8);
-    }
-    return out;
 }
 
 /**

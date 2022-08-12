@@ -2550,10 +2550,6 @@ function deserializeAsciiJsWord(pos) {
 }
 const { asciiSlice } = Buffer.prototype;
 
-function deserializeOptionAsciiJsWord(pos) {
-    return deserializeOption(pos, deserializeAsciiJsWord, 4);
-}
-
 function deserializeBoolean(pos) {
     return buff[pos] === 1;
 }
@@ -2662,6 +2658,10 @@ function deserializeBoxPattern(pos) {
 
 function deserializeVecObjectPatternProperty(pos) {
     return deserializeVec(pos, deserializeObjectPatternProperty, 64);
+}
+
+function deserializeOptionAsciiJsWord(pos) {
+    return deserializeOption(pos, deserializeAsciiJsWord, 4);
 }
 
 function deserializeOptionBoxExpression(pos) {

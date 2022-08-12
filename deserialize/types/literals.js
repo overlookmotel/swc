@@ -22,9 +22,9 @@ module.exports = {
 
     NullLiteral: Node({}),
 
-    NumericLiteral: Node({ value: "Number", raw: "OptionAsciiJsWord" }),
+    NumericLiteral: Node({ value: "Number", raw: Option("AsciiJsWord") }),
 
-    BigIntLiteral: Node({ value: "BigIntValue", raw: "OptionAsciiJsWord" }),
+    BigIntLiteral: Node({ value: "BigIntValue", raw: Option("AsciiJsWord") }),
     BigIntValue: Custom({
         deserialize(pos) {
             // TODO This implementation could be more efficient
@@ -54,24 +54,23 @@ module.exports = {
 
             return [sign, parts];
         },
-        serialize(value) {
-            if (value[0] === 0) return serializeAsciiJsWord("0");
+        serialize(value, pos) {
+            if (value[0] === 0) {
+                serializeAsciiJsWord("0", pos);
+            } else {
+                const parts = value[1];
+                let num = 0n;
+                for (let i = parts.length - 1; i >= 0; i--) {
+                    num <<= 32n;
+                    num += BigInt(parts[i]);
+                }
 
-            const parts = value[1];
-            let num = 0n;
-            for (let i = parts.length - 1; i >= 0; i--) {
-                num <<= 32n;
-                num += BigInt(parts[i]);
+                let str = num.toString();
+                if (value[0] === -1) str = `-${str}`;
+
+                serializeAsciiJsWord(str, pos);
             }
-
-            let str = num.toString();
-            if (value[0] === -1) str = `-${str}`;
-
-            return serializeAsciiJsWord(str);
         },
-        // Use `finalizeJsWord` as finalizer for type
-        finalize: false,
-        finalizerName: "finalizeJsWord",
         dependencies: ["AsciiJsWord", "JsWord"],
         length: 8,
         align: 4,

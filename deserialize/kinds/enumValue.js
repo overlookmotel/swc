@@ -63,17 +63,18 @@ class EnumValue extends Kind {
 
     /**
      * Generate serializer function code for type.
-     * Serializer returns ID of value + 256.
-     * `+ 256` is to ensure result is never 0. 0 has a special meaning for Options.
+     * Serializer writes ID of value to buffer.
      * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
         const caseCodes = this.values.map(
             (value, index) =>
-                `case ${JSON.stringify(value)}: return ${index + 256};`
+                `case ${JSON.stringify(
+                    value
+                )}: uint32[pos >>> 2] = ${index}; break;`
         );
 
-        return `function ${this.serializerName}(value) {
+        return `function ${this.serializerName}(value, pos) {
             switch (value) {
                 ${caseCodes.join("\n")}
                 default: throw new Error("Unexpected enum value for ${
@@ -82,21 +83,6 @@ class EnumValue extends Kind {
             }
         }`;
     }
-
-    // Use `finalizeEnumValue` as finalizer for all EnumValue types
-    finalizerName = "finalizeEnumValue";
 }
 
-/**
- * Finalize EnumValue.
- * Write value ID to output buffer.
- * NB Only a single Uint8 value is required, so scratch is not used.
- * @param {number} id - Enum option ID
- * @returns {undefined}
- */
-function finalizeEnumValue(id) {
-    uint32[pos >>> 2] = id & 255;
-    pos += 4;
-}
-
-module.exports = { EnumValue, finalizeEnumValue };
+module.exports = EnumValue;

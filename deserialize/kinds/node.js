@@ -84,49 +84,20 @@ class Node extends Kind {
     }
 
     /**
-     * Generate serializer + finalizer functions code for type.
+     * Generate serializer function code for type.
      * Serializer calls the serializer for each property in turn.
-     * It stores the finalization data for properties in scratch (4 bytes for each property).
-     * It returns position of this data in scratch.
-     *
-     * Finalizer retrieves finalization data from scratch and calls finalizer
-     * for each property in turn with the finalization data for that property.
-     *
-     * @returns {string} - Code for `serialize` + `finalize` functions
+     * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
-        const serializeCodes = [],
-            finalizeCodes = [];
-        let endPos = 0;
-        this.propsWithPos.forEach(({ key, prop, pos }, index) => {
-            const storePos32Str = `storePos32${index > 0 ? ` + ${index}` : ""}`;
-            // Need to use `writeScratchUint32()` - reason explained in that function's definition
-            serializeCodes.push(
-                `writeScratchUint32(${storePos32Str}, ${prop.serializerName}(node.${key}));`
-            );
+        const serializeCodes = this.propsWithPos.map(
+            ({ key, prop, pos }) =>
+                `${prop.serializerName}(node.${key}, pos${
+                    pos === 0 ? "" : `+ ${pos}`
+                });`
+        );
 
-            if (pos > endPos) finalizeCodes.push(`pos += ${pos - endPos};`);
-            finalizeCodes.push(
-                `${prop.finalizerName}(scratchUint32[${storePos32Str}]);`
-            );
-
-            endPos = pos + prop.length;
-        });
-
-        if (endPos !== this.length)
-            finalizeCodes.push(`pos += ${this.length - endPos};`);
-
-        // NB Scratch must be allocated in 8-byte blocks
-        return `function ${this.serializerName}(node) {
-            const storePos32 = allocScratch(${
-                getAligned(this.propsWithPos.length * 4, 8) >>> 2
-            });
+        return `function ${this.serializerName}(node, pos) {
             ${serializeCodes.join("\n")}
-            return storePos32;
-        }
-        
-        function ${this.finalizerName}(storePos32) {
-            ${finalizeCodes.join("\n")}
         }`;
     }
 }

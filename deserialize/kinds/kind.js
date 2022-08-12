@@ -62,9 +62,6 @@ class Kind {
     get serializerName() {
         return `serialize${this.name}`;
     }
-    get finalizerName() {
-        return `finalize${this.name}`;
-    }
 }
 
 module.exports = Kind;

@@ -59,24 +59,13 @@ class Option extends Kind {
     }
 
     /**
-     * Generate serializer + finalizer function code for type.
-     * @returns {string} - Code for `serialize` + `finalize` functions
+     * Generate serializer function code for type.
+     * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
-        const { valueType } = this,
-            {
-                finalizerName,
-                length: valueLength,
-                align: valueAlign,
-            } = valueType;
-        return `function ${this.serializerName}(value) {
-            return serializeOption(value, ${valueType.serializerName});
-        }
-        
-        function ${this.finalizerName}(finalizeData) {
-            return finalizeOption(finalizeData, ${finalizerName}, ${valueAlign}, ${
-            valueLength + valueAlign
-        });
+        const { valueType } = this;
+        return `function ${this.serializerName}(value, pos) {
+            serializeOption(value, pos, ${valueType.serializerName}, ${valueType.align});
         }`;
     }
 }
@@ -102,39 +91,23 @@ function deserializeOption(pos, deserialize, offset) {
 
 /**
  * Serialize Option.
- * If option disabled, return 0;
- * If option enabled, return finalize data for value.
- * Finalize data is never 0, so 0 can be safely used to denote option disabled.
- * (usually finalize data is scratch position, and scratch starts at 8)
- *
- * @param {*} value - Value or `null`
+ * @param {*} value - Value (or null)
+ * @param {number} pos - Position to write at
  * @param {Function} serialize - Serialize function for type
- * @returns {number} - Finalize data for value, or 0 if option disabled
- */
-function serializeOption(value, serialize) {
-    return value === null ? 0 : serialize(value);
-}
-
-/**
- * Finalize option.
- * @param {number} finalizeData - Finalize data for value
- * @param {Function} finalize - Finalize function for value
  * @param {number} offset - Offset of value from start of Option
- * @param {number} length - Length of Option (total inc. value and offset)
+ * @returns {undefined}
  */
-function finalizeOption(finalizeData, finalize, offset, length) {
-    if (finalizeData === 0) {
+function serializeOption(value, pos, serialize, offset) {
+    if (value === null) {
         // Option disabled
         // TODO Maybe should be `buff[pos + 3]` on big endian systems?
         buff[pos] = 0;
-        pos += length;
     } else {
         // Option enabled
         // TODO Maybe should be `buff[pos + 3]` on big endian systems?
         buff[pos] = 1;
-        pos += offset;
-        finalize(finalizeData);
+        serialize(value, pos + offset);
     }
 }
 
-module.exports = { Option, deserializeOption, serializeOption, finalizeOption };
+module.exports = { Option, deserializeOption, serializeOption };

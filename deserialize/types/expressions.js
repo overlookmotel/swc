@@ -124,10 +124,11 @@ module.exports = {
             },
             generateSerializer() {
                 return Node.prototype.generateSerializer.call(this).replace(
-                    "serializeAssignmentLeft(",
-                    `node.operator === "="
-                        ? serializeAssignmentLeftEquals(node.left)
-                        : serializeAssignmentLeft(`
+                    /serializeAssignmentLeft\((.+?)\)/,
+                    (whole, args) =>
+                        `node.operator === "="
+                        ? serializeAssignmentLeftEquals(${args})
+                        : ${whole}`
                 );
             },
         }
@@ -137,14 +138,10 @@ module.exports = {
         // Use `deserializeAssignmentLeft` as deserializer for type
         deserialize: false,
         // Shortened serializer as only patterns are valid on left side of `=` assignment expression
-        serialize(node) {
-            const storePos32 = allocScratch(2);
-            scratchBuff[storePos32 << 2] = 1;
-            writeScratchUint32(storePos32 + 1, serializeBoxPattern(node));
-            return storePos32;
+        serialize(node, pos) {
+            uint32[pos >>> 2] = 1;
+            serializeBoxPattern(node, pos + 4);
         },
-        // Use `finalizeAssignmentLeft` as finalizer for type
-        finalize: false,
         dependencies: [Box("Expression"), Box("Pattern")],
         length: 8,
         align: 4,

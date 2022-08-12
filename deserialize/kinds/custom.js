@@ -15,7 +15,6 @@ const Kind = require("./kind.js"),
 class Custom extends Kind {
     deserialize = null;
     serialize = null;
-    finalize = null;
     dependencies = [];
 
     constructor(options) {
@@ -30,10 +29,6 @@ class Custom extends Kind {
         assert(
             typeof this.serialize === "function",
             `Custom type ${this.name} has no serializer`
-        );
-        assert(
-            typeof this.finalize === "function" || this.finalize === false,
-            `Custom type ${this.name} has no finalizer`
         );
     }
 
@@ -59,22 +54,9 @@ class Custom extends Kind {
             serializeCode.startsWith("serialize("),
             `Custom type ${this.name} malformed serializer function`
         );
-        let code = `function ${this.serializerName}${serializeCode.slice(
+        return `function ${this.serializerName}${serializeCode.slice(
             "serialize".length
         )}`;
-
-        if (this.finalize) {
-            const finalizeCode = this.finalize.toString();
-            assert(
-                finalizeCode.startsWith("finalize("),
-                `Custom type ${this.name} malformed finalizer function`
-            );
-            code += `\n\nfunction ${this.finalizerName}${finalizeCode.slice(
-                "finalize".length
-            )}`;
-        }
-
-        return code;
     }
 }
 

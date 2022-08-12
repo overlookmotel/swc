@@ -85,28 +85,22 @@ class Enum extends Kind {
     }
 
     /**
-     * Generate serializer + finalizer functions code for type.
-     * Serializer stores 8 bytes in scratch:
-     *   - Byte 0: ID of selected value type.
-     *   - Bytes 4-7: Finalizer data from value type's `serialize` function
-     * It returns position of this data in scratch as Uint32.
-     *
-     * Finalizer retrieves this data from scratch, uses first byte to determine selected type,
-     * and passes bytes 4-7 to finalizer for the selected type (via `finalizeEnum()`).
-     *
-     * @returns {string} - Code for `serialize` + `finalize` functions
+     * Generate serializer function code for type.
+     * Serializer writes to buffer:
+     *   - ID of selected value type.
+     *   - Serialized value
+     * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
         // TODO For nested Enums, does `switch (node.type) {}` more than once - inefficient
-        const optionSerializeCodes = [],
-            optionFinalizeCodes = [],
+        const serializeCodes = [],
             usedNodeNames = new Set();
         this.valueTypes.forEach((type, index) => {
             const addCode = (nodeName) => {
                 if (usedNodeNames.has(nodeName)) return;
                 usedNodeNames.add(nodeName);
 
-                optionSerializeCodes.push(`case "${nodeName}":`);
+                serializeCodes.push(`case "${nodeName}":`);
             };
             (function resolve(thisType) {
                 if (thisType instanceof Node) return addCode(thisType.nodeName);
@@ -119,64 +113,34 @@ class Enum extends Kind {
                 );
             })(type);
 
-            optionSerializeCodes.push(
-                `scratchBuff[storePos32 << 2] = ${index};`,
-                // Need to use `writeScratchUint32()` - reason explained in that function's definition
-                `writeScratchUint32(storePos32 + 1, ${type.serializerName}(node));`,
-                "break;"
-            );
-
-            optionFinalizeCodes.push(
-                `case ${index}:
-                    finalizeEnum(
-                        ${index},
-                        scratchUint32[storePos32 + 1],
-                        ${type.finalizerName},
-                        ${type.align},
-                        ${this.length}
-                    );
-                    break;`
+            serializeCodes.push(
+                `serializeEnum(node, pos, ${index}, ${type.serializerName}, ${type.align}); break;`
             );
         });
 
-        return `function ${this.serializerName}(node) {
-            const storePos32 = allocScratch(2);
+        return `function ${this.serializerName}(node, pos) {
             switch (node.type) {
-                ${optionSerializeCodes.join("\n")}
+                ${serializeCodes.join("\n")}
                 default: throw new Error("Unexpected enum option type for ${
                     this.name
                 }");
-            }
-            return storePos32;
-        }
-
-        function ${this.finalizerName}(storePos32) {
-            switch (scratchBuff[storePos32 << 2]) {
-                ${optionFinalizeCodes.join("\n")}
-                default:
-                    throw new Error("Unexpected enum option ID for ${
-                        this.name
-                    }");
             }
         }`;
     }
 }
 
 /**
- * Finalize Enum.
+ * Serialize Enum.
+ * @param {*} node - Node
+ * @param {number} pos - Position to write at
  * @param {number} id - Enum option ID
- * @param {number} finalizeData - Finalize data from value serializer
- * @param {Function} finalize - Finalize function for value
+ * @param {Function} serialize - Serialize function for type
  * @param {number} offset - Length in bytes of option ID
- * @param {number} length - Length in bytes of structure including enum option ID and value
  * @returns {undefined}
  */
-function finalizeEnum(id, finalizeData, finalize, offset, length) {
-    const startPos = pos;
+function serializeEnum(node, pos, id, serialize, offset) {
     uint32[pos >>> 2] = id;
-    pos += offset;
-    finalize(finalizeData);
-    pos = startPos + length;
+    serialize(node, pos + offset);
 }
 
-module.exports = { Enum, finalizeEnum };
+module.exports = { Enum, serializeEnum };

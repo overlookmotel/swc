@@ -21,6 +21,7 @@ const enumValues = new Map();
 class EnumValue extends Kind {
     length = 4;
     align = 4;
+    mayAlloc = false;
     values = null;
 
     constructor(values, options) {
@@ -81,6 +82,7 @@ class EnumValue extends Kind {
                     this.name
                 }");
             }
+            return 0;
         }`;
     }
 }

@@ -55,25 +55,24 @@ module.exports = {
             return [sign, parts];
         },
         serialize(value, pos) {
-            if (value[0] === 0) {
-                serializeAsciiJsWord("0", pos);
-            } else {
-                const parts = value[1];
-                let num = 0n;
-                for (let i = parts.length - 1; i >= 0; i--) {
-                    num <<= 32n;
-                    num += BigInt(parts[i]);
-                }
+            if (value[0] === 0) return serializeAsciiJsWord("0", pos);
 
-                let str = num.toString();
-                if (value[0] === -1) str = `-${str}`;
-
-                serializeAsciiJsWord(str, pos);
+            const parts = value[1];
+            let num = 0n;
+            for (let i = parts.length - 1; i >= 0; i--) {
+                num <<= 32n;
+                num += BigInt(parts[i]);
             }
+
+            let str = num.toString();
+            if (value[0] === -1) str = `-${str}`;
+
+            return serializeAsciiJsWord(str, pos);
         },
         dependencies: ["AsciiJsWord", "JsWord"],
         length: 8,
         align: 4,
+        mayAlloc: true,
     }),
 
     RegExpLiteral: Node({ pattern: "JsWord", flags: "AsciiJsWord" }),

@@ -22,6 +22,7 @@ const vecs = new Map();
 class Vec extends Kind {
     length = 8;
     align = 4;
+    mayAlloc = true;
     valueType = null;
 
     constructor(valueType, options) {
@@ -56,7 +57,7 @@ class Vec extends Kind {
     generateSerializer() {
         const { valueType } = this;
         return `function ${this.serializerName}(values, pos) {
-            serializeVec(values, pos, ${valueType.serializerName}, ${valueType.length}, ${valueType.align});
+            return serializeVec(values, pos, ${valueType.serializerName}, ${valueType.length}, ${valueType.align});
         }`;
     }
 }
@@ -93,28 +94,39 @@ function deserializeVec(pos, deserialize, length) {
  * @param {Function} serialize - Serialize function for type
  * @param {number} valueLength - Length of value type
  * @param {number} valueAlign - Alignment of value type
- * @returns {undefined}
+ * @returns {number} - Number of bytes buffer grew by during serialization
  */
 function serializeVec(values, pos, serialize, valueLength, valueAlign) {
-    const numValues = values.length,
-        pos32 = pos >>> 2;
+    const numValues = values.length;
     if (numValues === 0) {
         alignPos(valueAlign);
-        uint32[pos32] = buffPos - pos; // Always positive number, so safe to use `uint32`
+        const pos32 = pos >>> 2;
+        int32[pos32] = buffPos - pos;
         uint32[pos32 + 1] = 0;
-        return;
+        return 0;
     }
 
-    let valuePos = allocAligned(valueLength * numValues, valueAlign);
-    uint32[pos32] = valuePos - pos; // Always positive number, so safe to use `uint32`
+    alignPos(valueAlign);
+    let bufferGrownByBytes = alloc(valueLength * numValues);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    const pos32 = pos >>> 2;
+    int32[pos32] = buffPos - pos;
     uint32[pos32 + 1] = numValues;
 
-    let i = 0;
+    let valuePos = buffPos,
+        i = 0;
     while (true) {
-        serialize(values[i], valuePos);
+        const thisBufferGrownByBytes = serialize(values[i], valuePos);
+        if (thisBufferGrownByBytes > 0) {
+            valuePos += thisBufferGrownByBytes;
+            bufferGrownByBytes += thisBufferGrownByBytes;
+        }
         if (++i === numValues) break;
         valuePos += valueLength;
     }
+
+    return bufferGrownByBytes;
 }
 
 module.exports = { Vec, deserializeVec, serializeVec };

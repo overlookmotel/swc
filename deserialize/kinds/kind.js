@@ -16,6 +16,7 @@ class Kind {
     name = null;
     length = null;
     align = null;
+    mayAlloc = null;
     isLinked = false;
     isInitialized = false;
 
@@ -41,9 +42,10 @@ class Kind {
         this.isInitialized = true;
 
         if (this.getLengthAndAlign) {
-            const { length, align } = this.getLengthAndAlign();
+            const { length, align, mayAlloc } = this.getLengthAndAlign();
             this.length = length;
             this.align = align;
+            this.mayAlloc = mayAlloc;
         }
 
         assert(

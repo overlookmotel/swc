@@ -24,5 +24,5 @@ module.exports = {
     // https://github.com/swc-project/swc/blob/main/crates/swc_common/src/plugin.rs#L186
     AST_VERSION: 1,
     PROGRAM_LENGTH_PLUS_4: 0, // Will be set based on types
-    PROGRAM_ALIGN: 0, // Will be set based on types
+    PROGRAM_LENGTH_PLUS_8: 0, // Will be set based on types
 };

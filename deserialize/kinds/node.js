@@ -53,17 +53,19 @@ class Node extends Kind {
 
     getLengthAndAlign() {
         let pos = 0,
-            align = 0;
+            align = 0,
+            mayAlloc = false;
         this.propsWithPos = Object.entries(this.props).map(([key, prop]) => {
             prop.initLengthAndAlign();
             pos = getAligned(pos, prop.align);
             if (prop.align > align) align = prop.align;
+            if (prop.mayAlloc) mayAlloc = true;
             const propWithPos = { key, prop, pos };
             pos += prop.length;
             return propWithPos;
         });
 
-        return { length: getAligned(pos, align), align };
+        return { length: getAligned(pos, align), align, mayAlloc };
     }
 
     generateDeserializer() {
@@ -89,15 +91,67 @@ class Node extends Kind {
      * @returns {string} - Code for `serialize` function
      */
     generateSerializer() {
+        let previousPos = 0,
+            bufferGrownCount = 0;
+        const lastIndex = this.propsWithPos.length - 1,
+            numBufferGrowers = this.propsWithPos.filter(
+                ({ prop }) => prop.mayAlloc
+            ).length,
+            lastPropGrows = this.propsWithPos[lastIndex].prop.mayAlloc;
         const serializeCodes = this.propsWithPos.map(
-            ({ key, prop, pos }) =>
-                `${prop.serializerName}(node.${key}, pos${
-                    pos === 0 ? "" : `+ ${pos}`
-                });`
+            ({ key, prop, pos }, index) => {
+                const posStr =
+                    index === 0 && pos === 0
+                        ? "pos"
+                        : index === lastIndex
+                        ? `pos + ${pos - previousPos}`
+                        : `pos += ${pos - previousPos}`;
+                previousPos = pos;
+
+                const serializeStr = `${prop.serializerName}(node.${key}, ${posStr})`;
+                if (!prop.mayAlloc) return `${serializeStr};`;
+
+                bufferGrownCount++;
+                if (bufferGrownCount === 1) {
+                    if (index === lastIndex) return `return ${serializeStr};`;
+
+                    const prefix =
+                        numBufferGrowers === 1 ||
+                        (numBufferGrowers === 2 && lastPropGrows)
+                            ? "const"
+                            : "let";
+                    return `
+                        ${prefix} bufferGrownByBytes = ${serializeStr};
+                        if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+                    `;
+                }
+
+                if (index === lastIndex)
+                    return `return ${serializeStr} + bufferGrownByBytes;`;
+
+                const prefix =
+                    bufferGrownCount === 2
+                        ? numBufferGrowers === 2
+                            ? "const "
+                            : "let "
+                        : "";
+                return `
+                    ${prefix}thisBufferGrownByBytes = ${serializeStr};
+                    if (thisBufferGrownByBytes > 0) {
+                        pos += thisBufferGrownByBytes;
+                        bufferGrownByBytes += thisBufferGrownByBytes;
+                    }
+                `;
+            }
         );
 
+        // NB Scratch must be allocated in 8-byte blocks
+        const returnStr = lastPropGrows
+            ? ""
+            : `return ${this.mayAlloc ? "bufferGrownByBytes" : "0"}; `;
         return `function ${this.serializerName}(node, pos) {
             ${serializeCodes.join("\n")}
+            ${returnStr}
         }`;
     }
 }

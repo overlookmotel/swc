@@ -21,6 +21,7 @@ const boxes = new Map();
 class Box extends Kind {
     length = 4;
     align = 4;
+    mayAlloc = true;
     valueType = null;
 
     constructor(valueType, options) {
@@ -56,7 +57,7 @@ class Box extends Kind {
     generateSerializer() {
         const { valueType } = this;
         return `function ${this.serializerName}(value, pos) {
-            serializeBox(value, pos, ${valueType.serializerName}, ${valueType.length}, ${valueType.align});
+            return serializeBox(value, pos, ${valueType.serializerName}, ${valueType.length}, ${valueType.align});
         }`;
     }
 }
@@ -78,12 +79,14 @@ function deserializeBox(pos, deserialize) {
  * @param {Function} serialize - Serialize function for type
  * @param {number} valueLength - Length of value type
  * @param {number} valueAlign - Alignment of value type
- * @returns {undefined}
+ * @returns {number} - Number of bytes buffer grew by during serialization
  */
 function serializeBox(value, pos, serialize, valueLength, valueAlign) {
-    const valuePos = allocAligned(valueLength, valueAlign);
-    uint32[pos >>> 2] = valuePos - pos; // Always positive number, so safe to use `uint32`
-    serialize(value, valuePos);
+    alignPos(valueAlign);
+    const bufferGrownByBytes = alloc(valueLength);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+    int32[pos >>> 2] = buffPos - pos;
+    return serialize(value, buffPos) + bufferGrownByBytes;
 }
 
 module.exports = { Box, deserializeBox, serializeBox };

@@ -56,15 +56,17 @@ class Enum extends Kind {
 
     getLengthAndAlign() {
         let length = 0,
-            align = 4;
+            align = 4,
+            mayAlloc = false;
         for (const valueType of this.valueTypes) {
             valueType.initLengthAndAlign();
             const optionLength = valueType.length + valueType.align;
             if (optionLength > length) length = optionLength;
             if (valueType.align > align) align = valueType.align;
+            if (valueType.mayAlloc) mayAlloc = true;
         }
 
-        return { length: getAligned(length, align), align };
+        return { length: getAligned(length, align), align, mayAlloc };
     }
 
     generateDeserializer() {
@@ -114,7 +116,7 @@ class Enum extends Kind {
             })(type);
 
             serializeCodes.push(
-                `serializeEnum(node, pos, ${index}, ${type.serializerName}, ${type.align}); break;`
+                `return serializeEnum(node, pos, ${index}, ${type.serializerName}, ${type.align});`
             );
         });
 
@@ -136,11 +138,11 @@ class Enum extends Kind {
  * @param {number} id - Enum option ID
  * @param {Function} serialize - Serialize function for type
  * @param {number} offset - Length in bytes of option ID
- * @returns {undefined}
+ * @returns {number} - Number of bytes buffer grew by during serialization
  */
 function serializeEnum(node, pos, id, serialize, offset) {
     uint32[pos >>> 2] = id;
-    serialize(node, pos + offset);
+    return serialize(node, pos + offset);
 }
 
 module.exports = { Enum, serializeEnum };

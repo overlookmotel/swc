@@ -3,7 +3,7 @@
 // Imports
 const {
     PROGRAM_LENGTH_PLUS_4,
-    PROGRAM_ALIGN,
+    PROGRAM_LENGTH_PLUS_8,
     SERIALIZE_INITIAL_BUFFER_SIZE,
     SERIALIZE_MAX_BUFFER_SIZE,
 } = require("./constants.js");
@@ -15,12 +15,11 @@ module.exports = {
     serialize,
     resetBuffer,
     initBuffer,
-    alloc,
-    allocAligned,
-    growBuffer,
     alignPos,
-    writeShortStringToBuffer,
+    alloc,
+    growBuffer,
     writeStringToBuffer,
+    shiftBytesAndFree,
     writeAsciiStringToBuffer,
     debugBuff,
     debugAst,
@@ -55,22 +54,23 @@ function serialize(ast) {
     resetBuffer();
     /* DEBUG_ONLY_END */
 
-    // Write `VersionedSerializable` version to buffer
-    uint32[0] = AST_VERSION;
+    // Allocate space for `VersionedSerializable` (4 bytes)
+    // + `Program` node + pointer to `VersionedSerializable` (4 bytes)
+    buffPos = buffLen - PROGRAM_LENGTH_PLUS_8;
 
-    // Allocate space for `VersionedSerializable` (4 bytes) and `Program` node
-    buffPos = PROGRAM_LENGTH_PLUS_4;
+    // Write `VersionedSerializable` version to buffer before `Program` node
+    uint32[buffPos >>> 2] = AST_VERSION;
+
+    // Write pointer to `VersionedSerializable` at end of buffer
+    int32[(buffLen >>> 2) - 1] = -PROGRAM_LENGTH_PLUS_4;
 
     // Serialize program
-    serializeProgram(ast, 4);
+    serializeProgram(ast, buffPos + 4);
 
-    // Add pointer to `VersionedSerializable` version as final Int32.
-    // Write as `Uint32` to avoid creating an `Int32` view of buffer just for this.
-    // 4294967296 === 1 << 32
-    const pos = allocAligned(4, PROGRAM_ALIGN);
-    uint32[pos >>> 2] = 4294967296 - pos;
+    // Ensure start of buffer is aligned on 8
+    alignPos(8);
 
-    return subarray.call(buff, 0, pos + 4);
+    return subarray.call(buff, buffPos);
 }
 let buffPos;
 
@@ -103,40 +103,54 @@ function initBuffer() {
 
     const arrayBuffer = buff.buffer;
     uint32 = new Uint32Array(arrayBuffer);
+    int32 = new Int32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer);
+}
+
+/**
+ * Align `buffPos` to specified alignment.
+ * `align` must be no more than 8.
+ * Therefore, no need to check if more space needs to be allocated.
+ * Buffer length is always a multiple of 8.
+ * TODO Could make this more efficient by having separate functions for each alignment.
+ * @param {number} align - Aligment
+ * @returns {undefined}
+ */
+function alignPos(align) {
+    // 1 << 32 = 4294967296
+    if (align !== 1) buffPos &= 4294967296 - align;
 }
 
 /**
  * Allocate buffer space.
  * @param {number} bytes - Number of bytes to allocate
- * @returns {number} - Position of start of reserved space
+ * @returns {number} - Number of bytes buffer grew by
  */
 function alloc(bytes) {
-    const startPos = buffPos;
-    buffPos += bytes;
-    if (buffPos > buffLen) growBuffer();
-    return startPos;
-}
-
-/**
- * Allocate buffer space with start aligned.
- * @param {number} bytes - Number of bytes to allocate
- * @param {number} align - Alignment in bytes
- * @returns {number} - Position of start of reserved space
- */
-function allocAligned(bytes, align) {
-    alignPos(align);
-    return alloc(bytes);
+    const bufferGrownByBytes = bytes <= buffPos ? 0 : growBuffer(bytes);
+    buffPos -= bytes;
+    return bufferGrownByBytes;
 }
 
 /**
  * Grow buffer.
- * @returns {undefined}
+ * Creates a new buffer with enough free space to accomodate allocation,
+ * and copies the current buffer to end of new buffer.
+ * i.e. New buffer has free space at *start*.
+ * Buffer is grown in multiples of previous buffer size.
+ * i.e. Buffer doubles in size. If not enough space, it doubles again,
+ * and so on until amount of free space is sufficient.
+ * `buffPos` is updated to point to the new address.
+ * @param {number} minBytes - Minimum number of free bytes required
+ * @returns {number} - Num bytes buffer grown by
  */
-function growBuffer() {
+function growBuffer(minBytes) {
+    let grownByBytes = 0;
     do {
+        grownByBytes += buffLen;
+        buffPos += buffLen;
         buffLen *= 2;
-    } while (buffLen < buffPos);
+    } while (minBytes > buffPos);
 
     if (buffLen > SERIALIZE_MAX_BUFFER_SIZE) {
         throw new Error("Exceeded maximum serialization buffer size");
@@ -144,7 +158,9 @@ function growBuffer() {
 
     const oldBuff = buff;
     initBuffer();
-    setBuff.call(buff, oldBuff);
+    setBuff.call(buff, oldBuff, grownByBytes);
+
+    return grownByBytes;
 }
 
 growBuffer.toString = () =>
@@ -152,27 +168,14 @@ growBuffer.toString = () =>
     "\n\nconst setBuff = Buffer.prototype.set;";
 
 /**
- * Align `buffPos` to specified alignment.
- * @param {number} align - Aligment
- * @returns {undefined}
- */
-function alignPos(align) {
-    if (align !== 1) {
-        const modulus = buffPos & (align - 1);
-        if (modulus !== 0) buffPos += align - modulus;
-    }
-}
-
-/**
- * Write short string to buffer.
- * String must be 1-7 chars long.
+ * Write string to buffer if it's all ASCII characters.
  * If non-ASCII character encountered, stop and return `false`.
  * @param {string} str - String
  * @param {number} pos - Position in buffer to write at
  * @param {number} strLen - Length of string
  * @returns {boolean} - `true` if written successfully
  */
-function writeShortStringToBuffer(str, pos, strLen) {
+function writeStringToBuffer(str, pos, strLen) {
     let strPos = 0;
     do {
         const c = charCodeAt.call(str, strPos);
@@ -180,28 +183,6 @@ function writeShortStringToBuffer(str, pos, strLen) {
         buff[pos++] = c;
     } while (++strPos < strLen);
     return true;
-}
-
-/**
- * Write string to buffer, encoded as UTF8.
- * String must be at least 1 character long.
- * Assume common case that string contains no Unicode characters.
- * If a Unicode character is encountered, fall back to `Buffer.prototype.utf8Write()`.
- *
- * @param {string} str - String
- * @param {Buffer} buff - Buffer to write bytes to
- * @param {number} strLen - Length of string (in characters)
- * @param {number} pos - Position in buffer to write to
- * @returns {number} - Number of bytes written
- */
-function writeStringToBuffer(str, buff, strLen, pos) {
-    let strPos = 0;
-    do {
-        const c = charCodeAt.call(str, strPos);
-        if (c >= 128) return utf8Write.call(buff, str, pos - strPos);
-        buff[pos++] = c;
-    } while (++strPos < strLen);
-    return strLen;
 }
 
 writeStringToBuffer.toString = () =>
@@ -223,6 +204,47 @@ function writeAsciiStringToBuffer(str, buff, strLen, pos) {
         buff[pos++] = charCodeAt.call(str, strPos);
     } while (++strPos < strLen);
 }
+
+/**
+ * Shift up bytes in buffer.
+ * If `allocBytes` have been allocated, starting at `buffPos`, and only `len` bytes used,
+ * shifts the bytes up so they occupy the end of the allocated space.
+ * `buffPos` is then incremented to point to the new address of the start of the bytes.
+ *
+ * i.e.:
+ * `allocBytes` = 8, `len` = 5
+ * Before: Buffer contains `xxxxABCDExxx`, `buffPos` = 4.
+ * After : Buffer contains `xxxxxxxABCDE`, `buffPos` = 7.
+ * (actually buff contains `xxxxABCABCDE`, but first `ABC` is free for over-writing)
+ *
+ * @param {number} len - Number of bytes to shift
+ * @param {number} allocBytes - Number of bytes allocated, starting at `buffPos`
+ * @returns {undefined}
+ */
+function shiftBytesAndFree(len, allocBytes) {
+    const numBytesFree = allocBytes - len;
+    if (numBytesFree > 0) {
+        const startPos = buffPos;
+        copyWithinBuffer.call(
+            buff,
+            (buffPos += numBytesFree),
+            startPos,
+            startPos + len
+        );
+
+        /* DEBUG_ONLY_START */
+        // Zero out bytes which were moved.
+        // This is not required, but useful when debugging so buffer is clean.
+        for (let pos = startPos; pos < buffPos; pos++) {
+            buff[pos] = 0;
+        }
+        /* DEBUG_ONLY_END */
+    }
+}
+
+shiftBytesAndFree.toString = () =>
+    Function.prototype.toString.call(shiftBytesAndFree) +
+    "\n\nconst copyWithinBuffer = Buffer.prototype.copyWithin;";
 
 /**
  * Log contents of section of buffer.

@@ -3,6 +3,7 @@
 // Modules
 const { writeFileSync } = require("fs"),
     pathJoin = require("path").join,
+    assert = require("assert"),
     prettier = require("prettier");
 
 // Imports
@@ -16,13 +17,12 @@ const { types } = require("./types/index.js"),
         serialize,
         resetBuffer,
         initBuffer,
-        alloc,
-        allocAligned,
-        growBuffer,
         alignPos,
-        writeShortStringToBuffer,
+        alloc,
+        growBuffer,
         writeStringToBuffer,
         writeAsciiStringToBuffer,
+        shiftBytesAndFree,
         debugBuff,
         debugAst,
     } = require("./utils.js"),
@@ -33,13 +33,16 @@ const { types } = require("./types/index.js"),
 const DEBUG = !!process.env.DEBUG;
 
 constants.PROGRAM_LENGTH_PLUS_4 = types.Program.length + 4;
-constants.PROGRAM_ALIGN = Math.max(types.Program.align, 4);
+constants.PROGRAM_LENGTH_PLUS_8 = types.Program.length + 8;
+
+assert(types.Program.align === 4, "Program node is not aligned to 4 bytes");
 
 writeFileSync(pathJoin(__dirname, "deserialize.js"), generateDeserializer());
 writeFileSync(pathJoin(__dirname, "serialize.js"), generateSerializer());
 
 // This branch contains a new simpler implementation of Serializer.
-// It fills buffer from start-to-end, (`Program` node at start of buffer),
+//
+// First version fills buffer from start-to-end, (`Program` node at start of buffer),
 // unlike RKYV which fills buffer end-to-start.
 // It doesn't use a scratch buffer or finalizers.
 // It's almost twice as fast as previous serializer and does work, except for an
@@ -47,11 +50,22 @@ writeFileSync(pathJoin(__dirname, "serialize.js"), generateSerializer());
 // RKYV relies on pointers to strings being negative, so uses the sign bit to interpret
 // whether the 32-bit int is a pointer or an inline string.
 // Filling the buffer in reverse order upsets that (pointers are now positive ints), so it doesn't work.
-// 2 possible solutions:
-//   1. Implement a separate deserializer in Rust for `JsWord`s which works around this.
-//   2. In JS, begin at end of the buffer and work backwards to the start, so pointers are negative.
-// The latter has the disadvantage that strings will have to be serialized and then moved in many cases,
-// as the byte length of the UTF8-encoded string cannot be known until after it's serialized.
+//
+// 2nd version fixes this problem by filling buffer end-to-start (`Program` node at end of buffer).
+// In fact it fills the end of the buffer first and works forward.
+// This results in a slightly different buffer from what RKYV produces, because of the reverse order
+// of filling buffer. But nonetheless it's valid - everything is aligned correctly.
+// The buffer therefore needs to grow at it's front end, not its back end.
+// When growth happens, a new larger buffer is created and the old buffer is copied to the *end*
+// of the new buffer. So serialization can continue filling the buffer working towards the start.
+// Because the buffer can grow at almost any time, pointers which are held at the time of growth
+// all become invalid (because what was at byte 4 is now at byte 4 + n, if buffer grew by n bytes).
+// Tracking this and adjusting pointers in such cases is quite a pain.
+// It costs about 6% performance.
+//
+// A better solution would be to implement a separate deserializer in Rust for `JsWord`s which
+// expects positive pointers, not negative. The buffer could then be filled in start to end order
+// without any problems.
 
 /**
  * Generate code for deserializer.
@@ -107,7 +121,7 @@ function generateSerializer() {
 
             // Serializer entry point
             "module.exports = serialize;",
-            "let buffPos, buffLen, buff, uint32, float64;",
+            "let buffPos, buffLen, buff, uint32, int32, float64;",
             "resetBuffer();",
 
             // Type serialize functions
@@ -132,13 +146,12 @@ function generateSerializer() {
                     serializeVec,
                     resetBuffer,
                     initBuffer,
-                    alloc,
-                    allocAligned,
                     alignPos,
+                    alloc,
                     growBuffer,
-                    writeShortStringToBuffer,
                     writeStringToBuffer,
                     writeAsciiStringToBuffer,
+                    shiftBytesAndFree,
                 ],
                 debugAst
             ),

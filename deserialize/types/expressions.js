@@ -140,11 +140,12 @@ module.exports = {
         // Shortened serializer as only patterns are valid on left side of `=` assignment expression
         serialize(node, pos) {
             uint32[pos >>> 2] = 1;
-            serializeBoxPattern(node, pos + 4);
+            return serializeBoxPattern(node, pos + 4);
         },
         dependencies: [Box("Expression"), Box("Pattern")],
         length: 8,
         align: 4,
+        mayAlloc: true,
     }),
     AssignmentOperator: EnumValue([
         "=",

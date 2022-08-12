@@ -4,18 +4,16 @@
 
 module.exports = serialize;
 
-let buffPos, buffLen, buff, uint32, float64;
+let buffPos, buffLen, buff, uint32, int32, float64;
 
 resetBuffer();
 
 function serializeProgram(node, pos) {
     switch (node.type) {
         case "Module":
-            serializeEnum(node, pos, 0, serializeModule, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeModule, 4);
         case "Script":
-            serializeEnum(node, pos, 1, serializeScript, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeScript, 4);
         default:
             throw new Error("Unexpected enum option type for Program");
     }
@@ -23,14 +21,22 @@ function serializeProgram(node, pos) {
 
 function serializeModule(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecModuleItem(node.body, pos + 12);
-    serializeOptionJsWord(node.interpreter, pos + 20);
+    const bufferGrownByBytes = serializeVecModuleItem(node.body, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionJsWord(node.interpreter, pos + 8) + bufferGrownByBytes
+    );
 }
 
 function serializeScript(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecStatement(node.body, pos + 12);
-    serializeOptionJsWord(node.interpreter, pos + 20);
+    const bufferGrownByBytes = serializeVecStatement(node.body, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionJsWord(node.interpreter, pos + 8) + bufferGrownByBytes
+    );
 }
 
 function serializeModuleItem(node, pos) {
@@ -44,8 +50,7 @@ function serializeModuleItem(node, pos) {
         case "TsImportEqualsDeclaration":
         case "TsExportAssignment":
         case "TsNamespaceExportDeclaration":
-            serializeEnum(node, pos, 0, serializeModuleDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeModuleDeclaration, 4);
         case "BlockStatement":
         case "EmptyStatement":
         case "DebuggerStatement":
@@ -71,8 +76,7 @@ function serializeModuleItem(node, pos) {
         case "TsEnumDeclaration":
         case "TsModuleDeclaration":
         case "ExpressionStatement":
-            serializeEnum(node, pos, 1, serializeStatement, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeStatement, 4);
         default:
             throw new Error("Unexpected enum option type for ModuleItem");
     }
@@ -81,38 +85,59 @@ function serializeModuleItem(node, pos) {
 function serializeModuleDeclaration(node, pos) {
     switch (node.type) {
         case "ImportDeclaration":
-            serializeEnum(node, pos, 0, serializeImportDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeImportDeclaration, 4);
         case "ExportDeclaration":
-            serializeEnum(node, pos, 1, serializeExportDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeExportDeclaration, 4);
         case "ExportNamedDeclaration":
-            serializeEnum(node, pos, 2, serializeExportNamedDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                2,
+                serializeExportNamedDeclaration,
+                4
+            );
         case "ExportDefaultDeclaration":
-            serializeEnum(node, pos, 3, serializeExportDefaultDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                3,
+                serializeExportDefaultDeclaration,
+                4
+            );
         case "ExportDefaultExpression":
-            serializeEnum(node, pos, 4, serializeExportDefaultExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                4,
+                serializeExportDefaultExpression,
+                4
+            );
         case "ExportAllDeclaration":
-            serializeEnum(node, pos, 5, serializeExportAllDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                5,
+                serializeExportAllDeclaration,
+                4
+            );
         case "TsImportEqualsDeclaration":
-            serializeEnum(node, pos, 6, serializeTsImportEqualsDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                6,
+                serializeTsImportEqualsDeclaration,
+                4
+            );
         case "TsExportAssignment":
-            serializeEnum(node, pos, 7, serializeTsExportAssignment, 4);
-            break;
+            return serializeEnum(node, pos, 7, serializeTsExportAssignment, 4);
         case "TsNamespaceExportDeclaration":
-            serializeEnum(
+            return serializeEnum(
                 node,
                 pos,
                 8,
                 serializeTsNamespaceExportDeclaration,
                 4
             );
-            break;
         default:
             throw new Error(
                 "Unexpected enum option type for ModuleDeclaration"
@@ -122,23 +147,54 @@ function serializeModuleDeclaration(node, pos) {
 
 function serializeImportDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecImportSpecifier(node.specifiers, pos + 12);
-    serializeStringLiteral(node.source, pos + 20);
-    serializeBoolean(node.typeOnly, pos + 52);
-    serializeOptionObjectExpression(node.asserts, pos + 56);
+    let bufferGrownByBytes = serializeVecImportSpecifier(
+        node.specifiers,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeStringLiteral(
+        node.source,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.typeOnly, (pos += 32));
+    return (
+        serializeOptionObjectExpression(node.asserts, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeImportSpecifier(node, pos) {
     switch (node.type) {
         case "ImportSpecifier":
-            serializeEnum(node, pos, 0, serializeImportNamedSpecifier, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                0,
+                serializeImportNamedSpecifier,
+                4
+            );
         case "ImportDefaultSpecifier":
-            serializeEnum(node, pos, 1, serializeImportDefaultSpecifier, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                1,
+                serializeImportDefaultSpecifier,
+                4
+            );
         case "ImportNamespaceSpecifier":
-            serializeEnum(node, pos, 2, serializeImportNamespaceSpecifier, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                2,
+                serializeImportNamespaceSpecifier,
+                4
+            );
         default:
             throw new Error("Unexpected enum option type for ImportSpecifier");
     }
@@ -146,45 +202,87 @@ function serializeImportSpecifier(node, pos) {
 
 function serializeImportNamedSpecifier(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.local, pos + 12);
-    serializeOptionTsModuleName(node.imported, pos + 36);
-    serializeBoolean(node.isTypeOnly, pos + 76);
+    let bufferGrownByBytes = serializeIdentifier(node.local, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    const thisBufferGrownByBytes = serializeOptionTsModuleName(
+        node.imported,
+        (pos += 24)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.isTypeOnly, pos + 40);
+    return bufferGrownByBytes;
 }
 
 function serializeImportDefaultSpecifier(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.local, pos + 12);
+    return serializeIdentifier(node.local, pos + 12);
 }
 
 function serializeImportNamespaceSpecifier(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.local, pos + 12);
+    return serializeIdentifier(node.local, pos + 12);
 }
 
 function serializeExportDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeDeclaration(node.declaration, pos + 12);
+    return serializeDeclaration(node.declaration, pos + 12);
 }
 
 function serializeExportNamedDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecExportSpecifier(node.specifiers, pos + 12);
-    serializeOptionStringLiteral(node.source, pos + 20);
-    serializeBoolean(node.typeOnly, pos + 56);
-    serializeOptionObjectExpression(node.asserts, pos + 60);
+    let bufferGrownByBytes = serializeVecExportSpecifier(
+        node.specifiers,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionStringLiteral(
+        node.source,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.typeOnly, (pos += 36));
+    return (
+        serializeOptionObjectExpression(node.asserts, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeExportSpecifier(node, pos) {
     switch (node.type) {
         case "ExportNamespaceSpecifier":
-            serializeEnum(node, pos, 0, serializeExportNamespaceSpecifier, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                0,
+                serializeExportNamespaceSpecifier,
+                4
+            );
         case "ExportDefaultSpecifier":
-            serializeEnum(node, pos, 1, serializeExportDefaultSpecifier, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                1,
+                serializeExportDefaultSpecifier,
+                4
+            );
         case "ExportSpecifier":
-            serializeEnum(node, pos, 2, serializeExportNamedSpecifier, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                2,
+                serializeExportNamedSpecifier,
+                4
+            );
         default:
             throw new Error("Unexpected enum option type for ExportSpecifier");
     }
@@ -192,24 +290,35 @@ function serializeExportSpecifier(node, pos) {
 
 function serializeExportNamespaceSpecifier(node, pos) {
     serializeSpan(node.span, pos);
-    serializeTsModuleName(node.name, pos + 12);
+    return serializeTsModuleName(node.name, pos + 12);
 }
 
 function serializeExportDefaultSpecifier(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.exported, pos + 12);
+    return serializeIdentifier(node.exported, pos + 12);
 }
 
 function serializeExportNamedSpecifier(node, pos) {
     serializeSpan(node.span, pos);
-    serializeTsModuleName(node.orig, pos + 12);
-    serializeOptionTsModuleName(node.exported, pos + 48);
-    serializeBoolean(node.isTypeOnly, pos + 88);
+    let bufferGrownByBytes = serializeTsModuleName(node.orig, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    const thisBufferGrownByBytes = serializeOptionTsModuleName(
+        node.exported,
+        (pos += 36)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.isTypeOnly, pos + 40);
+    return bufferGrownByBytes;
 }
 
 function serializeExportDefaultDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
+    return serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
         node.decl,
         pos + 12
     );
@@ -217,23 +326,26 @@ function serializeExportDefaultDeclaration(node, pos) {
 
 function serializeExportDefaultExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializeExportAllDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeStringLiteral(node.source, pos + 12);
-    serializeOptionObjectExpression(node.asserts, pos + 44);
+    const bufferGrownByBytes = serializeStringLiteral(node.source, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionObjectExpression(node.asserts, pos + 32) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsModuleName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "StringLiteral":
-            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeStringLiteral, 4);
         default:
             throw new Error("Unexpected enum option type for TsModuleName");
     }
@@ -242,56 +354,39 @@ function serializeTsModuleName(node, pos) {
 function serializeStatement(node, pos) {
     switch (node.type) {
         case "BlockStatement":
-            serializeEnum(node, pos, 0, serializeBlockStatement, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeBlockStatement, 4);
         case "EmptyStatement":
-            serializeEnum(node, pos, 1, serializeEmptyStatement, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeEmptyStatement, 4);
         case "DebuggerStatement":
-            serializeEnum(node, pos, 2, serializeDebuggerStatement, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeDebuggerStatement, 4);
         case "WithStatement":
-            serializeEnum(node, pos, 3, serializeWithStatement, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeWithStatement, 4);
         case "ReturnStatement":
-            serializeEnum(node, pos, 4, serializeReturnStatement, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializeReturnStatement, 4);
         case "LabeledStatement":
-            serializeEnum(node, pos, 5, serializeLabeledStatement, 4);
-            break;
+            return serializeEnum(node, pos, 5, serializeLabeledStatement, 4);
         case "BreakStatement":
-            serializeEnum(node, pos, 6, serializeBreakStatement, 4);
-            break;
+            return serializeEnum(node, pos, 6, serializeBreakStatement, 4);
         case "ContinueStatement":
-            serializeEnum(node, pos, 7, serializeContinueStatement, 4);
-            break;
+            return serializeEnum(node, pos, 7, serializeContinueStatement, 4);
         case "IfStatement":
-            serializeEnum(node, pos, 8, serializeIfStatement, 4);
-            break;
+            return serializeEnum(node, pos, 8, serializeIfStatement, 4);
         case "SwitchStatement":
-            serializeEnum(node, pos, 9, serializeSwitchStatement, 4);
-            break;
+            return serializeEnum(node, pos, 9, serializeSwitchStatement, 4);
         case "ThrowStatement":
-            serializeEnum(node, pos, 10, serializeThrowStatement, 4);
-            break;
+            return serializeEnum(node, pos, 10, serializeThrowStatement, 4);
         case "TryStatement":
-            serializeEnum(node, pos, 11, serializeTryStatement, 4);
-            break;
+            return serializeEnum(node, pos, 11, serializeTryStatement, 4);
         case "WhileStatement":
-            serializeEnum(node, pos, 12, serializeWhileStatement, 4);
-            break;
+            return serializeEnum(node, pos, 12, serializeWhileStatement, 4);
         case "DoWhileStatement":
-            serializeEnum(node, pos, 13, serializeDoWhileStatement, 4);
-            break;
+            return serializeEnum(node, pos, 13, serializeDoWhileStatement, 4);
         case "ForStatement":
-            serializeEnum(node, pos, 14, serializeForStatement, 4);
-            break;
+            return serializeEnum(node, pos, 14, serializeForStatement, 4);
         case "ForInStatement":
-            serializeEnum(node, pos, 15, serializeForInStatement, 4);
-            break;
+            return serializeEnum(node, pos, 15, serializeForInStatement, 4);
         case "ForOfStatement":
-            serializeEnum(node, pos, 16, serializeForOfStatement, 4);
-            break;
+            return serializeEnum(node, pos, 16, serializeForOfStatement, 4);
         case "ClassDeclaration":
         case "FunctionDeclaration":
         case "VariableDeclaration":
@@ -299,11 +394,15 @@ function serializeStatement(node, pos) {
         case "TsTypeAliasDeclaration":
         case "TsEnumDeclaration":
         case "TsModuleDeclaration":
-            serializeEnum(node, pos, 17, serializeDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 17, serializeDeclaration, 4);
         case "ExpressionStatement":
-            serializeEnum(node, pos, 18, serializeExpressionStatement, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                18,
+                serializeExpressionStatement,
+                4
+            );
         default:
             throw new Error("Unexpected enum option type for Statement");
     }
@@ -311,144 +410,244 @@ function serializeStatement(node, pos) {
 
 function serializeBlockStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecStatement(node.stmts, pos + 12);
+    return serializeVecStatement(node.stmts, pos + 12);
 }
 
 function serializeEmptyStatement(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeDebuggerStatement(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeWithStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.object, pos + 12);
-    serializeBoxStatement(node.body, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(node.object, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxStatement(node.body, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeReturnStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionBoxExpression(node.argument, pos + 12);
+    return serializeOptionBoxExpression(node.argument, pos + 12);
 }
 
 function serializeLabeledStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.label, pos + 12);
-    serializeBoxStatement(node.body, pos + 36);
+    const bufferGrownByBytes = serializeIdentifier(node.label, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxStatement(node.body, pos + 24) + bufferGrownByBytes;
 }
 
 function serializeBreakStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionIdentifier(node.label, pos + 12);
+    return serializeOptionIdentifier(node.label, pos + 12);
 }
 
 function serializeContinueStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionIdentifier(node.label, pos + 12);
+    return serializeOptionIdentifier(node.label, pos + 12);
 }
 
 function serializeIfStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.test, pos + 12);
-    serializeBoxStatement(node.consequent, pos + 16);
-    serializeOptionBoxStatement(node.alternate, pos + 20);
+    let bufferGrownByBytes = serializeBoxExpression(node.test, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeBoxStatement(
+        node.consequent,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionBoxStatement(node.alternate, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeSwitchStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.discriminant, pos + 12);
-    serializeVecSwitchCase(node.cases, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(
+        node.discriminant,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeVecSwitchCase(node.cases, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeSwitchCase(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionBoxExpression(node.test, pos + 12);
-    serializeVecStatement(node.consequent, pos + 20);
+    const bufferGrownByBytes = serializeOptionBoxExpression(
+        node.test,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeVecStatement(node.consequent, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeThrowStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.argument, pos + 12);
+    return serializeBoxExpression(node.argument, pos + 12);
 }
 
 function serializeTryStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBlockStatement(node.block, pos + 12);
-    serializeOptionCatchClause(node.handler, pos + 32);
-    serializeOptionBlockStatement(node.finalizer, pos + 124);
+    let bufferGrownByBytes = serializeBlockStatement(node.block, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionCatchClause(
+        node.handler,
+        (pos += 20)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionBlockStatement(node.finalizer, pos + 92) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeCatchClause(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionPattern(node.param, pos + 12);
-    serializeBlockStatement(node.body, pos + 68);
+    const bufferGrownByBytes = serializeOptionPattern(node.param, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBlockStatement(node.body, pos + 56) + bufferGrownByBytes;
 }
 
 function serializeWhileStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.test, pos + 12);
-    serializeBoxStatement(node.body, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(node.test, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxStatement(node.body, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeDoWhileStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.test, pos + 12);
-    serializeBoxStatement(node.body, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(node.test, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxStatement(node.body, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeForStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionVariableDeclarationOrBoxExpression(node.init, pos + 12);
-    serializeOptionBoxExpression(node.test, pos + 48);
-    serializeOptionBoxExpression(node.update, pos + 56);
-    serializeBoxStatement(node.body, pos + 64);
+    let bufferGrownByBytes = serializeOptionVariableDeclarationOrBoxExpression(
+        node.init,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionBoxExpression(
+        node.test,
+        (pos += 36)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionBoxExpression(
+        node.update,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return serializeBoxStatement(node.body, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeForInStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVariableDeclarationOrPattern(node.left, pos + 12);
-    serializeBoxExpression(node.right, pos + 68);
-    serializeBoxStatement(node.body, pos + 72);
+    let bufferGrownByBytes = serializeVariableDeclarationOrPattern(
+        node.left,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeBoxExpression(
+        node.right,
+        (pos += 56)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return serializeBoxStatement(node.body, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeForOfStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionSpan(node.await, pos + 12);
-    serializeVariableDeclarationOrPattern(node.left, pos + 28);
-    serializeBoxExpression(node.right, pos + 84);
-    serializeBoxStatement(node.body, pos + 88);
+    serializeOptionSpan(node.await, (pos += 12));
+    let bufferGrownByBytes = serializeVariableDeclarationOrPattern(
+        node.left,
+        (pos += 16)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeBoxExpression(
+        node.right,
+        (pos += 56)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return serializeBoxStatement(node.body, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeExpressionStatement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializeDeclaration(node, pos) {
     switch (node.type) {
         case "ClassDeclaration":
-            serializeEnum(node, pos, 0, serializeClassDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeClassDeclaration, 4);
         case "FunctionDeclaration":
-            serializeEnum(node, pos, 1, serializeFunctionDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeFunctionDeclaration, 4);
         case "VariableDeclaration":
-            serializeEnum(node, pos, 2, serializeVariableDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeVariableDeclaration, 4);
         case "TsInterfaceDeclaration":
-            serializeEnum(node, pos, 3, serializeTsInterfaceDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                3,
+                serializeTsInterfaceDeclaration,
+                4
+            );
         case "TsTypeAliasDeclaration":
-            serializeEnum(node, pos, 4, serializeTsTypeAliasDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                4,
+                serializeTsTypeAliasDeclaration,
+                4
+            );
         case "TsEnumDeclaration":
-            serializeEnum(node, pos, 5, serializeTsEnumDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 5, serializeTsEnumDeclaration, 4);
         case "TsModuleDeclaration":
-            serializeEnum(node, pos, 6, serializeTsModuleDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 6, serializeTsModuleDeclaration, 4);
         default:
             throw new Error("Unexpected enum option type for Declaration");
     }
@@ -456,9 +655,9 @@ function serializeDeclaration(node, pos) {
 
 function serializeVariableDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVariableDeclarationKind(node.kind, pos + 12);
-    serializeBoolean(node.declare, pos + 16);
-    serializeVecVariableDeclarator(node.declarations, pos + 20);
+    serializeVariableDeclarationKind(node.kind, (pos += 12));
+    serializeBoolean(node.declare, (pos += 4));
+    return serializeVecVariableDeclarator(node.declarations, pos + 4);
 }
 
 function serializeVariableDeclarationKind(value, pos) {
@@ -477,112 +676,291 @@ function serializeVariableDeclarationKind(value, pos) {
                 "Unexpected enum value for VariableDeclarationKind"
             );
     }
+    return 0;
 }
 
 function serializeVariableDeclarator(node, pos) {
     serializeSpan(node.span, pos);
-    serializePattern(node.id, pos + 12);
-    serializeOptionBoxExpression(node.init, pos + 64);
-    serializeBoolean(node.definite, pos + 72);
+    let bufferGrownByBytes = serializePattern(node.id, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    const thisBufferGrownByBytes = serializeOptionBoxExpression(
+        node.init,
+        (pos += 52)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.definite, pos + 8);
+    return bufferGrownByBytes;
 }
 
 function serializeFunctionDeclaration(node, pos) {
-    serializeIdentifier(node.identifier, pos);
-    serializeBoolean(node.declare, pos + 24);
-    serializeVecParameter(node.params, pos + 28);
-    serializeVecDecorator(node.decorators, pos + 36);
-    serializeSpan(node.span, pos + 44);
-    serializeOptionBlockStatement(node.body, pos + 56);
-    serializeBoolean(node.generator, pos + 80);
-    serializeBoolean(node.async, pos + 81);
-    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 84);
-    serializeOptionTsTypeAnnotation(node.returnType, pos + 108);
+    let bufferGrownByBytes = serializeIdentifier(node.identifier, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.declare, (pos += 24));
+    let thisBufferGrownByBytes = serializeVecParameter(node.params, (pos += 4));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeVecDecorator(node.decorators, (pos += 8));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeSpan(node.span, (pos += 8));
+    thisBufferGrownByBytes = serializeOptionBlockStatement(
+        node.body,
+        (pos += 12)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.generator, (pos += 24));
+    serializeBoolean(node.async, (pos += 1));
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParameters,
+        (pos += 3)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeAnnotation(node.returnType, pos + 24) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeFunctionExpression(node, pos) {
-    serializeOptionIdentifier(node.identifier, pos);
-    serializeVecParameter(node.params, pos + 28);
-    serializeVecDecorator(node.decorators, pos + 36);
-    serializeSpan(node.span, pos + 44);
-    serializeOptionBlockStatement(node.body, pos + 56);
-    serializeBoolean(node.generator, pos + 80);
-    serializeBoolean(node.async, pos + 81);
-    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 84);
-    serializeOptionTsTypeAnnotation(node.returnType, pos + 108);
+    let bufferGrownByBytes = serializeOptionIdentifier(node.identifier, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeVecParameter(
+        node.params,
+        (pos += 28)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeVecDecorator(node.decorators, (pos += 8));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeSpan(node.span, (pos += 8));
+    thisBufferGrownByBytes = serializeOptionBlockStatement(
+        node.body,
+        (pos += 12)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.generator, (pos += 24));
+    serializeBoolean(node.async, (pos += 1));
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParameters,
+        (pos += 3)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeAnnotation(node.returnType, pos + 24) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeArrowFunctionExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecPattern(node.params, pos + 12);
-    serializeBlockStatementOrBoxExpression(node.body, pos + 20);
-    serializeBoolean(node.async, pos + 44);
-    serializeBoolean(node.generator, pos + 45);
-    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 48);
-    serializeOptionTsTypeAnnotation(node.returnType, pos + 72);
+    let bufferGrownByBytes = serializeVecPattern(node.params, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeBlockStatementOrBoxExpression(
+        node.body,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.async, (pos += 24));
+    serializeBoolean(node.generator, (pos += 1));
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParameters,
+        (pos += 3)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeAnnotation(node.returnType, pos + 24) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeParameter(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecDecorator(node.decorators, pos + 12);
-    serializePattern(node.pat, pos + 20);
+    const bufferGrownByBytes = serializeVecDecorator(
+        node.decorators,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializePattern(node.pat, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeDecorator(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializeClassDeclaration(node, pos) {
-    serializeIdentifier(node.identifier, pos);
-    serializeBoolean(node.declare, pos + 24);
-    serializeSpan(node.span, pos + 28);
-    serializeVecDecorator(node.decorators, pos + 40);
-    serializeVecClassMember(node.body, pos + 48);
-    serializeOptionBoxExpression(node.superClass, pos + 56);
-    serializeBoolean(node.isAbstract, pos + 64);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 68);
-    serializeOptionTsTypeParameterInstantiation(node.superTypeParams, pos + 92);
-    serializeVecTsExpressionWithTypeArguments(node.implements, pos + 116);
+    let bufferGrownByBytes = serializeIdentifier(node.identifier, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.declare, (pos += 24));
+    serializeSpan(node.span, (pos += 4));
+    let thisBufferGrownByBytes = serializeVecDecorator(
+        node.decorators,
+        (pos += 12)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeVecClassMember(node.body, (pos += 8));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionBoxExpression(
+        node.superClass,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.isAbstract, (pos += 8));
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParams,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterInstantiation(
+        node.superTypeParams,
+        (pos += 24)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeVecTsExpressionWithTypeArguments(node.implements, pos + 24) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeClassExpression(node, pos) {
-    serializeOptionIdentifier(node.identifier, pos);
-    serializeSpan(node.span, pos + 28);
-    serializeVecDecorator(node.decorators, pos + 40);
-    serializeVecClassMember(node.body, pos + 48);
-    serializeOptionBoxExpression(node.superClass, pos + 56);
-    serializeBoolean(node.isAbstract, pos + 64);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 68);
-    serializeOptionTsTypeParameterInstantiation(node.superTypeParams, pos + 92);
-    serializeVecTsExpressionWithTypeArguments(node.implements, pos + 116);
+    let bufferGrownByBytes = serializeOptionIdentifier(node.identifier, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeSpan(node.span, (pos += 28));
+    let thisBufferGrownByBytes = serializeVecDecorator(
+        node.decorators,
+        (pos += 12)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeVecClassMember(node.body, (pos += 8));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionBoxExpression(
+        node.superClass,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.isAbstract, (pos += 8));
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParams,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterInstantiation(
+        node.superTypeParams,
+        (pos += 24)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeVecTsExpressionWithTypeArguments(node.implements, pos + 24) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeClassMember(node, pos) {
     switch (node.type) {
         case "Constructor":
-            serializeEnum(node, pos, 0, serializeConstructor, 8);
-            break;
+            return serializeEnum(node, pos, 0, serializeConstructor, 8);
         case "ClassMethod":
-            serializeEnum(node, pos, 1, serializeClassMethod, 8);
-            break;
+            return serializeEnum(node, pos, 1, serializeClassMethod, 8);
         case "PrivateMethod":
-            serializeEnum(node, pos, 2, serializePrivateMethod, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializePrivateMethod, 4);
         case "ClassProperty":
-            serializeEnum(node, pos, 3, serializeClassProperty, 8);
-            break;
+            return serializeEnum(node, pos, 3, serializeClassProperty, 8);
         case "PrivateProperty":
-            serializeEnum(node, pos, 4, serializePrivateProperty, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializePrivateProperty, 4);
         case "TsIndexSignature":
-            serializeEnum(node, pos, 5, serializeTsIndexSignature, 4);
-            break;
+            return serializeEnum(node, pos, 5, serializeTsIndexSignature, 4);
         case "EmptyStatement":
-            serializeEnum(node, pos, 6, serializeEmptyStatement, 4);
-            break;
+            return serializeEnum(node, pos, 6, serializeEmptyStatement, 4);
         case "StaticBlock":
-            serializeEnum(node, pos, 7, serializeStaticBlock, 4);
-            break;
+            return serializeEnum(node, pos, 7, serializeStaticBlock, 4);
         default:
             throw new Error("Unexpected enum option type for ClassMember");
     }
@@ -590,70 +968,159 @@ function serializeClassMember(node, pos) {
 
 function serializeConstructor(node, pos) {
     serializeSpan(node.span, pos);
-    serializePropertyName(node.key, pos + 16);
-    serializeVecTsParameterPropertyOrParameter(node.params, pos + 64);
-    serializeOptionBlockStatement(node.body, pos + 72);
-    serializeOptionAccessibility(node.accessibility, pos + 96);
-    serializeBoolean(node.isOptional, pos + 104);
+    let bufferGrownByBytes = serializePropertyName(node.key, (pos += 16));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeVecTsParameterPropertyOrParameter(
+        node.params,
+        (pos += 48)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionBlockStatement(
+        node.body,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeOptionAccessibility(node.accessibility, (pos += 24));
+    serializeBoolean(node.isOptional, pos + 8);
+    return bufferGrownByBytes;
 }
 
 function serializeClassMethod(node, pos) {
     serializeSpan(node.span, pos);
-    serializePropertyName(node.key, pos + 16);
-    serializeFunction(node.function, pos + 64);
-    serializeMethodKind(node.kind, pos + 164);
-    serializeBoolean(node.isStatic, pos + 168);
-    serializeOptionAccessibility(node.accessibility, pos + 172);
-    serializeBoolean(node.isAbstract, pos + 180);
-    serializeBoolean(node.isOptional, pos + 181);
-    serializeBoolean(node.isOverride, pos + 182);
+    let bufferGrownByBytes = serializePropertyName(node.key, (pos += 16));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    const thisBufferGrownByBytes = serializeFunction(
+        node.function,
+        (pos += 48)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeMethodKind(node.kind, (pos += 100));
+    serializeBoolean(node.isStatic, (pos += 4));
+    serializeOptionAccessibility(node.accessibility, (pos += 4));
+    serializeBoolean(node.isAbstract, (pos += 8));
+    serializeBoolean(node.isOptional, (pos += 1));
+    serializeBoolean(node.isOverride, pos + 1);
+    return bufferGrownByBytes;
 }
 
 function serializePrivateMethod(node, pos) {
     serializeSpan(node.span, pos);
-    serializePrivateName(node.key, pos + 12);
-    serializeFunction(node.function, pos + 48);
-    serializeMethodKind(node.kind, pos + 148);
-    serializeBoolean(node.isStatic, pos + 152);
-    serializeOptionAccessibility(node.accessibility, pos + 156);
-    serializeBoolean(node.isAbstract, pos + 164);
-    serializeBoolean(node.isOptional, pos + 165);
-    serializeBoolean(node.isOverride, pos + 166);
+    let bufferGrownByBytes = serializePrivateName(node.key, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    const thisBufferGrownByBytes = serializeFunction(
+        node.function,
+        (pos += 36)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeMethodKind(node.kind, (pos += 100));
+    serializeBoolean(node.isStatic, (pos += 4));
+    serializeOptionAccessibility(node.accessibility, (pos += 4));
+    serializeBoolean(node.isAbstract, (pos += 8));
+    serializeBoolean(node.isOptional, (pos += 1));
+    serializeBoolean(node.isOverride, pos + 1);
+    return bufferGrownByBytes;
 }
 
 function serializeClassProperty(node, pos) {
     serializeSpan(node.span, pos);
-    serializePropertyName(node.key, pos + 16);
-    serializeOptionBoxExpression(node.value, pos + 64);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 72);
-    serializeBoolean(node.isStatic, pos + 92);
-    serializeVecDecorator(node.decorators, pos + 96);
-    serializeOptionAccessibility(node.accessibility, pos + 104);
-    serializeBoolean(node.isAbstract, pos + 112);
-    serializeBoolean(node.isOptional, pos + 113);
-    serializeBoolean(node.isOverride, pos + 114);
-    serializeBoolean(node.readonly, pos + 115);
-    serializeBoolean(node.declare, pos + 116);
-    serializeBoolean(node.definite, pos + 117);
+    let bufferGrownByBytes = serializePropertyName(node.key, (pos += 16));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionBoxExpression(
+        node.value,
+        (pos += 48)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionTsTypeAnnotation(
+        node.typeAnnotation,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.isStatic, (pos += 20));
+    thisBufferGrownByBytes = serializeVecDecorator(node.decorators, (pos += 4));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeOptionAccessibility(node.accessibility, (pos += 8));
+    serializeBoolean(node.isAbstract, (pos += 8));
+    serializeBoolean(node.isOptional, (pos += 1));
+    serializeBoolean(node.isOverride, (pos += 1));
+    serializeBoolean(node.readonly, (pos += 1));
+    serializeBoolean(node.declare, (pos += 1));
+    serializeBoolean(node.definite, pos + 1);
+    return bufferGrownByBytes;
 }
 
 function serializePrivateProperty(node, pos) {
     serializeSpan(node.span, pos);
-    serializePrivateName(node.key, pos + 12);
-    serializeOptionBoxExpression(node.value, pos + 48);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 56);
-    serializeBoolean(node.isStatic, pos + 76);
-    serializeVecDecorator(node.decorators, pos + 80);
-    serializeOptionAccessibility(node.accessibility, pos + 88);
-    serializeBoolean(node.isOptional, pos + 96);
-    serializeBoolean(node.isOverride, pos + 97);
-    serializeBoolean(node.readonly, pos + 98);
-    serializeBoolean(node.definite, pos + 99);
+    let bufferGrownByBytes = serializePrivateName(node.key, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionBoxExpression(
+        node.value,
+        (pos += 36)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionTsTypeAnnotation(
+        node.typeAnnotation,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.isStatic, (pos += 20));
+    thisBufferGrownByBytes = serializeVecDecorator(node.decorators, (pos += 4));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeOptionAccessibility(node.accessibility, (pos += 8));
+    serializeBoolean(node.isOptional, (pos += 8));
+    serializeBoolean(node.isOverride, (pos += 1));
+    serializeBoolean(node.readonly, (pos += 1));
+    serializeBoolean(node.definite, pos + 1);
+    return bufferGrownByBytes;
 }
 
 function serializeStaticBlock(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBlockStatement(node.body, pos + 12);
+    return serializeBlockStatement(node.body, pos + 12);
 }
 
 function serializeMethodKind(value, pos) {
@@ -670,39 +1137,63 @@ function serializeMethodKind(value, pos) {
         default:
             throw new Error("Unexpected enum value for MethodKind");
     }
+    return 0;
 }
 
 function serializeFunction(node, pos) {
-    serializeVecParameter(node.params, pos);
-    serializeVecDecorator(node.decorators, pos + 8);
-    serializeSpan(node.span, pos + 16);
-    serializeOptionBlockStatement(node.body, pos + 28);
-    serializeBoolean(node.generator, pos + 52);
-    serializeBoolean(node.async, pos + 53);
-    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 56);
-    serializeOptionTsTypeAnnotation(node.returnType, pos + 80);
+    let bufferGrownByBytes = serializeVecParameter(node.params, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeVecDecorator(
+        node.decorators,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeSpan(node.span, (pos += 8));
+    thisBufferGrownByBytes = serializeOptionBlockStatement(
+        node.body,
+        (pos += 12)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.generator, (pos += 24));
+    serializeBoolean(node.async, (pos += 1));
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParameters,
+        (pos += 3)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeAnnotation(node.returnType, pos + 24) +
+        bufferGrownByBytes
+    );
 }
 
 function serializePattern(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
         case "ArrayPattern":
-            serializeEnum(node, pos, 1, serializeArrayPattern, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeArrayPattern, 4);
         case "RestElement":
-            serializeEnum(node, pos, 2, serializeRestElement, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeRestElement, 4);
         case "ObjectPattern":
-            serializeEnum(node, pos, 3, serializeObjectPattern, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeObjectPattern, 4);
         case "AssignmentPattern":
-            serializeEnum(node, pos, 4, serializeAssignmentPattern, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializeAssignmentPattern, 4);
         case "Invalid":
-            serializeEnum(node, pos, 5, serializeInvalid, 4);
-            break;
+            return serializeEnum(node, pos, 5, serializeInvalid, 4);
         case "ThisExpression":
         case "ArrayExpression":
         case "ObjectExpression":
@@ -744,8 +1235,7 @@ function serializePattern(node, pos) {
         case "TsInstantiation":
         case "PrivateName":
         case "OptionalChainingExpression":
-            serializeEnum(node, pos, 6, serializeBoxExpression, 4);
-            break;
+            return serializeEnum(node, pos, 6, serializeBoxExpression, 4);
         default:
             throw new Error("Unexpected enum option type for Pattern");
     }
@@ -753,43 +1243,78 @@ function serializePattern(node, pos) {
 
 function serializeBindingIdentifier(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJsWord(node.value, pos + 12);
-    serializeBoolean(node.optional, pos + 20);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 24);
+    const bufferGrownByBytes = serializeJsWord(node.value, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.optional, (pos += 8));
+    return (
+        serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeArrayPattern(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecOptionPattern(node.elements, pos + 12);
-    serializeBoolean(node.optional, pos + 20);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 24);
+    const bufferGrownByBytes = serializeVecOptionPattern(
+        node.elements,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.optional, (pos += 8));
+    return (
+        serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeRestElement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeSpan(node.rest, pos + 12);
-    serializeBoxPattern(node.argument, pos + 24);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 28);
+    serializeSpan(node.rest, (pos += 12));
+    const bufferGrownByBytes = serializeBoxPattern(node.argument, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeObjectPattern(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecObjectPatternProperty(node.properties, pos + 12);
-    serializeBoolean(node.optional, pos + 20);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 24);
+    const bufferGrownByBytes = serializeVecObjectPatternProperty(
+        node.properties,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.optional, (pos += 8));
+    return (
+        serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeObjectPatternProperty(node, pos) {
     switch (node.type) {
         case "KeyValuePatternProperty":
-            serializeEnum(node, pos, 0, serializeKeyValuePatternProperty, 8);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                0,
+                serializeKeyValuePatternProperty,
+                8
+            );
         case "AssignmentPatternProperty":
-            serializeEnum(node, pos, 1, serializeAssignmentPatternProperty, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                1,
+                serializeAssignmentPatternProperty,
+                4
+            );
         case "RestElement":
-            serializeEnum(node, pos, 2, serializeRestElement, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeRestElement, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for ObjectPatternProperty"
@@ -798,70 +1323,83 @@ function serializeObjectPatternProperty(node, pos) {
 }
 
 function serializeKeyValuePatternProperty(node, pos) {
-    serializePropertyName(node.key, pos);
-    serializeBoxPattern(node.value, pos + 48);
+    const bufferGrownByBytes = serializePropertyName(node.key, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxPattern(node.value, pos + 48) + bufferGrownByBytes;
 }
 
 function serializeAssignmentPatternProperty(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.key, pos + 12);
-    serializeOptionBoxExpression(node.value, pos + 36);
+    const bufferGrownByBytes = serializeIdentifier(node.key, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionBoxExpression(node.value, pos + 24) + bufferGrownByBytes
+    );
 }
 
 function serializeAssignmentPattern(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxPattern(node.left, pos + 12);
-    serializeBoxExpression(node.right, pos + 16);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 20);
+    let bufferGrownByBytes = serializeBoxPattern(node.left, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeBoxExpression(node.right, (pos += 4));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeExpression(node, pos) {
     switch (node.type) {
         case "ThisExpression":
-            serializeEnum(node, pos, 0, serializeThisExpression, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeThisExpression, 4);
         case "ArrayExpression":
-            serializeEnum(node, pos, 1, serializeArrayExpression, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeArrayExpression, 4);
         case "ObjectExpression":
-            serializeEnum(node, pos, 2, serializeObjectExpression, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeObjectExpression, 4);
         case "FunctionExpression":
-            serializeEnum(node, pos, 3, serializeFunctionExpression, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeFunctionExpression, 4);
         case "UnaryExpression":
-            serializeEnum(node, pos, 4, serializeUnaryExpression, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializeUnaryExpression, 4);
         case "UpdateExpression":
-            serializeEnum(node, pos, 5, serializeUpdateExpression, 4);
-            break;
+            return serializeEnum(node, pos, 5, serializeUpdateExpression, 4);
         case "BinaryExpression":
-            serializeEnum(node, pos, 6, serializeBinaryExpression, 4);
-            break;
+            return serializeEnum(node, pos, 6, serializeBinaryExpression, 4);
         case "AssignmentExpression":
-            serializeEnum(node, pos, 7, serializeAssignmentExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                7,
+                serializeAssignmentExpression,
+                4
+            );
         case "MemberExpression":
-            serializeEnum(node, pos, 8, serializeMemberExpression, 4);
-            break;
+            return serializeEnum(node, pos, 8, serializeMemberExpression, 4);
         case "SuperPropExpression":
-            serializeEnum(node, pos, 9, serializeSuperPropExpression, 4);
-            break;
+            return serializeEnum(node, pos, 9, serializeSuperPropExpression, 4);
         case "ConditionalExpression":
-            serializeEnum(node, pos, 10, serializeConditionalExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                10,
+                serializeConditionalExpression,
+                4
+            );
         case "CallExpression":
-            serializeEnum(node, pos, 11, serializeCallExpression, 4);
-            break;
+            return serializeEnum(node, pos, 11, serializeCallExpression, 4);
         case "NewExpression":
-            serializeEnum(node, pos, 12, serializeNewExpression, 4);
-            break;
+            return serializeEnum(node, pos, 12, serializeNewExpression, 4);
         case "SequenceExpression":
-            serializeEnum(node, pos, 13, serializeSequenceExpression, 4);
-            break;
+            return serializeEnum(node, pos, 13, serializeSequenceExpression, 4);
         case "Identifier":
-            serializeEnum(node, pos, 14, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 14, serializeIdentifier, 4);
         case "StringLiteral":
         case "BooleanLiteral":
         case "NullLiteral":
@@ -869,77 +1407,85 @@ function serializeExpression(node, pos) {
         case "BigIntLiteral":
         case "RegExpLiteral":
         case "JSXText":
-            serializeEnum(node, pos, 15, serializeLiteral, 8);
-            break;
+            return serializeEnum(node, pos, 15, serializeLiteral, 8);
         case "TemplateLiteral":
-            serializeEnum(node, pos, 16, serializeTemplateLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 16, serializeTemplateLiteral, 4);
         case "TaggedTemplateExpression":
-            serializeEnum(node, pos, 17, serializeTaggedTemplateExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                17,
+                serializeTaggedTemplateExpression,
+                4
+            );
         case "ArrowFunctionExpression":
-            serializeEnum(node, pos, 18, serializeArrowFunctionExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                18,
+                serializeArrowFunctionExpression,
+                4
+            );
         case "ClassExpression":
-            serializeEnum(node, pos, 19, serializeClassExpression, 4);
-            break;
+            return serializeEnum(node, pos, 19, serializeClassExpression, 4);
         case "YieldExpression":
-            serializeEnum(node, pos, 20, serializeYieldExpression, 4);
-            break;
+            return serializeEnum(node, pos, 20, serializeYieldExpression, 4);
         case "MetaProperty":
-            serializeEnum(node, pos, 21, serializeMetaProperty, 4);
-            break;
+            return serializeEnum(node, pos, 21, serializeMetaProperty, 4);
         case "AwaitExpression":
-            serializeEnum(node, pos, 22, serializeAwaitExpression, 4);
-            break;
+            return serializeEnum(node, pos, 22, serializeAwaitExpression, 4);
         case "ParenthesisExpression":
-            serializeEnum(node, pos, 23, serializeParenthesisExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                23,
+                serializeParenthesisExpression,
+                4
+            );
         case "JSXMemberExpression":
-            serializeEnum(node, pos, 24, serializeJSXMemberExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                24,
+                serializeJSXMemberExpression,
+                4
+            );
         case "JSXNamespacedName":
-            serializeEnum(node, pos, 25, serializeJSXNamespacedName, 4);
-            break;
+            return serializeEnum(node, pos, 25, serializeJSXNamespacedName, 4);
         case "JSXEmptyExpression":
-            serializeEnum(node, pos, 26, serializeJSXEmptyExpression, 4);
-            break;
+            return serializeEnum(node, pos, 26, serializeJSXEmptyExpression, 4);
         case "JSXElement":
-            serializeEnum(node, pos, 27, serializeBoxJSXElement, 4);
-            break;
+            return serializeEnum(node, pos, 27, serializeBoxJSXElement, 4);
         case "JSXFragment":
-            serializeEnum(node, pos, 28, serializeJSXFragment, 4);
-            break;
+            return serializeEnum(node, pos, 28, serializeJSXFragment, 4);
         case "TsTypeAssertion":
-            serializeEnum(node, pos, 29, serializeTsTypeAssertion, 4);
-            break;
+            return serializeEnum(node, pos, 29, serializeTsTypeAssertion, 4);
         case "TsConstAssertion":
-            serializeEnum(node, pos, 30, serializeTsConstAssertion, 4);
-            break;
+            return serializeEnum(node, pos, 30, serializeTsConstAssertion, 4);
         case "TsNonNullExpression":
-            serializeEnum(node, pos, 31, serializeTsNonNullExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                31,
+                serializeTsNonNullExpression,
+                4
+            );
         case "TsAsExpression":
-            serializeEnum(node, pos, 32, serializeTsAsExpression, 4);
-            break;
+            return serializeEnum(node, pos, 32, serializeTsAsExpression, 4);
         case "TsInstantiation":
-            serializeEnum(node, pos, 33, serializeTsInstantiation, 4);
-            break;
+            return serializeEnum(node, pos, 33, serializeTsInstantiation, 4);
         case "PrivateName":
-            serializeEnum(node, pos, 34, serializePrivateName, 4);
-            break;
+            return serializeEnum(node, pos, 34, serializePrivateName, 4);
         case "OptionalChainingExpression":
-            serializeEnum(
+            return serializeEnum(
                 node,
                 pos,
                 35,
                 serializeOptionalChainingExpression,
                 4
             );
-            break;
         case "Invalid":
-            serializeEnum(node, pos, 36, serializeInvalid, 4);
-            break;
+            return serializeEnum(node, pos, 36, serializeInvalid, 4);
         default:
             throw new Error("Unexpected enum option type for Expression");
     }
@@ -947,17 +1493,18 @@ function serializeExpression(node, pos) {
 
 function serializeThisExpression(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeArrayExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecOptionExpressionOrSpread(node.elements, pos + 12);
+    return serializeVecOptionExpressionOrSpread(node.elements, pos + 12);
 }
 
 function serializeUnaryExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeUnaryOperator(node.operator, pos + 12);
-    serializeBoxExpression(node.argument, pos + 16);
+    serializeUnaryOperator(node.operator, (pos += 12));
+    return serializeBoxExpression(node.argument, pos + 4);
 }
 
 function serializeUnaryOperator(value, pos) {
@@ -986,13 +1533,14 @@ function serializeUnaryOperator(value, pos) {
         default:
             throw new Error("Unexpected enum value for UnaryOperator");
     }
+    return 0;
 }
 
 function serializeUpdateExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeUpdateOperator(node.operator, pos + 12);
-    serializeBoolean(node.prefix, pos + 16);
-    serializeBoxExpression(node.argument, pos + 20);
+    serializeUpdateOperator(node.operator, (pos += 12));
+    serializeBoolean(node.prefix, (pos += 4));
+    return serializeBoxExpression(node.argument, pos + 4);
 }
 
 function serializeUpdateOperator(value, pos) {
@@ -1006,13 +1554,16 @@ function serializeUpdateOperator(value, pos) {
         default:
             throw new Error("Unexpected enum value for UpdateOperator");
     }
+    return 0;
 }
 
 function serializeBinaryExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBinaryOperator(node.operator, pos + 12);
-    serializeBoxExpression(node.left, pos + 16);
-    serializeBoxExpression(node.right, pos + 20);
+    serializeBinaryOperator(node.operator, (pos += 12));
+    const bufferGrownByBytes = serializeBoxExpression(node.left, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxExpression(node.right, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeBinaryOperator(value, pos) {
@@ -1095,15 +1646,19 @@ function serializeBinaryOperator(value, pos) {
         default:
             throw new Error("Unexpected enum value for BinaryOperator");
     }
+    return 0;
 }
 
 function serializeAssignmentExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeAssignmentOperator(node.operator, pos + 12);
-    node.operator === "="
-        ? serializeAssignmentLeftEquals(node.left, pos + 16)
-        : serializeAssignmentLeft(node.left, pos + 16);
-    serializeBoxExpression(node.right, pos + 24);
+    serializeAssignmentOperator(node.operator, (pos += 12));
+    const bufferGrownByBytes =
+        node.operator === "="
+            ? serializeAssignmentLeftEquals(node.left, (pos += 4))
+            : serializeAssignmentLeft(node.left, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxExpression(node.right, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeAssignmentLeft(node, pos) {
@@ -1151,14 +1706,12 @@ function serializeAssignmentLeft(node, pos) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            serializeEnum(node, pos, 0, serializeBoxExpression, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeBoxExpression, 4);
         case "ArrayPattern":
         case "RestElement":
         case "ObjectPattern":
         case "AssignmentPattern":
-            serializeEnum(node, pos, 1, serializeBoxPattern, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeBoxPattern, 4);
         default:
             throw new Error("Unexpected enum option type for AssignmentLeft");
     }
@@ -1166,7 +1719,7 @@ function serializeAssignmentLeft(node, pos) {
 
 function serializeAssignmentLeftEquals(node, pos) {
     uint32[pos >>> 2] = 1;
-    serializeBoxPattern(node, pos + 4);
+    return serializeBoxPattern(node, pos + 4);
 }
 
 function serializeAssignmentOperator(value, pos) {
@@ -1222,81 +1775,161 @@ function serializeAssignmentOperator(value, pos) {
         default:
             throw new Error("Unexpected enum value for AssignmentOperator");
     }
+    return 0;
 }
 
 function serializeMemberExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.object, pos + 12);
-    serializeIdentifierOrPrivateNameOrComputed(node.property, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(node.object, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeIdentifierOrPrivateNameOrComputed(node.property, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeSuperPropExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeSuper(node.obj, pos + 12);
-    serializeIdentifierOrComputed(node.property, pos + 24);
+    serializeSuper(node.obj, (pos += 12));
+    return serializeIdentifierOrComputed(node.property, pos + 12);
 }
 
 function serializeConditionalExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.test, pos + 12);
-    serializeBoxExpression(node.consequent, pos + 16);
-    serializeBoxExpression(node.alternate, pos + 20);
+    let bufferGrownByBytes = serializeBoxExpression(node.test, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeBoxExpression(
+        node.consequent,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return serializeBoxExpression(node.alternate, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeCallExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeSuperOrImportOrBoxExpression(node.callee, pos + 12);
-    serializeVecExpressionOrSpread(node.arguments, pos + 28);
-    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 36);
+    let bufferGrownByBytes = serializeSuperOrImportOrBoxExpression(
+        node.callee,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeVecExpressionOrSpread(
+        node.arguments,
+        (pos += 16)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeParameterInstantiation(
+            node.typeArguments,
+            pos + 8
+        ) + bufferGrownByBytes
+    );
 }
 
 function serializeNewExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.callee, pos + 12);
-    serializeOptionVecExpressionOrSpread(node.arguments, pos + 16);
-    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 28);
+    let bufferGrownByBytes = serializeBoxExpression(node.callee, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionVecExpressionOrSpread(
+        node.arguments,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeParameterInstantiation(
+            node.typeArguments,
+            pos + 12
+        ) + bufferGrownByBytes
+    );
 }
 
 function serializeSequenceExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecBoxExpression(node.expressions, pos + 12);
+    return serializeVecBoxExpression(node.expressions, pos + 12);
 }
 
 function serializeIdentifier(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJsWord(node.value, pos + 12);
-    serializeBoolean(node.optional, pos + 20);
+    const bufferGrownByBytes = serializeJsWord(node.value, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.optional, pos + 8);
+    return bufferGrownByBytes;
 }
 
 function serializeTemplateLiteral(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecBoxExpression(node.expressions, pos + 12);
-    serializeVecTemplateElement(node.quasis, pos + 20);
+    const bufferGrownByBytes = serializeVecBoxExpression(
+        node.expressions,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeVecTemplateElement(node.quasis, pos + 8) + bufferGrownByBytes
+    );
 }
 
 function serializeTemplateElement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.tail, pos + 12);
-    serializeOptionJsWord(node.cooked, pos + 16);
-    serializeJsWord(node.raw, pos + 28);
+    serializeBoolean(node.tail, (pos += 12));
+    const bufferGrownByBytes = serializeOptionJsWord(node.cooked, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeJsWord(node.raw, pos + 12) + bufferGrownByBytes;
 }
 
 function serializeTaggedTemplateExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.tag, pos + 12);
-    serializeOptionTsTypeParameterInstantiation(node.typeParameters, pos + 16);
-    serializeTemplateLiteral(node.template, pos + 40);
+    let bufferGrownByBytes = serializeBoxExpression(node.tag, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionTsTypeParameterInstantiation(
+        node.typeParameters,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeTemplateLiteral(node.template, pos + 24) + bufferGrownByBytes
+    );
 }
 
 function serializeYieldExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionBoxExpression(node.argument, pos + 12);
-    serializeBoolean(node.delegate, pos + 20);
+    const bufferGrownByBytes = serializeOptionBoxExpression(
+        node.argument,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.delegate, pos + 8);
+    return bufferGrownByBytes;
 }
 
 function serializeMetaProperty(node, pos) {
     serializeSpan(node.span, pos);
     serializeMetaPropertyKind(node.kind, pos + 12);
+    return 0;
 }
 
 function serializeMetaPropertyKind(value, pos) {
@@ -1310,146 +1943,216 @@ function serializeMetaPropertyKind(value, pos) {
         default:
             throw new Error("Unexpected enum value for MetaPropertyKind");
     }
+    return 0;
 }
 
 function serializeAwaitExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.argument, pos + 12);
+    return serializeBoxExpression(node.argument, pos + 12);
 }
 
 function serializeParenthesisExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializePrivateName(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.id, pos + 12);
+    return serializeIdentifier(node.id, pos + 12);
 }
 
 function serializeOptionalChainingExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeSpan(node.questionDotToken, pos + 12);
-    serializeMemberExpressionOrOptionalChainingCall(node.base, pos + 24);
+    serializeSpan(node.questionDotToken, (pos += 12));
+    return serializeMemberExpressionOrOptionalChainingCall(node.base, pos + 12);
 }
 
 function serializeOptionalChainingCall(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.callee, pos + 12);
-    serializeVecExpressionOrSpread(node.arguments, pos + 16);
-    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 24);
+    let bufferGrownByBytes = serializeBoxExpression(node.callee, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeVecExpressionOrSpread(
+        node.arguments,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeParameterInstantiation(
+            node.typeArguments,
+            pos + 8
+        ) + bufferGrownByBytes
+    );
 }
 
 function serializeSuper(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeImport(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeInvalid(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeComputed(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializeExpressionOrSpread(node, pos) {
     serializeOptionSpan(node.spread, pos);
-    serializeBoxExpression(node.expression, pos + 16);
+    return serializeBoxExpression(node.expression, pos + 16);
 }
 
 function serializeObjectExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecSpreadElementOrBoxObjectProperty(node.properties, pos + 12);
+    return serializeVecSpreadElementOrBoxObjectProperty(
+        node.properties,
+        pos + 12
+    );
 }
 
 function serializeSpreadElement(node, pos) {
     serializeSpan(node.spread, pos);
-    serializeBoxExpression(node.arguments, pos + 12);
+    return serializeBoxExpression(node.arguments, pos + 12);
 }
 
 function serializeObjectProperty(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "KeyValueProperty":
-            serializeEnum(node, pos, 1, serializeKeyValueProperty, 8);
-            break;
+            return serializeEnum(node, pos, 1, serializeKeyValueProperty, 8);
         case "AssignmentProperty":
-            serializeEnum(node, pos, 2, serializeAssignmentProperty, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeAssignmentProperty, 4);
         case "GetterProperty":
-            serializeEnum(node, pos, 3, serializeGetterProperty, 8);
-            break;
+            return serializeEnum(node, pos, 3, serializeGetterProperty, 8);
         case "SetterProperty":
-            serializeEnum(node, pos, 4, serializeSetterProperty, 8);
-            break;
+            return serializeEnum(node, pos, 4, serializeSetterProperty, 8);
         case "MethodProperty":
-            serializeEnum(node, pos, 5, serializeMethodProperty, 8);
-            break;
+            return serializeEnum(node, pos, 5, serializeMethodProperty, 8);
         default:
             throw new Error("Unexpected enum option type for ObjectProperty");
     }
 }
 
 function serializeKeyValueProperty(node, pos) {
-    serializePropertyName(node.key, pos);
-    serializeBoxExpression(node.value, pos + 48);
+    const bufferGrownByBytes = serializePropertyName(node.key, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxExpression(node.value, pos + 48) + bufferGrownByBytes;
 }
 
 function serializeAssignmentProperty(node, pos) {
-    serializeIdentifier(node.key, pos);
-    serializeBoxExpression(node.value, pos + 24);
+    const bufferGrownByBytes = serializeIdentifier(node.key, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxExpression(node.value, pos + 24) + bufferGrownByBytes;
 }
 
 function serializeGetterProperty(node, pos) {
     serializeSpan(node.span, pos);
-    serializePropertyName(node.key, pos + 16);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 64);
-    serializeOptionBlockStatement(node.body, pos + 84);
+    let bufferGrownByBytes = serializePropertyName(node.key, (pos += 16));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionTsTypeAnnotation(
+        node.typeAnnotation,
+        (pos += 48)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionBlockStatement(node.body, pos + 20) + bufferGrownByBytes
+    );
 }
 
 function serializeSetterProperty(node, pos) {
     serializeSpan(node.span, pos);
-    serializePropertyName(node.key, pos + 16);
-    serializePattern(node.param, pos + 64);
-    serializeOptionBlockStatement(node.body, pos + 116);
+    let bufferGrownByBytes = serializePropertyName(node.key, (pos += 16));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializePattern(node.param, (pos += 48));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionBlockStatement(node.body, pos + 52) + bufferGrownByBytes
+    );
 }
 
 function serializeMethodProperty(node, pos) {
-    serializePropertyName(node.key, pos);
-    serializeVecParameter(node.params, pos + 48);
-    serializeVecDecorator(node.decorators, pos + 56);
-    serializeSpan(node.span, pos + 64);
-    serializeOptionBlockStatement(node.body, pos + 76);
-    serializeBoolean(node.generator, pos + 100);
-    serializeBoolean(node.async, pos + 101);
-    serializeOptionTsTypeParameterDeclaration(node.typeParameters, pos + 104);
-    serializeOptionTsTypeAnnotation(node.returnType, pos + 128);
+    let bufferGrownByBytes = serializePropertyName(node.key, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeVecParameter(
+        node.params,
+        (pos += 48)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeVecDecorator(node.decorators, (pos += 8));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeSpan(node.span, (pos += 8));
+    thisBufferGrownByBytes = serializeOptionBlockStatement(
+        node.body,
+        (pos += 12)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.generator, (pos += 24));
+    serializeBoolean(node.async, (pos += 1));
+    thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParameters,
+        (pos += 3)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeAnnotation(node.returnType, pos + 24) +
+        bufferGrownByBytes
+    );
 }
 
 function serializePropertyName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "StringLiteral":
-            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeStringLiteral, 4);
         case "NumericLiteral":
-            serializeEnum(node, pos, 2, serializeNumericLiteral, 8);
-            break;
+            return serializeEnum(node, pos, 2, serializeNumericLiteral, 8);
         case "Computed":
-            serializeEnum(node, pos, 3, serializeComputed, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeComputed, 4);
         case "BigIntLiteral":
-            serializeEnum(node, pos, 4, serializeBigIntLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializeBigIntLiteral, 4);
         default:
             throw new Error("Unexpected enum option type for PropertyName");
     }
@@ -1458,26 +2161,19 @@ function serializePropertyName(node, pos) {
 function serializeLiteral(node, pos) {
     switch (node.type) {
         case "StringLiteral":
-            serializeEnum(node, pos, 0, serializeStringLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeStringLiteral, 4);
         case "BooleanLiteral":
-            serializeEnum(node, pos, 1, serializeBooleanLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeBooleanLiteral, 4);
         case "NullLiteral":
-            serializeEnum(node, pos, 2, serializeNullLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeNullLiteral, 4);
         case "NumericLiteral":
-            serializeEnum(node, pos, 3, serializeNumericLiteral, 8);
-            break;
+            return serializeEnum(node, pos, 3, serializeNumericLiteral, 8);
         case "BigIntLiteral":
-            serializeEnum(node, pos, 4, serializeBigIntLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializeBigIntLiteral, 4);
         case "RegExpLiteral":
-            serializeEnum(node, pos, 5, serializeRegExpLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 5, serializeRegExpLiteral, 4);
         case "JSXText":
-            serializeEnum(node, pos, 6, serializeJSXText, 4);
-            break;
+            return serializeEnum(node, pos, 6, serializeJSXText, 4);
         default:
             throw new Error("Unexpected enum option type for Literal");
     }
@@ -1485,82 +2181,124 @@ function serializeLiteral(node, pos) {
 
 function serializeStringLiteral(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJsWord(node.value, pos + 12);
-    serializeOptionJsWord(node.raw, pos + 20);
+    const bufferGrownByBytes = serializeJsWord(node.value, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeOptionJsWord(node.raw, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeBooleanLiteral(node, pos) {
     serializeSpan(node.span, pos);
     serializeBoolean(node.value, pos + 12);
+    return 0;
 }
 
 function serializeNullLiteral(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeNumericLiteral(node, pos) {
     serializeSpan(node.span, pos);
-    serializeNumber(node.value, pos + 16);
-    serializeOptionAsciiJsWord(node.raw, pos + 24);
+    serializeNumber(node.value, (pos += 16));
+    return serializeOptionAsciiJsWord(node.raw, pos + 8);
 }
 
 function serializeBigIntLiteral(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBigIntValue(node.value, pos + 12);
-    serializeOptionAsciiJsWord(node.raw, pos + 20);
+    const bufferGrownByBytes = serializeBigIntValue(node.value, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeOptionAsciiJsWord(node.raw, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeBigIntValue(value, pos) {
-    if (value[0] === 0) {
-        serializeAsciiJsWord("0", pos);
-    } else {
-        const parts = value[1];
-        let num = 0n;
-        for (let i = parts.length - 1; i >= 0; i--) {
-            num <<= 32n;
-            num += BigInt(parts[i]);
-        }
-        let str = num.toString();
-        if (value[0] === -1) str = `-${str}`;
-        serializeAsciiJsWord(str, pos);
+    if (value[0] === 0) return serializeAsciiJsWord("0", pos);
+    const parts = value[1];
+    let num = 0n;
+    for (let i = parts.length - 1; i >= 0; i--) {
+        num <<= 32n;
+        num += BigInt(parts[i]);
     }
+    let str = num.toString();
+    if (value[0] === -1) str = `-${str}`;
+    return serializeAsciiJsWord(str, pos);
 }
 
 function serializeRegExpLiteral(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJsWord(node.pattern, pos + 12);
-    serializeAsciiJsWord(node.flags, pos + 20);
+    const bufferGrownByBytes = serializeJsWord(node.pattern, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeAsciiJsWord(node.flags, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeJSXElement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJSXOpeningElement(node.opening, pos + 12);
-    serializeVecJSXElementChild(node.children, pos + 116);
-    serializeOptionJSXClosingElement(node.closing, pos + 124);
+    let bufferGrownByBytes = serializeJSXOpeningElement(
+        node.opening,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeVecJSXElementChild(
+        node.children,
+        (pos += 104)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionJSXClosingElement(node.closing, pos + 8) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeJSXOpeningElement(node, pos) {
-    serializeJSXElementName(node.name, pos);
-    serializeSpan(node.span, pos + 56);
-    serializeVecJSXAttributeOrSpreadElement(node.attributes, pos + 68);
-    serializeBoolean(node.selfClosing, pos + 76);
-    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 80);
+    let bufferGrownByBytes = serializeJSXElementName(node.name, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeSpan(node.span, (pos += 56));
+    let thisBufferGrownByBytes = serializeVecJSXAttributeOrSpreadElement(
+        node.attributes,
+        (pos += 12)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.selfClosing, (pos += 8));
+    return (
+        serializeOptionTsTypeParameterInstantiation(
+            node.typeArguments,
+            pos + 4
+        ) + bufferGrownByBytes
+    );
 }
 
 function serializeJSXAttribute(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJSXAttributeName(node.name, pos + 12);
-    serializeOptionJSXAttributeValue(node.value, pos + 64);
+    const bufferGrownByBytes = serializeJSXAttributeName(
+        node.name,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionJSXAttributeValue(node.value, pos + 52) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeJSXAttributeName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "JSXNamespacedName":
-            serializeEnum(node, pos, 1, serializeJSXNamespacedName, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeJSXNamespacedName, 4);
         default:
             throw new Error("Unexpected enum option type for JSXAttributeName");
     }
@@ -1575,17 +2313,19 @@ function serializeJSXAttributeValue(node, pos) {
         case "BigIntLiteral":
         case "RegExpLiteral":
         case "JSXText":
-            serializeEnum(node, pos, 0, serializeLiteral, 8);
-            break;
+            return serializeEnum(node, pos, 0, serializeLiteral, 8);
         case "JSXExpressionContainer":
-            serializeEnum(node, pos, 1, serializeJSXExpressionContainer, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                1,
+                serializeJSXExpressionContainer,
+                4
+            );
         case "JSXElement":
-            serializeEnum(node, pos, 2, serializeBoxJSXElement, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeBoxJSXElement, 4);
         case "JSXFragment":
-            serializeEnum(node, pos, 3, serializeJSXFragment, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeJSXFragment, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for JSXAttributeValue"
@@ -1595,74 +2335,94 @@ function serializeJSXAttributeValue(node, pos) {
 
 function serializeJSXClosingElement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJSXElementName(node.name, pos + 12);
+    return serializeJSXElementName(node.name, pos + 12);
 }
 
 function serializeJSXFragment(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJSXOpeningFragment(node.opening, pos + 12);
-    serializeVecJSXElementChild(node.children, pos + 24);
-    serializeJSXClosingFragment(node.closing, pos + 32);
+    serializeJSXOpeningFragment(node.opening, (pos += 12));
+    const bufferGrownByBytes = serializeVecJSXElementChild(
+        node.children,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeJSXClosingFragment(node.closing, pos + 8);
+    return bufferGrownByBytes;
 }
 
 function serializeJSXOpeningFragment(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeJSXClosingFragment(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeJSXMemberExpression(node, pos) {
-    serializeJSXObject(node.object, pos);
-    serializeIdentifier(node.property, pos + 28);
+    const bufferGrownByBytes = serializeJSXObject(node.object, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeIdentifier(node.property, pos + 28) + bufferGrownByBytes;
 }
 
 function serializeJSXObject(node, pos) {
     switch (node.type) {
         case "JSXMemberExpression":
-            serializeEnum(node, pos, 0, serializeBoxJSXMemberExpression, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                0,
+                serializeBoxJSXMemberExpression,
+                4
+            );
         case "Identifier":
-            serializeEnum(node, pos, 1, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeIdentifier, 4);
         default:
             throw new Error("Unexpected enum option type for JSXObject");
     }
 }
 
 function serializeJSXNamespacedName(node, pos) {
-    serializeIdentifier(node.namespace, pos);
-    serializeIdentifier(node.name, pos + 24);
+    const bufferGrownByBytes = serializeIdentifier(node.namespace, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeIdentifier(node.name, pos + 24) + bufferGrownByBytes;
 }
 
 function serializeJSXText(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJsWord(node.value, pos + 12);
-    serializeJsWord(node.raw, pos + 20);
+    const bufferGrownByBytes = serializeJsWord(node.value, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeJsWord(node.raw, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeJSXEmptyExpression(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeJSXElementChild(node, pos) {
     switch (node.type) {
         case "JSXText":
-            serializeEnum(node, pos, 0, serializeJSXText, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeJSXText, 4);
         case "JSXExpressionContainer":
-            serializeEnum(node, pos, 1, serializeJSXExpressionContainer, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                1,
+                serializeJSXExpressionContainer,
+                4
+            );
         case "JSXSpreadChild":
-            serializeEnum(node, pos, 2, serializeJSXSpreadChild, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeJSXSpreadChild, 4);
         case "JSXElement":
-            serializeEnum(node, pos, 3, serializeBoxJSXElement, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeBoxJSXElement, 4);
         case "JSXFragment":
-            serializeEnum(node, pos, 4, serializeJSXFragment, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializeJSXFragment, 4);
         default:
             throw new Error("Unexpected enum option type for JSXElementChild");
     }
@@ -1670,14 +2430,13 @@ function serializeJSXElementChild(node, pos) {
 
 function serializeJSXExpressionContainer(node, pos) {
     serializeSpan(node.span, pos);
-    serializeJSXExpression(node.expression, pos + 12);
+    return serializeJSXExpression(node.expression, pos + 12);
 }
 
 function serializeJSXExpression(node, pos) {
     switch (node.type) {
         case "JSXEmptyExpression":
-            serializeEnum(node, pos, 0, serializeJSXEmptyExpression, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeJSXEmptyExpression, 4);
         case "ThisExpression":
         case "ArrayExpression":
         case "ObjectExpression":
@@ -1720,8 +2479,7 @@ function serializeJSXExpression(node, pos) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            serializeEnum(node, pos, 1, serializeBoxExpression, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeBoxExpression, 4);
         default:
             throw new Error("Unexpected enum option type for JSXExpression");
     }
@@ -1729,20 +2487,17 @@ function serializeJSXExpression(node, pos) {
 
 function serializeJSXSpreadChild(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializeJSXElementName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "JSXMemberExpression":
-            serializeEnum(node, pos, 1, serializeJSXMemberExpression, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeJSXMemberExpression, 4);
         case "JSXNamespacedName":
-            serializeEnum(node, pos, 2, serializeJSXNamespacedName, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeJSXNamespacedName, 4);
         default:
             throw new Error("Unexpected enum option type for JSXElementName");
     }
@@ -1750,63 +2505,76 @@ function serializeJSXElementName(node, pos) {
 
 function serializeTsTypeAnnotation(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxTsType(node.typeAnnotation, pos + 12);
+    return serializeBoxTsType(node.typeAnnotation, pos + 12);
 }
 
 function serializeTsTypeParameterDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecTsTypeParameter(node.parameters, pos + 12);
+    return serializeVecTsTypeParameter(node.parameters, pos + 12);
 }
 
 function serializeTsTypeParameter(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.name, pos + 12);
-    serializeBoolean(node.in, pos + 36);
-    serializeBoolean(node.out, pos + 37);
-    serializeOptionBoxTsType(node.constraint, pos + 40);
-    serializeOptionBoxTsType(node.default, pos + 48);
+    let bufferGrownByBytes = serializeIdentifier(node.name, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.in, (pos += 24));
+    serializeBoolean(node.out, (pos += 1));
+    let thisBufferGrownByBytes = serializeOptionBoxTsType(
+        node.constraint,
+        (pos += 3)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return serializeOptionBoxTsType(node.default, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeTsTypeParameterInstantiation(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecBoxTsType(node.params, pos + 12);
+    return serializeVecBoxTsType(node.params, pos + 12);
 }
 
 function serializeTsParameterProperty(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecDecorator(node.decorators, pos + 12);
-    serializeOptionAccessibility(node.accessibility, pos + 20);
-    serializeBoolean(node.override, pos + 28);
-    serializeBoolean(node.readonly, pos + 29);
-    serializeTsParamPropParam(node.param, pos + 32);
+    const bufferGrownByBytes = serializeVecDecorator(
+        node.decorators,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeOptionAccessibility(node.accessibility, (pos += 8));
+    serializeBoolean(node.override, (pos += 8));
+    serializeBoolean(node.readonly, (pos += 1));
+    return serializeTsParamPropParam(node.param, pos + 3) + bufferGrownByBytes;
 }
 
 function serializeTsParamPropParam(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
         case "AssignmentPattern":
-            serializeEnum(node, pos, 1, serializeAssignmentPattern, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeAssignmentPattern, 4);
         default:
             throw new Error("Unexpected enum option type for TsParamPropParam");
     }
 }
 
 function serializeTsQualifiedName(node, pos) {
-    serializeTsEntityName(node.left, pos);
-    serializeIdentifier(node.right, pos + 28);
+    const bufferGrownByBytes = serializeTsEntityName(node.left, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeIdentifier(node.right, pos + 28) + bufferGrownByBytes;
 }
 
 function serializeTsEntityName(node, pos) {
     switch (node.type) {
         case "TsQualifiedName":
-            serializeEnum(node, pos, 0, serializeBoxTsQualifiedName, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeBoxTsQualifiedName, 4);
         case "Identifier":
-            serializeEnum(node, pos, 1, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeIdentifier, 4);
         default:
             throw new Error("Unexpected enum option type for TsEntityName");
     }
@@ -1815,32 +2583,31 @@ function serializeTsEntityName(node, pos) {
 function serializeTsTypeElement(node, pos) {
     switch (node.type) {
         case "TsCallSignatureDeclaration":
-            serializeEnum(node, pos, 0, serializeTsCallSignatureDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                0,
+                serializeTsCallSignatureDeclaration,
+                4
+            );
         case "TsConstructSignatureDeclaration":
-            serializeEnum(
+            return serializeEnum(
                 node,
                 pos,
                 1,
                 serializeTsConstructSignatureDeclaration,
                 4
             );
-            break;
         case "TsPropertySignature":
-            serializeEnum(node, pos, 2, serializeTsPropertySignature, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeTsPropertySignature, 4);
         case "TsGetterSignature":
-            serializeEnum(node, pos, 3, serializeTsGetterSignature, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeTsGetterSignature, 4);
         case "TsSetterSignature":
-            serializeEnum(node, pos, 4, serializeTsSetterSignature, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializeTsSetterSignature, 4);
         case "TsMethodSignature":
-            serializeEnum(node, pos, 5, serializeTsMethodSignature, 4);
-            break;
+            return serializeEnum(node, pos, 5, serializeTsMethodSignature, 4);
         case "TsIndexSignature":
-            serializeEnum(node, pos, 6, serializeTsIndexSignature, 4);
-            break;
+            return serializeEnum(node, pos, 6, serializeTsIndexSignature, 4);
         default:
             throw new Error("Unexpected enum option type for TsTypeElement");
     }
@@ -1848,131 +2615,223 @@ function serializeTsTypeElement(node, pos) {
 
 function serializeTsCallSignatureDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecTsFnParam(node.params, pos + 12);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 20);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 40);
+    let bufferGrownByBytes = serializeVecTsFnParam(node.params, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionTsTypeAnnotation(
+        node.typeAnnotation,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 20) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsConstructSignatureDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecTsFnParam(node.params, pos + 12);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 20);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 40);
+    let bufferGrownByBytes = serializeVecTsFnParam(node.params, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionTsTypeAnnotation(
+        node.typeAnnotation,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 20) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsPropertySignature(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.readonly, pos + 12);
-    serializeBoxExpression(node.key, pos + 16);
-    serializeBoolean(node.computed, pos + 20);
-    serializeBoolean(node.optional, pos + 21);
-    serializeOptionBoxExpression(node.init, pos + 24);
-    serializeVecTsFnParam(node.params, pos + 32);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 40);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 60);
+    serializeBoolean(node.readonly, (pos += 12));
+    let bufferGrownByBytes = serializeBoxExpression(node.key, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.computed, (pos += 4));
+    serializeBoolean(node.optional, (pos += 1));
+    let thisBufferGrownByBytes = serializeOptionBoxExpression(
+        node.init,
+        (pos += 3)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeVecTsFnParam(node.params, (pos += 8));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionTsTypeAnnotation(
+        node.typeAnnotation,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 20) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsGetterSignature(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.readonly, pos + 12);
-    serializeBoxExpression(node.key, pos + 16);
-    serializeBoolean(node.computed, pos + 20);
-    serializeBoolean(node.optional, pos + 21);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 24);
+    serializeBoolean(node.readonly, (pos += 12));
+    const bufferGrownByBytes = serializeBoxExpression(node.key, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.computed, (pos += 4));
+    serializeBoolean(node.optional, (pos += 1));
+    return (
+        serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 3) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsSetterSignature(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.readonly, pos + 12);
-    serializeBoxExpression(node.key, pos + 16);
-    serializeBoolean(node.computed, pos + 20);
-    serializeBoolean(node.optional, pos + 21);
-    serializeTsFnParam(node.param, pos + 24);
+    serializeBoolean(node.readonly, (pos += 12));
+    const bufferGrownByBytes = serializeBoxExpression(node.key, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.computed, (pos += 4));
+    serializeBoolean(node.optional, (pos += 1));
+    return serializeTsFnParam(node.param, pos + 3) + bufferGrownByBytes;
 }
 
 function serializeTsMethodSignature(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.readonly, pos + 12);
-    serializeBoxExpression(node.key, pos + 16);
-    serializeBoolean(node.computed, pos + 20);
-    serializeBoolean(node.optional, pos + 21);
-    serializeVecTsFnParam(node.params, pos + 24);
-    serializeOptionTsTypeAnnotation(node.typeAnn, pos + 32);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 52);
+    serializeBoolean(node.readonly, (pos += 12));
+    let bufferGrownByBytes = serializeBoxExpression(node.key, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.computed, (pos += 4));
+    serializeBoolean(node.optional, (pos += 1));
+    let thisBufferGrownByBytes = serializeVecTsFnParam(node.params, (pos += 3));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeOptionTsTypeAnnotation(
+        node.typeAnn,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 20) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsIndexSignature(node, pos) {
-    serializeVecTsFnParam(node.params, pos);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 8);
-    serializeBoolean(node.readonly, pos + 28);
-    serializeBoolean(node.static, pos + 29);
-    serializeSpan(node.span, pos + 32);
+    let bufferGrownByBytes = serializeVecTsFnParam(node.params, pos);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    const thisBufferGrownByBytes = serializeOptionTsTypeAnnotation(
+        node.typeAnnotation,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.readonly, (pos += 20));
+    serializeBoolean(node.static, (pos += 1));
+    serializeSpan(node.span, pos + 3);
+    return bufferGrownByBytes;
 }
 
 function serializeTsType(node, pos) {
     switch (node.type) {
         case "TsKeywordType":
-            serializeEnum(node, pos, 0, serializeTsKeywordType, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeTsKeywordType, 4);
         case "TsThisType":
-            serializeEnum(node, pos, 1, serializeTsThisType, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeTsThisType, 4);
         case "TsFunctionType":
         case "TsConstructorType":
-            serializeEnum(node, pos, 2, serializeTsFnOrConstructorType, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                2,
+                serializeTsFnOrConstructorType,
+                4
+            );
         case "TsTypeReference":
-            serializeEnum(node, pos, 3, serializeTsTypeReference, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeTsTypeReference, 4);
         case "TsTypeQuery":
-            serializeEnum(node, pos, 4, serializeTsTypeQuery, 4);
-            break;
+            return serializeEnum(node, pos, 4, serializeTsTypeQuery, 4);
         case "TsTypeLiteral":
-            serializeEnum(node, pos, 5, serializeTsTypeLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 5, serializeTsTypeLiteral, 4);
         case "TsArrayType":
-            serializeEnum(node, pos, 6, serializeTsArrayType, 4);
-            break;
+            return serializeEnum(node, pos, 6, serializeTsArrayType, 4);
         case "TsTupleType":
-            serializeEnum(node, pos, 7, serializeTsTupleType, 4);
-            break;
+            return serializeEnum(node, pos, 7, serializeTsTupleType, 4);
         case "TsOptionalType":
-            serializeEnum(node, pos, 8, serializeTsOptionalType, 4);
-            break;
+            return serializeEnum(node, pos, 8, serializeTsOptionalType, 4);
         case "TsRestType":
-            serializeEnum(node, pos, 9, serializeTsRestType, 4);
-            break;
+            return serializeEnum(node, pos, 9, serializeTsRestType, 4);
         case "TsUnionType":
         case "TsIntersectionType":
-            serializeEnum(node, pos, 10, serializeTsUnionOrIntersectionType, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                10,
+                serializeTsUnionOrIntersectionType,
+                4
+            );
         case "TsConditionalType":
-            serializeEnum(node, pos, 11, serializeTsConditionalType, 4);
-            break;
+            return serializeEnum(node, pos, 11, serializeTsConditionalType, 4);
         case "TsInferType":
-            serializeEnum(node, pos, 12, serializeTsInferType, 4);
-            break;
+            return serializeEnum(node, pos, 12, serializeTsInferType, 4);
         case "TsParenthesizedType":
-            serializeEnum(node, pos, 13, serializeTsParenthesizedType, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                13,
+                serializeTsParenthesizedType,
+                4
+            );
         case "TsTypeOperator":
-            serializeEnum(node, pos, 14, serializeTsTypeOperator, 4);
-            break;
+            return serializeEnum(node, pos, 14, serializeTsTypeOperator, 4);
         case "TsIndexedAccessType":
-            serializeEnum(node, pos, 15, serializeTsIndexedAccessType, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                15,
+                serializeTsIndexedAccessType,
+                4
+            );
         case "TsMappedType":
-            serializeEnum(node, pos, 16, serializeTsMappedType, 4);
-            break;
+            return serializeEnum(node, pos, 16, serializeTsMappedType, 4);
         case "TsLiteralType":
-            serializeEnum(node, pos, 17, serializeTsLiteralType, 8);
-            break;
+            return serializeEnum(node, pos, 17, serializeTsLiteralType, 8);
         case "TsTypePredicate":
-            serializeEnum(node, pos, 18, serializeTsTypePredicate, 4);
-            break;
+            return serializeEnum(node, pos, 18, serializeTsTypePredicate, 4);
         case "TsImportType":
-            serializeEnum(node, pos, 19, serializeTsImportType, 4);
-            break;
+            return serializeEnum(node, pos, 19, serializeTsImportType, 4);
         default:
             throw new Error("Unexpected enum option type for TsType");
     }
@@ -1981,11 +2840,9 @@ function serializeTsType(node, pos) {
 function serializeTsFnOrConstructorType(node, pos) {
     switch (node.type) {
         case "TsFunctionType":
-            serializeEnum(node, pos, 0, serializeTsFunctionType, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeTsFunctionType, 4);
         case "TsConstructorType":
-            serializeEnum(node, pos, 1, serializeTsConstructorType, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeTsConstructorType, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for TsFnOrConstructorType"
@@ -1996,6 +2853,7 @@ function serializeTsFnOrConstructorType(node, pos) {
 function serializeTsKeywordType(node, pos) {
     serializeSpan(node.span, pos);
     serializeTsKeywordTypeKind(node.kind, pos + 12);
+    return 0;
 }
 
 function serializeTsKeywordTypeKind(value, pos) {
@@ -2042,26 +2900,24 @@ function serializeTsKeywordTypeKind(value, pos) {
         default:
             throw new Error("Unexpected enum value for TsKeywordTypeKind");
     }
+    return 0;
 }
 
 function serializeTsThisType(node, pos) {
     serializeSpan(node.span, pos);
+    return 0;
 }
 
 function serializeTsFnParam(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeBindingIdentifier, 4);
         case "ArrayPattern":
-            serializeEnum(node, pos, 1, serializeArrayPattern, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeArrayPattern, 4);
         case "RestElement":
-            serializeEnum(node, pos, 2, serializeRestElement, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeRestElement, 4);
         case "ObjectPattern":
-            serializeEnum(node, pos, 3, serializeObjectPattern, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeObjectPattern, 4);
         default:
             throw new Error("Unexpected enum option type for TsFnParam");
     }
@@ -2069,40 +2925,86 @@ function serializeTsFnParam(node, pos) {
 
 function serializeTsFunctionType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecTsFnParam(node.params, pos + 12);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 20);
-    serializeTsTypeAnnotation(node.typeAnnotation, pos + 44);
+    let bufferGrownByBytes = serializeVecTsFnParam(node.params, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParams,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeTsTypeAnnotation(node.typeAnnotation, pos + 24) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsConstructorType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecTsFnParam(node.params, pos + 12);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 20);
-    serializeTsTypeAnnotation(node.typeAnnotation, pos + 44);
-    serializeBoolean(node.isAbstract, pos + 60);
+    let bufferGrownByBytes = serializeVecTsFnParam(node.params, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParams,
+        (pos += 8)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeTsTypeAnnotation(
+        node.typeAnnotation,
+        (pos += 24)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeBoolean(node.isAbstract, pos + 16);
+    return bufferGrownByBytes;
 }
 
 function serializeTsTypeReference(node, pos) {
     serializeSpan(node.span, pos);
-    serializeTsEntityName(node.typeName, pos + 12);
-    serializeOptionTsTypeParameterInstantiation(node.typeParams, pos + 40);
+    const bufferGrownByBytes = serializeTsEntityName(
+        node.typeName,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionTsTypeParameterInstantiation(node.typeParams, pos + 28) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsTypePredicate(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.asserts, pos + 12);
-    serializeTsThisTypeOrIdent(node.paramName, pos + 16);
-    serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 44);
+    serializeBoolean(node.asserts, (pos += 12));
+    const bufferGrownByBytes = serializeTsThisTypeOrIdent(
+        node.paramName,
+        (pos += 4)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionTsTypeAnnotation(node.typeAnnotation, pos + 28) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsThisTypeOrIdent(node, pos) {
     switch (node.type) {
         case "TsThisType":
-            serializeEnum(node, pos, 0, serializeTsThisType, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeTsThisType, 4);
         case "Identifier":
-            serializeEnum(node, pos, 1, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeIdentifier, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for TsThisTypeOrIdent"
@@ -2112,19 +3014,27 @@ function serializeTsThisTypeOrIdent(node, pos) {
 
 function serializeTsTypeQuery(node, pos) {
     serializeSpan(node.span, pos);
-    serializeTsTypeQueryExpr(node.exprName, pos + 12);
-    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 116);
+    const bufferGrownByBytes = serializeTsTypeQueryExpr(
+        node.exprName,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionTsTypeParameterInstantiation(
+            node.typeArguments,
+            pos + 104
+        ) + bufferGrownByBytes
+    );
 }
 
 function serializeTsTypeQueryExpr(node, pos) {
     switch (node.type) {
         case "TsQualifiedName":
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeTsEntityName, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeTsEntityName, 4);
         case "TsImportType":
-            serializeEnum(node, pos, 1, serializeTsImportType, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeTsImportType, 4);
         default:
             throw new Error("Unexpected enum option type for TsTypeQueryExpr");
     }
@@ -2132,50 +3042,65 @@ function serializeTsTypeQueryExpr(node, pos) {
 
 function serializeTsImportType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeStringLiteral(node.argument, pos + 12);
-    serializeOptionTsEntityName(node.qualifier, pos + 44);
-    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 76);
+    let bufferGrownByBytes = serializeStringLiteral(node.argument, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionTsEntityName(
+        node.qualifier,
+        (pos += 32)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeOptionTsTypeParameterInstantiation(
+            node.typeArguments,
+            pos + 32
+        ) + bufferGrownByBytes
+    );
 }
 
 function serializeTsTypeLiteral(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecTsTypeElement(node.members, pos + 12);
+    return serializeVecTsTypeElement(node.members, pos + 12);
 }
 
 function serializeTsArrayType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxTsType(node.elemType, pos + 12);
+    return serializeBoxTsType(node.elemType, pos + 12);
 }
 
 function serializeTsTupleType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecTsTupleElement(node.elemTypes, pos + 12);
+    return serializeVecTsTupleElement(node.elemTypes, pos + 12);
 }
 
 function serializeTsTupleElement(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionPattern(node.label, pos + 12);
-    serializeTsType(node.ty, pos + 72);
+    const bufferGrownByBytes = serializeOptionPattern(node.label, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeTsType(node.ty, pos + 60) + bufferGrownByBytes;
 }
 
 function serializeTsOptionalType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxTsType(node.typeAnnotation, pos + 12);
+    return serializeBoxTsType(node.typeAnnotation, pos + 12);
 }
 
 function serializeTsRestType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxTsType(node.typeAnnotation, pos + 12);
+    return serializeBoxTsType(node.typeAnnotation, pos + 12);
 }
 
 function serializeTsUnionOrIntersectionType(node, pos) {
     switch (node.type) {
         case "TsUnionType":
-            serializeEnum(node, pos, 0, serializeTsUnionType, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeTsUnionType, 4);
         case "TsIntersectionType":
-            serializeEnum(node, pos, 1, serializeTsIntersectionType, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeTsIntersectionType, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for TsUnionOrIntersectionType"
@@ -2185,36 +3110,51 @@ function serializeTsUnionOrIntersectionType(node, pos) {
 
 function serializeTsUnionType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecBoxTsType(node.types, pos + 12);
+    return serializeVecBoxTsType(node.types, pos + 12);
 }
 
 function serializeTsIntersectionType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecBoxTsType(node.types, pos + 12);
+    return serializeVecBoxTsType(node.types, pos + 12);
 }
 
 function serializeTsConditionalType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxTsType(node.checkType, pos + 12);
-    serializeBoxTsType(node.extendsType, pos + 16);
-    serializeBoxTsType(node.trueType, pos + 20);
-    serializeBoxTsType(node.falseType, pos + 24);
+    let bufferGrownByBytes = serializeBoxTsType(node.checkType, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeBoxTsType(
+        node.extendsType,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeBoxTsType(node.trueType, (pos += 4));
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return serializeBoxTsType(node.falseType, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeTsInferType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeTsTypeParameter(node.typeParam, pos + 12);
+    return serializeTsTypeParameter(node.typeParam, pos + 12);
 }
 
 function serializeTsParenthesizedType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxTsType(node.typeAnnotation, pos + 12);
+    return serializeBoxTsType(node.typeAnnotation, pos + 12);
 }
 
 function serializeTsTypeOperator(node, pos) {
     serializeSpan(node.span, pos);
-    serializeTsTypeOperatorOp(node.op, pos + 12);
-    serializeBoxTsType(node.typeAnnotation, pos + 16);
+    serializeTsTypeOperatorOp(node.op, (pos += 12));
+    return serializeBoxTsType(node.typeAnnotation, pos + 4);
 }
 
 function serializeTsTypeOperatorOp(value, pos) {
@@ -2231,13 +3171,16 @@ function serializeTsTypeOperatorOp(value, pos) {
         default:
             throw new Error("Unexpected enum value for TsTypeOperatorOp");
     }
+    return 0;
 }
 
 function serializeTsIndexedAccessType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.readonly, pos + 12);
-    serializeBoxTsType(node.objectType, pos + 16);
-    serializeBoxTsType(node.indexType, pos + 20);
+    serializeBoolean(node.readonly, (pos += 12));
+    const bufferGrownByBytes = serializeBoxTsType(node.objectType, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeBoxTsType(node.indexType, pos + 4) + bufferGrownByBytes;
 }
 
 function serializeTruePlusMinus(value, pos) {
@@ -2255,39 +3198,57 @@ function serializeTruePlusMinus(value, pos) {
         default:
             throw new Error("Unexpected enum value for TruePlusMinus");
     }
+    return 0;
 }
 
 function serializeTsMappedType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeOptionTruePlusMinus(node.readonly, pos + 12);
-    serializeTsTypeParameter(node.typeParam, pos + 20);
-    serializeOptionBoxTsType(node.nameType, pos + 76);
-    serializeOptionTruePlusMinus(node.optional, pos + 84);
-    serializeOptionBoxTsType(node.typeAnnotation, pos + 92);
+    serializeOptionTruePlusMinus(node.readonly, (pos += 12));
+    let bufferGrownByBytes = serializeTsTypeParameter(
+        node.typeParam,
+        (pos += 8)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionBoxTsType(
+        node.nameType,
+        (pos += 56)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    serializeOptionTruePlusMinus(node.optional, (pos += 8));
+    return (
+        serializeOptionBoxTsType(node.typeAnnotation, pos + 8) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeTsLiteralType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeTsLit(node.literal, pos + 16);
+    return serializeTsLit(node.literal, pos + 16);
 }
 
 function serializeTsLit(node, pos) {
     switch (node.type) {
         case "NumericLiteral":
-            serializeEnum(node, pos, 0, serializeNumericLiteral, 8);
-            break;
+            return serializeEnum(node, pos, 0, serializeNumericLiteral, 8);
         case "StringLiteral":
-            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeStringLiteral, 4);
         case "BooleanLiteral":
-            serializeEnum(node, pos, 2, serializeBooleanLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeBooleanLiteral, 4);
         case "BigIntLiteral":
-            serializeEnum(node, pos, 3, serializeBigIntLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 3, serializeBigIntLiteral, 4);
         case "TemplateLiteral":
-            serializeEnum(node, pos, 4, serializeTsTemplateLiteralType, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                4,
+                serializeTsTemplateLiteralType,
+                4
+            );
         default:
             throw new Error("Unexpected enum option type for TsLit");
     }
@@ -2295,60 +3256,110 @@ function serializeTsLit(node, pos) {
 
 function serializeTsTemplateLiteralType(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecBoxTsType(node.types, pos + 12);
-    serializeVecTemplateElement(node.quasis, pos + 20);
+    const bufferGrownByBytes = serializeVecBoxTsType(node.types, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeVecTemplateElement(node.quasis, pos + 8) + bufferGrownByBytes
+    );
 }
 
 function serializeTsInterfaceDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.id, pos + 12);
-    serializeBoolean(node.declare, pos + 36);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 40);
-    serializeVecTsExpressionWithTypeArguments(node.extends, pos + 64);
-    serializeTsInterfaceBody(node.body, pos + 72);
+    let bufferGrownByBytes = serializeIdentifier(node.id, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    serializeBoolean(node.declare, (pos += 24));
+    let thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParams,
+        (pos += 4)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    thisBufferGrownByBytes = serializeVecTsExpressionWithTypeArguments(
+        node.extends,
+        (pos += 24)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return serializeTsInterfaceBody(node.body, pos + 8) + bufferGrownByBytes;
 }
 
 function serializeTsInterfaceBody(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecTsTypeElement(node.body, pos + 12);
+    return serializeVecTsTypeElement(node.body, pos + 12);
 }
 
 function serializeTsExpressionWithTypeArguments(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
-    serializeOptionTsTypeParameterInstantiation(node.typeArguments, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(
+        node.expression,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionTsTypeParameterInstantiation(
+            node.typeArguments,
+            pos + 4
+        ) + bufferGrownByBytes
+    );
 }
 
 function serializeTsTypeAliasDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.declare, pos + 12);
-    serializeIdentifier(node.id, pos + 16);
-    serializeOptionTsTypeParameterDeclaration(node.typeParams, pos + 40);
-    serializeBoxTsType(node.typeAnnotation, pos + 64);
+    serializeBoolean(node.declare, (pos += 12));
+    let bufferGrownByBytes = serializeIdentifier(node.id, (pos += 4));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    let thisBufferGrownByBytes = serializeOptionTsTypeParameterDeclaration(
+        node.typeParams,
+        (pos += 24)
+    );
+    if (thisBufferGrownByBytes > 0) {
+        pos += thisBufferGrownByBytes;
+        bufferGrownByBytes += thisBufferGrownByBytes;
+    }
+
+    return (
+        serializeBoxTsType(node.typeAnnotation, pos + 24) + bufferGrownByBytes
+    );
 }
 
 function serializeTsEnumDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.declare, pos + 12);
-    serializeBoolean(node.isConst, pos + 13);
-    serializeIdentifier(node.id, pos + 16);
-    serializeVecTsEnumMember(node.members, pos + 40);
+    serializeBoolean(node.declare, (pos += 12));
+    serializeBoolean(node.isConst, (pos += 1));
+    const bufferGrownByBytes = serializeIdentifier(node.id, (pos += 3));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeVecTsEnumMember(node.members, pos + 24) + bufferGrownByBytes
+    );
 }
 
 function serializeTsEnumMember(node, pos) {
     serializeSpan(node.span, pos);
-    serializeTsModuleName(node.id, pos + 12);
-    serializeOptionBoxExpression(node.init, pos + 48);
+    const bufferGrownByBytes = serializeTsModuleName(node.id, (pos += 12));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionBoxExpression(node.init, pos + 36) + bufferGrownByBytes
+    );
 }
 
 function serializeTsModuleName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "StringLiteral":
-            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeStringLiteral, 4);
         default:
             throw new Error("Unexpected enum option type for TsModuleName");
     }
@@ -2356,20 +3367,28 @@ function serializeTsModuleName(node, pos) {
 
 function serializeTsModuleDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.declare, pos + 12);
-    serializeBoolean(node.global, pos + 13);
-    serializeTsModuleName(node.id, pos + 16);
-    serializeOptionTsNamespaceBody(node.body, pos + 52);
+    serializeBoolean(node.declare, (pos += 12));
+    serializeBoolean(node.global, (pos += 1));
+    const bufferGrownByBytes = serializeTsModuleName(node.id, (pos += 3));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeOptionTsNamespaceBody(node.body, pos + 36) + bufferGrownByBytes
+    );
 }
 
 function serializeTsNamespaceBody(node, pos) {
     switch (node.type) {
         case "TsModuleBlock":
-            serializeEnum(node, pos, 0, serializeTsModuleBlock, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeTsModuleBlock, 4);
         case "TsNamespaceDeclaration":
-            serializeEnum(node, pos, 1, serializeTsNamespaceDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                1,
+                serializeTsNamespaceDeclaration,
+                4
+            );
         default:
             throw new Error("Unexpected enum option type for TsNamespaceBody");
     }
@@ -2377,25 +3396,27 @@ function serializeTsNamespaceBody(node, pos) {
 
 function serializeTsModuleBlock(node, pos) {
     serializeSpan(node.span, pos);
-    serializeVecModuleItem(node.body, pos + 12);
+    return serializeVecModuleItem(node.body, pos + 12);
 }
 
 function serializeTsNamespaceDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.declare, pos + 12);
-    serializeBoolean(node.global, pos + 13);
-    serializeIdentifier(node.id, pos + 16);
-    serializeBoxTsNamespaceBody(node.body, pos + 40);
+    serializeBoolean(node.declare, (pos += 12));
+    serializeBoolean(node.global, (pos += 1));
+    const bufferGrownByBytes = serializeIdentifier(node.id, (pos += 3));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeBoxTsNamespaceBody(node.body, pos + 24) + bufferGrownByBytes
+    );
 }
 
 function serializeTsModuleName(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "StringLiteral":
-            serializeEnum(node, pos, 1, serializeStringLiteral, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeStringLiteral, 4);
         default:
             throw new Error("Unexpected enum option type for TsModuleName");
     }
@@ -2403,22 +3424,28 @@ function serializeTsModuleName(node, pos) {
 
 function serializeTsImportEqualsDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoolean(node.declare, pos + 12);
-    serializeBoolean(node.isExport, pos + 13);
-    serializeBoolean(node.isTypeOnly, pos + 14);
-    serializeIdentifier(node.id, pos + 16);
-    serializeTsModuleRef(node.moduleRef, pos + 40);
+    serializeBoolean(node.declare, (pos += 12));
+    serializeBoolean(node.isExport, (pos += 1));
+    serializeBoolean(node.isTypeOnly, (pos += 1));
+    const bufferGrownByBytes = serializeIdentifier(node.id, (pos += 2));
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return serializeTsModuleRef(node.moduleRef, pos + 24) + bufferGrownByBytes;
 }
 
 function serializeTsModuleRef(node, pos) {
     switch (node.type) {
         case "TsQualifiedName":
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeTsEntityName, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeTsEntityName, 4);
         case "TsExternalModuleReference":
-            serializeEnum(node, pos, 1, serializeTsExternalModuleReference, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                1,
+                serializeTsExternalModuleReference,
+                4
+            );
         default:
             throw new Error("Unexpected enum option type for TsModuleRef");
     }
@@ -2426,34 +3453,48 @@ function serializeTsModuleRef(node, pos) {
 
 function serializeTsExternalModuleReference(node, pos) {
     serializeSpan(node.span, pos);
-    serializeStringLiteral(node.expression, pos + 12);
+    return serializeStringLiteral(node.expression, pos + 12);
 }
 
 function serializeTsExportAssignment(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializeTsNamespaceExportDeclaration(node, pos) {
     serializeSpan(node.span, pos);
-    serializeIdentifier(node.id, pos + 12);
+    return serializeIdentifier(node.id, pos + 12);
 }
 
 function serializeTsAsExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
-    serializeBoxTsType(node.typeAnnotation, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(
+        node.expression,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeBoxTsType(node.typeAnnotation, pos + 4) + bufferGrownByBytes
+    );
 }
 
 function serializeTsTypeAssertion(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
-    serializeBoxTsType(node.typeAnnotation, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(
+        node.expression,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeBoxTsType(node.typeAnnotation, pos + 4) + bufferGrownByBytes
+    );
 }
 
 function serializeTsNonNullExpression(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializeAccessibility(value, pos) {
@@ -2470,58 +3511,81 @@ function serializeAccessibility(value, pos) {
         default:
             throw new Error("Unexpected enum value for Accessibility");
     }
+    return 0;
 }
 
 function serializeTsConstAssertion(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
+    return serializeBoxExpression(node.expression, pos + 12);
 }
 
 function serializeTsInstantiation(node, pos) {
     serializeSpan(node.span, pos);
-    serializeBoxExpression(node.expression, pos + 12);
-    serializeTsTypeParameterInstantiation(node.typeArguments, pos + 16);
+    const bufferGrownByBytes = serializeBoxExpression(
+        node.expression,
+        (pos += 12)
+    );
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+
+    return (
+        serializeTsTypeParameterInstantiation(node.typeArguments, pos + 4) +
+        bufferGrownByBytes
+    );
 }
 
 function serializeJsWord(str, pos) {
     const strLen = str.length;
     if (strLen === 0) {
         buff[pos + 7] = 0;
-        return;
+        return 0;
     }
-    let strPos, len;
+    let len, bufferGrownByBytes;
     if (strLen <= 7) {
-        const isWritten = writeShortStringToBuffer(str, pos, strLen);
-        if (isWritten) {
+        if (writeStringToBuffer(str, pos, strLen)) {
             buff[pos + 7] = strLen;
-            return;
+            return 0;
         }
         if (strLen <= 2) {
             buff[pos + 7] = utf8Write.call(buff, str, pos);
-            return;
+            return 0;
         }
-        strPos = alloc(strLen * 3);
-        len = utf8Write.call(buff, str, strPos);
+        const allocBytes = strLen * 3;
+        bufferGrownByBytes = alloc(allocBytes);
+        if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+        len = utf8Write.call(buff, str, buffPos);
         if (len <= 7) {
             buff[pos + 7] = len;
-            buffPos = strPos;
             const endPos = pos + len;
+            let charPos = buffPos;
             do {
-                buff[pos++] = buff[strPos++];
+                buff[pos++] = buff[charPos++];
             } while (pos < endPos);
-            return;
+            buffPos += allocBytes;
+            return bufferGrownByBytes;
+        }
+        shiftBytesAndFree(len, allocBytes);
+    } else if (strLen < 42) {
+        bufferGrownByBytes = alloc(strLen);
+        if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+        if (writeStringToBuffer(str, buffPos, strLen)) {
+            len = strLen;
+        } else {
+            bufferGrownByBytes += alloc(strLen * 2);
+            if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+            len = utf8Write.call(buff, str, buffPos);
+            shiftBytesAndFree(len, strLen * 3);
         }
     } else {
-        strPos = alloc(strLen * 3);
-        len =
-            strLen < 42
-                ? writeStringToBuffer(str, buff, strLen, strPos)
-                : utf8Write.call(buff, str, strPos);
+        const allocBytes = strLen * 3;
+        bufferGrownByBytes = alloc(allocBytes);
+        if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+        len = utf8Write.call(buff, str, buffPos);
+        shiftBytesAndFree(len, allocBytes);
     }
-    buffPos = strPos + len;
     const pos32 = pos >>> 2;
     uint32[pos32] = len;
-    uint32[pos32 + 1] = strPos - pos;
+    int32[pos32 + 1] = buffPos - pos;
+    return bufferGrownByBytes;
 }
 const { utf8Write } = Buffer.prototype;
 
@@ -2529,7 +3593,7 @@ function serializeAsciiJsWord(str, pos) {
     const len = str.length;
     if (len === 0) {
         buff[pos + 7] = 0;
-        return;
+        return 0;
     }
     if (len <= 7) {
         buff[pos + 7] = len;
@@ -2537,26 +3601,30 @@ function serializeAsciiJsWord(str, pos) {
         do {
             buff[pos++] = charCodeAt.call(str, charIndex);
         } while (++charIndex < len);
-        return;
+        return 0;
     }
-    const strPos = alloc(len);
+    const bufferGrownByBytes = alloc(len);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
     if (len < 48) {
-        writeAsciiStringToBuffer(str, buff, len, strPos);
+        writeAsciiStringToBuffer(str, buff, len, buffPos);
     } else {
-        asciiWrite.call(buff, str, strPos);
+        asciiWrite.call(buff, str, buffPos);
     }
     const pos32 = pos >>> 2;
     uint32[pos32] = len;
-    uint32[pos32 + 1] = strPos - pos;
+    int32[pos32 + 1] = buffPos - pos;
+    return bufferGrownByBytes;
 }
 const { asciiWrite } = Buffer.prototype;
 
 function serializeBoolean(value, pos) {
     buff[pos] = value ? 1 : 0;
+    return 0;
 }
 
 function serializeNumber(num, pos) {
     float64[pos >>> 3] = num;
+    return 0;
 }
 
 function serializeSpan(span, pos) {
@@ -2564,45 +3632,50 @@ function serializeSpan(span, pos) {
     uint32[pos32] = span.start;
     uint32[pos32 + 1] = span.end;
     uint32[pos32 + 2] = span.ctxt;
+    return 0;
 }
 
 function serializeVecModuleItem(values, pos) {
-    serializeVec(values, pos, serializeModuleItem, 156, 4);
+    return serializeVec(values, pos, serializeModuleItem, 156, 4);
 }
 
 function serializeVecImportSpecifier(values, pos) {
-    serializeVec(values, pos, serializeImportSpecifier, 84, 4);
+    return serializeVec(values, pos, serializeImportSpecifier, 84, 4);
 }
 
 function serializeOptionTsModuleName(value, pos) {
-    serializeOption(value, pos, serializeTsModuleName, 4);
+    return serializeOption(value, pos, serializeTsModuleName, 4);
 }
 
 function serializeOptionJsWord(value, pos) {
-    serializeOption(value, pos, serializeJsWord, 4);
+    return serializeOption(value, pos, serializeJsWord, 4);
 }
 
 function serializeOptionObjectExpression(value, pos) {
-    serializeOption(value, pos, serializeObjectExpression, 4);
+    return serializeOption(value, pos, serializeObjectExpression, 4);
 }
 
 function serializeVecSpreadElementOrBoxObjectProperty(values, pos) {
-    serializeVec(values, pos, serializeSpreadElementOrBoxObjectProperty, 20, 4);
+    return serializeVec(
+        values,
+        pos,
+        serializeSpreadElementOrBoxObjectProperty,
+        20,
+        4
+    );
 }
 
 function serializeSpreadElementOrBoxObjectProperty(node, pos) {
     switch (node.type) {
         case "SpreadElement":
-            serializeEnum(node, pos, 0, serializeSpreadElement, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeSpreadElement, 4);
         case "Identifier":
         case "KeyValueProperty":
         case "AssignmentProperty":
         case "GetterProperty":
         case "SetterProperty":
         case "MethodProperty":
-            serializeEnum(node, pos, 1, serializeBoxObjectProperty, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeBoxObjectProperty, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for SpreadElementOrBoxObjectProperty"
@@ -2611,146 +3684,155 @@ function serializeSpreadElementOrBoxObjectProperty(node, pos) {
 }
 
 function serializeBoxExpression(value, pos) {
-    serializeBox(value, pos, serializeExpression, 136, 8);
+    return serializeBox(value, pos, serializeExpression, 136, 8);
 }
 
 function serializeVecOptionExpressionOrSpread(values, pos) {
-    serializeVec(values, pos, serializeOptionExpressionOrSpread, 24, 4);
+    return serializeVec(values, pos, serializeOptionExpressionOrSpread, 24, 4);
 }
 
 function serializeOptionExpressionOrSpread(value, pos) {
-    serializeOption(value, pos, serializeExpressionOrSpread, 4);
+    return serializeOption(value, pos, serializeExpressionOrSpread, 4);
 }
 
 function serializeOptionSpan(value, pos) {
-    serializeOption(value, pos, serializeSpan, 4);
+    return serializeOption(value, pos, serializeSpan, 4);
 }
 
 function serializeOptionIdentifier(value, pos) {
-    serializeOption(value, pos, serializeIdentifier, 4);
+    return serializeOption(value, pos, serializeIdentifier, 4);
 }
 
 function serializeVecParameter(values, pos) {
-    serializeVec(values, pos, serializeParameter, 72, 4);
+    return serializeVec(values, pos, serializeParameter, 72, 4);
 }
 
 function serializeVecDecorator(values, pos) {
-    serializeVec(values, pos, serializeDecorator, 16, 4);
+    return serializeVec(values, pos, serializeDecorator, 16, 4);
 }
 
 function serializeOptionTsTypeAnnotation(value, pos) {
-    serializeOption(value, pos, serializeTsTypeAnnotation, 4);
+    return serializeOption(value, pos, serializeTsTypeAnnotation, 4);
 }
 
 function serializeBoxTsType(value, pos) {
-    serializeBox(value, pos, serializeTsType, 144, 8);
+    return serializeBox(value, pos, serializeTsType, 144, 8);
 }
 
 function serializeVecTsFnParam(values, pos) {
-    serializeVec(values, pos, serializeTsFnParam, 52, 4);
+    return serializeVec(values, pos, serializeTsFnParam, 52, 4);
 }
 
 function serializeVecOptionPattern(values, pos) {
-    serializeVec(values, pos, serializeOptionPattern, 56, 4);
+    return serializeVec(values, pos, serializeOptionPattern, 56, 4);
 }
 
 function serializeOptionPattern(value, pos) {
-    serializeOption(value, pos, serializePattern, 4);
+    return serializeOption(value, pos, serializePattern, 4);
 }
 
 function serializeBoxPattern(value, pos) {
-    serializeBox(value, pos, serializePattern, 52, 4);
+    return serializeBox(value, pos, serializePattern, 52, 4);
 }
 
 function serializeVecObjectPatternProperty(values, pos) {
-    serializeVec(values, pos, serializeObjectPatternProperty, 64, 8);
+    return serializeVec(values, pos, serializeObjectPatternProperty, 64, 8);
 }
 
 function serializeOptionAsciiJsWord(value, pos) {
-    serializeOption(value, pos, serializeAsciiJsWord, 4);
+    return serializeOption(value, pos, serializeAsciiJsWord, 4);
 }
 
 function serializeOptionBoxExpression(value, pos) {
-    serializeOption(value, pos, serializeBoxExpression, 4);
+    return serializeOption(value, pos, serializeBoxExpression, 4);
 }
 
 function serializeOptionTsTypeParameterDeclaration(value, pos) {
-    serializeOption(value, pos, serializeTsTypeParameterDeclaration, 4);
+    return serializeOption(value, pos, serializeTsTypeParameterDeclaration, 4);
 }
 
 function serializeVecTsTypeParameter(values, pos) {
-    serializeVec(values, pos, serializeTsTypeParameter, 56, 4);
+    return serializeVec(values, pos, serializeTsTypeParameter, 56, 4);
 }
 
 function serializeOptionBoxTsType(value, pos) {
-    serializeOption(value, pos, serializeBoxTsType, 4);
+    return serializeOption(value, pos, serializeBoxTsType, 4);
 }
 
 function serializeBoxTsQualifiedName(value, pos) {
-    serializeBox(value, pos, serializeTsQualifiedName, 52, 4);
+    return serializeBox(value, pos, serializeTsQualifiedName, 52, 4);
 }
 
 function serializeOptionTsTypeParameterInstantiation(value, pos) {
-    serializeOption(value, pos, serializeTsTypeParameterInstantiation, 4);
+    return serializeOption(
+        value,
+        pos,
+        serializeTsTypeParameterInstantiation,
+        4
+    );
 }
 
 function serializeVecBoxTsType(values, pos) {
-    serializeVec(values, pos, serializeBoxTsType, 4, 4);
+    return serializeVec(values, pos, serializeBoxTsType, 4, 4);
 }
 
 function serializeOptionTsEntityName(value, pos) {
-    serializeOption(value, pos, serializeTsEntityName, 4);
+    return serializeOption(value, pos, serializeTsEntityName, 4);
 }
 
 function serializeVecTsTypeElement(values, pos) {
-    serializeVec(values, pos, serializeTsTypeElement, 88, 4);
+    return serializeVec(values, pos, serializeTsTypeElement, 88, 4);
 }
 
 function serializeVecTsTupleElement(values, pos) {
-    serializeVec(values, pos, serializeTsTupleElement, 216, 8);
+    return serializeVec(values, pos, serializeTsTupleElement, 216, 8);
 }
 
 function serializeOptionTruePlusMinus(value, pos) {
-    serializeOption(value, pos, serializeTruePlusMinus, 4);
+    return serializeOption(value, pos, serializeTruePlusMinus, 4);
 }
 
 function serializeVecTemplateElement(values, pos) {
-    serializeVec(values, pos, serializeTemplateElement, 36, 4);
+    return serializeVec(values, pos, serializeTemplateElement, 36, 4);
 }
 
 function serializeOptionBlockStatement(value, pos) {
-    serializeOption(value, pos, serializeBlockStatement, 4);
+    return serializeOption(value, pos, serializeBlockStatement, 4);
 }
 
 function serializeVecStatement(values, pos) {
-    serializeVec(values, pos, serializeStatement, 152, 4);
+    return serializeVec(values, pos, serializeStatement, 152, 4);
 }
 
 function serializeBoxStatement(value, pos) {
-    serializeBox(value, pos, serializeStatement, 152, 4);
+    return serializeBox(value, pos, serializeStatement, 152, 4);
 }
 
 function serializeOptionBoxStatement(value, pos) {
-    serializeOption(value, pos, serializeBoxStatement, 4);
+    return serializeOption(value, pos, serializeBoxStatement, 4);
 }
 
 function serializeVecSwitchCase(values, pos) {
-    serializeVec(values, pos, serializeSwitchCase, 28, 4);
+    return serializeVec(values, pos, serializeSwitchCase, 28, 4);
 }
 
 function serializeOptionCatchClause(value, pos) {
-    serializeOption(value, pos, serializeCatchClause, 4);
+    return serializeOption(value, pos, serializeCatchClause, 4);
 }
 
 function serializeOptionVariableDeclarationOrBoxExpression(value, pos) {
-    serializeOption(value, pos, serializeVariableDeclarationOrBoxExpression, 4);
+    return serializeOption(
+        value,
+        pos,
+        serializeVariableDeclarationOrBoxExpression,
+        4
+    );
 }
 
 function serializeVariableDeclarationOrBoxExpression(node, pos) {
     switch (node.type) {
         case "VariableDeclaration":
-            serializeEnum(node, pos, 0, serializeVariableDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeVariableDeclaration, 4);
         case "ThisExpression":
         case "ArrayExpression":
         case "ObjectExpression":
@@ -2794,8 +3876,7 @@ function serializeVariableDeclarationOrBoxExpression(node, pos) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            serializeEnum(node, pos, 1, serializeBoxExpression, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeBoxExpression, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for VariableDeclarationOrBoxExpression"
@@ -2804,14 +3885,13 @@ function serializeVariableDeclarationOrBoxExpression(node, pos) {
 }
 
 function serializeVecVariableDeclarator(values, pos) {
-    serializeVec(values, pos, serializeVariableDeclarator, 76, 4);
+    return serializeVec(values, pos, serializeVariableDeclarator, 76, 4);
 }
 
 function serializeVariableDeclarationOrPattern(node, pos) {
     switch (node.type) {
         case "VariableDeclaration":
-            serializeEnum(node, pos, 0, serializeVariableDeclaration, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeVariableDeclaration, 4);
         case "Identifier":
         case "ArrayPattern":
         case "RestElement":
@@ -2859,8 +3939,7 @@ function serializeVariableDeclarationOrPattern(node, pos) {
         case "TsInstantiation":
         case "PrivateName":
         case "OptionalChainingExpression":
-            serializeEnum(node, pos, 1, serializePattern, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializePattern, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for VariableDeclarationOrPattern"
@@ -2869,21 +3948,25 @@ function serializeVariableDeclarationOrPattern(node, pos) {
 }
 
 function serializeVecClassMember(values, pos) {
-    serializeVec(values, pos, serializeClassMember, 192, 8);
+    return serializeVec(values, pos, serializeClassMember, 192, 8);
 }
 
 function serializeVecTsParameterPropertyOrParameter(values, pos) {
-    serializeVec(values, pos, serializeTsParameterPropertyOrParameter, 84, 4);
+    return serializeVec(
+        values,
+        pos,
+        serializeTsParameterPropertyOrParameter,
+        84,
+        4
+    );
 }
 
 function serializeTsParameterPropertyOrParameter(node, pos) {
     switch (node.type) {
         case "TsParameterProperty":
-            serializeEnum(node, pos, 0, serializeTsParameterProperty, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeTsParameterProperty, 4);
         case "Parameter":
-            serializeEnum(node, pos, 1, serializeParameter, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeParameter, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for TsParameterPropertyOrParameter"
@@ -2892,36 +3975,39 @@ function serializeTsParameterPropertyOrParameter(node, pos) {
 }
 
 function serializeOptionAccessibility(value, pos) {
-    serializeOption(value, pos, serializeAccessibility, 4);
+    return serializeOption(value, pos, serializeAccessibility, 4);
 }
 
 function serializeVecTsExpressionWithTypeArguments(values, pos) {
-    serializeVec(values, pos, serializeTsExpressionWithTypeArguments, 40, 4);
+    return serializeVec(
+        values,
+        pos,
+        serializeTsExpressionWithTypeArguments,
+        40,
+        4
+    );
 }
 
 function serializeVecTsEnumMember(values, pos) {
-    serializeVec(values, pos, serializeTsEnumMember, 56, 4);
+    return serializeVec(values, pos, serializeTsEnumMember, 56, 4);
 }
 
 function serializeOptionTsNamespaceBody(value, pos) {
-    serializeOption(value, pos, serializeTsNamespaceBody, 4);
+    return serializeOption(value, pos, serializeTsNamespaceBody, 4);
 }
 
 function serializeBoxTsNamespaceBody(value, pos) {
-    serializeBox(value, pos, serializeTsNamespaceBody, 48, 4);
+    return serializeBox(value, pos, serializeTsNamespaceBody, 48, 4);
 }
 
 function serializeIdentifierOrPrivateNameOrComputed(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "PrivateName":
-            serializeEnum(node, pos, 1, serializePrivateName, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializePrivateName, 4);
         case "Computed":
-            serializeEnum(node, pos, 2, serializeComputed, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeComputed, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for IdentifierOrPrivateNameOrComputed"
@@ -2932,11 +4018,9 @@ function serializeIdentifierOrPrivateNameOrComputed(node, pos) {
 function serializeIdentifierOrComputed(node, pos) {
     switch (node.type) {
         case "Identifier":
-            serializeEnum(node, pos, 0, serializeIdentifier, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeIdentifier, 4);
         case "Computed":
-            serializeEnum(node, pos, 1, serializeComputed, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeComputed, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for IdentifierOrComputed"
@@ -2947,11 +4031,9 @@ function serializeIdentifierOrComputed(node, pos) {
 function serializeSuperOrImportOrBoxExpression(node, pos) {
     switch (node.type) {
         case "Super":
-            serializeEnum(node, pos, 0, serializeSuper, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeSuper, 4);
         case "Import":
-            serializeEnum(node, pos, 1, serializeImport, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeImport, 4);
         case "ThisExpression":
         case "ArrayExpression":
         case "ObjectExpression":
@@ -2995,8 +4077,7 @@ function serializeSuperOrImportOrBoxExpression(node, pos) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            serializeEnum(node, pos, 2, serializeBoxExpression, 4);
-            break;
+            return serializeEnum(node, pos, 2, serializeBoxExpression, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for SuperOrImportOrBoxExpression"
@@ -3005,26 +4086,25 @@ function serializeSuperOrImportOrBoxExpression(node, pos) {
 }
 
 function serializeVecExpressionOrSpread(values, pos) {
-    serializeVec(values, pos, serializeExpressionOrSpread, 20, 4);
+    return serializeVec(values, pos, serializeExpressionOrSpread, 20, 4);
 }
 
 function serializeOptionVecExpressionOrSpread(value, pos) {
-    serializeOption(value, pos, serializeVecExpressionOrSpread, 4);
+    return serializeOption(value, pos, serializeVecExpressionOrSpread, 4);
 }
 
 function serializeVecBoxExpression(values, pos) {
-    serializeVec(values, pos, serializeBoxExpression, 4, 4);
+    return serializeVec(values, pos, serializeBoxExpression, 4, 4);
 }
 
 function serializeVecPattern(values, pos) {
-    serializeVec(values, pos, serializePattern, 52, 4);
+    return serializeVec(values, pos, serializePattern, 52, 4);
 }
 
 function serializeBlockStatementOrBoxExpression(node, pos) {
     switch (node.type) {
         case "BlockStatement":
-            serializeEnum(node, pos, 0, serializeBlockStatement, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeBlockStatement, 4);
         case "ThisExpression":
         case "ArrayExpression":
         case "ObjectExpression":
@@ -3068,8 +4148,7 @@ function serializeBlockStatementOrBoxExpression(node, pos) {
         case "PrivateName":
         case "OptionalChainingExpression":
         case "Invalid":
-            serializeEnum(node, pos, 1, serializeBoxExpression, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeBoxExpression, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for BlockStatementOrBoxExpression"
@@ -3078,25 +4157,29 @@ function serializeBlockStatementOrBoxExpression(node, pos) {
 }
 
 function serializeBoxJSXMemberExpression(value, pos) {
-    serializeBox(value, pos, serializeJSXMemberExpression, 52, 4);
+    return serializeBox(value, pos, serializeJSXMemberExpression, 52, 4);
 }
 
 function serializeBoxJSXElement(value, pos) {
-    serializeBox(value, pos, serializeJSXElement, 196, 4);
+    return serializeBox(value, pos, serializeJSXElement, 196, 4);
 }
 
 function serializeVecJSXAttributeOrSpreadElement(values, pos) {
-    serializeVec(values, pos, serializeJSXAttributeOrSpreadElement, 136, 8);
+    return serializeVec(
+        values,
+        pos,
+        serializeJSXAttributeOrSpreadElement,
+        136,
+        8
+    );
 }
 
 function serializeJSXAttributeOrSpreadElement(node, pos) {
     switch (node.type) {
         case "JSXAttribute":
-            serializeEnum(node, pos, 0, serializeJSXAttribute, 8);
-            break;
+            return serializeEnum(node, pos, 0, serializeJSXAttribute, 8);
         case "SpreadElement":
-            serializeEnum(node, pos, 1, serializeSpreadElement, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeSpreadElement, 4);
         default:
             throw new Error(
                 "Unexpected enum option type for JSXAttributeOrSpreadElement"
@@ -3105,25 +4188,29 @@ function serializeJSXAttributeOrSpreadElement(node, pos) {
 }
 
 function serializeOptionJSXAttributeValue(value, pos) {
-    serializeOption(value, pos, serializeJSXAttributeValue, 8);
+    return serializeOption(value, pos, serializeJSXAttributeValue, 8);
 }
 
 function serializeVecJSXElementChild(values, pos) {
-    serializeVec(values, pos, serializeJSXElementChild, 48, 4);
+    return serializeVec(values, pos, serializeJSXElementChild, 48, 4);
 }
 
 function serializeOptionJSXClosingElement(value, pos) {
-    serializeOption(value, pos, serializeJSXClosingElement, 4);
+    return serializeOption(value, pos, serializeJSXClosingElement, 4);
 }
 
 function serializeMemberExpressionOrOptionalChainingCall(node, pos) {
     switch (node.type) {
         case "MemberExpression":
-            serializeEnum(node, pos, 0, serializeMemberExpression, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeMemberExpression, 4);
         case "CallExpression":
-            serializeEnum(node, pos, 1, serializeOptionalChainingCall, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                1,
+                serializeOptionalChainingCall,
+                4
+            );
         default:
             throw new Error(
                 "Unexpected enum option type for MemberExpressionOrOptionalChainingCall"
@@ -3132,15 +4219,15 @@ function serializeMemberExpressionOrOptionalChainingCall(node, pos) {
 }
 
 function serializeBoxObjectProperty(value, pos) {
-    serializeBox(value, pos, serializeObjectProperty, 160, 8);
+    return serializeBox(value, pos, serializeObjectProperty, 160, 8);
 }
 
 function serializeVecExportSpecifier(values, pos) {
-    serializeVec(values, pos, serializeExportSpecifier, 96, 4);
+    return serializeVec(values, pos, serializeExportSpecifier, 96, 4);
 }
 
 function serializeOptionStringLiteral(value, pos) {
-    serializeOption(value, pos, serializeStringLiteral, 4);
+    return serializeOption(value, pos, serializeStringLiteral, 4);
 }
 
 function serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
@@ -3149,14 +4236,17 @@ function serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
 ) {
     switch (node.type) {
         case "ClassExpression":
-            serializeEnum(node, pos, 0, serializeClassExpression, 4);
-            break;
+            return serializeEnum(node, pos, 0, serializeClassExpression, 4);
         case "FunctionExpression":
-            serializeEnum(node, pos, 1, serializeFunctionExpression, 4);
-            break;
+            return serializeEnum(node, pos, 1, serializeFunctionExpression, 4);
         case "TsInterfaceDeclaration":
-            serializeEnum(node, pos, 2, serializeTsInterfaceDeclaration, 4);
-            break;
+            return serializeEnum(
+                node,
+                pos,
+                2,
+                serializeTsInterfaceDeclaration,
+                4
+            );
         default:
             throw new Error(
                 "Unexpected enum option type for ClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration"
@@ -3165,53 +4255,64 @@ function serializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
 }
 
 function serialize(ast) {
-    uint32[0] = 1;
-    buffPos = 40;
-    serializeProgram(ast, 4);
-    const pos = allocAligned(4, 4);
-    uint32[pos >>> 2] = 4294967296 - pos;
-    return subarray.call(buff, 0, pos + 4);
+    buffPos = buffLen - 44;
+    uint32[buffPos >>> 2] = 1;
+    int32[(buffLen >>> 2) - 1] = -40;
+    serializeProgram(ast, buffPos + 4);
+    alignPos(8);
+    return subarray.call(buff, buffPos);
 }
 const { subarray } = Buffer.prototype;
 
 function serializeEnum(node, pos, id, serialize, offset) {
     uint32[pos >>> 2] = id;
-    serialize(node, pos + offset);
+    return serialize(node, pos + offset);
 }
 
 function serializeOption(value, pos, serialize, offset) {
     if (value === null) {
         buff[pos] = 0;
-    } else {
-        buff[pos] = 1;
-        serialize(value, pos + offset);
+        return 0;
     }
+    buff[pos] = 1;
+    return serialize(value, pos + offset);
 }
 
 function serializeBox(value, pos, serialize, valueLength, valueAlign) {
-    const valuePos = allocAligned(valueLength, valueAlign);
-    uint32[pos >>> 2] = valuePos - pos;
-    serialize(value, valuePos);
+    alignPos(valueAlign);
+    const bufferGrownByBytes = alloc(valueLength);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+    int32[pos >>> 2] = buffPos - pos;
+    return serialize(value, buffPos) + bufferGrownByBytes;
 }
 
 function serializeVec(values, pos, serialize, valueLength, valueAlign) {
-    const numValues = values.length,
-        pos32 = pos >>> 2;
+    const numValues = values.length;
     if (numValues === 0) {
         alignPos(valueAlign);
-        uint32[pos32] = buffPos - pos;
+        const pos32 = pos >>> 2;
+        int32[pos32] = buffPos - pos;
         uint32[pos32 + 1] = 0;
-        return;
+        return 0;
     }
-    let valuePos = allocAligned(valueLength * numValues, valueAlign);
-    uint32[pos32] = valuePos - pos;
+    alignPos(valueAlign);
+    let bufferGrownByBytes = alloc(valueLength * numValues);
+    if (bufferGrownByBytes > 0) pos += bufferGrownByBytes;
+    const pos32 = pos >>> 2;
+    int32[pos32] = buffPos - pos;
     uint32[pos32 + 1] = numValues;
-    let i = 0;
+    let valuePos = buffPos,
+        i = 0;
     while (true) {
-        serialize(values[i], valuePos);
+        const thisBufferGrownByBytes = serialize(values[i], valuePos);
+        if (thisBufferGrownByBytes > 0) {
+            valuePos += thisBufferGrownByBytes;
+            bufferGrownByBytes += thisBufferGrownByBytes;
+        }
         if (++i === numValues) break;
         valuePos += valueLength;
     }
+    return bufferGrownByBytes;
 }
 
 function resetBuffer() {
@@ -3223,42 +4324,38 @@ function initBuffer() {
     buff = Buffer.allocUnsafeSlow(buffLen);
     const arrayBuffer = buff.buffer;
     uint32 = new Uint32Array(arrayBuffer);
+    int32 = new Int32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer);
 }
 
-function alloc(bytes) {
-    const startPos = buffPos;
-    buffPos += bytes;
-    if (buffPos > buffLen) growBuffer();
-    return startPos;
-}
-
-function allocAligned(bytes, align) {
-    alignPos(align);
-    return alloc(bytes);
-}
-
 function alignPos(align) {
-    if (align !== 1) {
-        const modulus = buffPos & (align - 1);
-        if (modulus !== 0) buffPos += align - modulus;
-    }
+    if (align !== 1) buffPos &= 4294967296 - align;
 }
 
-function growBuffer() {
+function alloc(bytes) {
+    const bufferGrownByBytes = bytes <= buffPos ? 0 : growBuffer(bytes);
+    buffPos -= bytes;
+    return bufferGrownByBytes;
+}
+
+function growBuffer(minBytes) {
+    let grownByBytes = 0;
     do {
+        grownByBytes += buffLen;
+        buffPos += buffLen;
         buffLen *= 2;
-    } while (buffLen < buffPos);
+    } while (minBytes > buffPos);
     if (buffLen > 2147483648) {
         throw new Error("Exceeded maximum serialization buffer size");
     }
     const oldBuff = buff;
     initBuffer();
-    setBuff.call(buff, oldBuff);
+    setBuff.call(buff, oldBuff, grownByBytes);
+    return grownByBytes;
 }
 const setBuff = Buffer.prototype.set;
 
-function writeShortStringToBuffer(str, pos, strLen) {
+function writeStringToBuffer(str, pos, strLen) {
     let strPos = 0;
     do {
         const c = charCodeAt.call(str, strPos);
@@ -3266,16 +4363,6 @@ function writeShortStringToBuffer(str, pos, strLen) {
         buff[pos++] = c;
     } while (++strPos < strLen);
     return true;
-}
-
-function writeStringToBuffer(str, buff, strLen, pos) {
-    let strPos = 0;
-    do {
-        const c = charCodeAt.call(str, strPos);
-        if (c >= 128) return utf8Write.call(buff, str, pos - strPos);
-        buff[pos++] = c;
-    } while (++strPos < strLen);
-    return strLen;
 }
 const { charCodeAt } = String.prototype;
 
@@ -3285,3 +4372,17 @@ function writeAsciiStringToBuffer(str, buff, strLen, pos) {
         buff[pos++] = charCodeAt.call(str, strPos);
     } while (++strPos < strLen);
 }
+
+function shiftBytesAndFree(len, allocBytes) {
+    const numBytesFree = allocBytes - len;
+    if (numBytesFree > 0) {
+        const startPos = buffPos;
+        copyWithinBuffer.call(
+            buff,
+            (buffPos += numBytesFree),
+            startPos,
+            startPos + len
+        );
+    }
+}
+const copyWithinBuffer = Buffer.prototype.copyWithin;

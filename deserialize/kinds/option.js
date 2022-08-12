@@ -49,6 +49,7 @@ class Option extends Kind {
         return {
             length: this.valueType.align + this.valueType.length,
             align: this.valueType.align,
+            mayAlloc: this.valueType.mayAlloc,
         };
     }
 
@@ -65,7 +66,7 @@ class Option extends Kind {
     generateSerializer() {
         const { valueType } = this;
         return `function ${this.serializerName}(value, pos) {
-            serializeOption(value, pos, ${valueType.serializerName}, ${valueType.align});
+            return serializeOption(value, pos, ${valueType.serializerName}, ${valueType.align});
         }`;
     }
 }
@@ -95,19 +96,20 @@ function deserializeOption(pos, deserialize, offset) {
  * @param {number} pos - Position to write at
  * @param {Function} serialize - Serialize function for type
  * @param {number} offset - Offset of value from start of Option
- * @returns {undefined}
+ * @returns {number} - Number of bytes buffer grew by during serialization
  */
 function serializeOption(value, pos, serialize, offset) {
     if (value === null) {
         // Option disabled
         // TODO Maybe should be `buff[pos + 3]` on big endian systems?
         buff[pos] = 0;
-    } else {
-        // Option enabled
-        // TODO Maybe should be `buff[pos + 3]` on big endian systems?
-        buff[pos] = 1;
-        serialize(value, pos + offset);
+        return 0;
     }
+
+    // Option enabled
+    // TODO Maybe should be `buff[pos + 3]` on big endian systems?
+    buff[pos] = 1;
+    return serialize(value, pos + offset);
 }
 
 module.exports = { Option, deserializeOption, serializeOption };

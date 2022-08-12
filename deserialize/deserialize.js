@@ -2509,7 +2509,7 @@ function deserializeJsWord(pos) {
         return String.fromCharCode(buff[pos]);
     }
     if (len & 128) {
-        const pos32 = pos >> 2;
+        const pos32 = pos >>> 2;
         len = uint32[pos32];
         pos += int32[pos32 + 1];
         if (len > 24) return utf8Slice.call(buff, pos, pos + len);
@@ -2535,7 +2535,7 @@ function deserializeAsciiJsWord(pos) {
         return String.fromCharCode(buff[pos]);
     }
     if (len & 128) {
-        const pos32 = pos >> 2;
+        const pos32 = pos >>> 2;
         len = uint32[pos32];
         pos += int32[pos32 + 1];
         if (len > 28) return asciiSlice.call(buff, pos, pos + len);
@@ -2559,11 +2559,11 @@ function deserializeBoolean(pos) {
 }
 
 function deserializeNumber(pos) {
-    return float64[pos >> 3];
+    return float64[pos >>> 3];
 }
 
 function deserializeSpan(pos) {
-    const pos32 = pos >> 2;
+    const pos32 = pos >>> 2;
     return {
         start: uint32[pos32],
         end: uint32[pos32 + 1],
@@ -2971,7 +2971,7 @@ function deserialize(buffIn) {
     buff = Buffer.from(arrayBuffer);
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
-    float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
+    float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >>> 3);
     return deserializeProgram(buffIn.byteOffset + buffIn.length - 40);
 }
 
@@ -2987,11 +2987,11 @@ function deserializeOption(pos, deserialize, offset) {
 }
 
 function deserializeBox(pos, deserialize) {
-    return deserialize(pos + int32[pos >> 2]);
+    return deserialize(pos + int32[pos >>> 2]);
 }
 
 function deserializeVec(pos, deserialize, length) {
-    const pos32 = pos >> 2;
+    const pos32 = pos >>> 2;
     const numEntries = uint32[pos32 + 1];
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);

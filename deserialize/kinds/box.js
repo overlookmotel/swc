@@ -76,7 +76,7 @@ class Box extends Kind {
  * @returns {*} - Value
  */
 function deserializeBox(pos, deserialize) {
-    return deserialize(pos + int32[pos >> 2]);
+    return deserialize(pos + int32[pos >>> 2]);
 }
 
 /**
@@ -106,7 +106,7 @@ function serializeBox(value, serialize, finalize, valueLength, valueAlign) {
 }
 
 function finalizeBox(valuePos) {
-    int32[pos >> 2] = (valuePos & 0x7fffffff) - pos;
+    int32[pos >>> 2] = (valuePos & 0x7fffffff) - pos;
     pos += 4;
 }
 

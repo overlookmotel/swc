@@ -173,7 +173,7 @@ class Enum extends Kind {
  */
 function finalizeEnum(id, finalizeData, finalize, offset, length) {
     const startPos = pos;
-    uint32[pos >> 2] = id;
+    uint32[pos >>> 2] = id;
     pos += offset;
     finalize(finalizeData);
     pos = startPos + length;

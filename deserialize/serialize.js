@@ -6755,13 +6755,13 @@ function finalizeJsWord(storePos32) {
     const len = scratchUint32[storePos32];
     if (len <= 7) {
         if (len > 0) {
-            const pos32 = pos >> 2;
+            const pos32 = pos >>> 2;
             uint32[pos32] = scratchUint32[storePos32 + 1];
             if (len > 4) uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
         }
         buff[pos + 7] = len;
     } else {
-        const pos32 = pos >> 2;
+        const pos32 = pos >>> 2;
         uint32[pos32] = len;
         int32[pos32 + 1] = scratchUint32[storePos32 + 1] - pos;
     }
@@ -6810,13 +6810,13 @@ function finalizeBoolean(id) {
 }
 
 function serializeNumber(num) {
-    const storePos64 = allocScratch(2) >> 1;
+    const storePos64 = allocScratch(2) >>> 1;
     scratchFloat64[storePos64] = num;
     return storePos64;
 }
 
 function finalizeNumber(storePos64) {
-    float64[pos >> 3] = scratchFloat64[storePos64];
+    float64[pos >>> 3] = scratchFloat64[storePos64];
     pos += 8;
 }
 
@@ -6829,7 +6829,7 @@ function serializeSpan(span) {
 }
 
 function finalizeSpan(storePos32) {
-    const pos32 = pos >> 2;
+    const pos32 = pos >>> 2;
     uint32[pos32] = scratchUint32[storePos32];
     uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
     uint32[pos32 + 2] = scratchUint32[storePos32 + 2];
@@ -8054,10 +8054,10 @@ function serialize(ast) {
     const storePos32 = serializeProgram(ast);
     alignPos(4);
     alloc(44);
-    uint32[pos >> 2] = 1;
+    uint32[pos >>> 2] = 1;
     pos += 4;
     finalizeProgram(storePos32);
-    int32[pos >> 2] = -40;
+    int32[pos >>> 2] = -40;
     return subarray.call(buff, 0, pos + 4);
 }
 const { subarray } = Buffer.prototype;
@@ -8103,14 +8103,14 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
 
 function finalizeEnum(id, finalizeData, finalize, offset, length) {
     const startPos = pos;
-    uint32[pos >> 2] = id;
+    uint32[pos >>> 2] = id;
     pos += offset;
     finalize(finalizeData);
     pos = startPos + length;
 }
 
 function finalizeEnumValue(id) {
-    uint32[pos >> 2] = id & 255;
+    uint32[pos >>> 2] = id & 255;
     pos += 4;
 }
 
@@ -8126,12 +8126,12 @@ function finalizeOption(finalizeData, finalize, offset, length) {
 }
 
 function finalizeBox(valuePos) {
-    int32[pos >> 2] = (valuePos & 0x7fffffff) - pos;
+    int32[pos >>> 2] = (valuePos & 0x7fffffff) - pos;
     pos += 4;
 }
 
 function finalizeVec(storePos32) {
-    const pos32 = pos >> 2;
+    const pos32 = pos >>> 2;
     int32[pos32] = scratchUint32[storePos32] - pos;
     uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
     pos += 8;
@@ -8195,7 +8195,7 @@ function allocScratch(bytes32) {
 
 function allocScratchAligned(bytes) {
     const mod = bytes & 7;
-    return allocScratch((mod === 0 ? bytes : bytes + 8 - mod) >> 2);
+    return allocScratch((mod === 0 ? bytes : bytes + 8 - mod) >>> 2);
 }
 
 function growScratch() {
@@ -8216,8 +8216,8 @@ function writeScratchUint32(pos32, value) {
 
 function copyFromScratch(scratchPos32, len) {
     if ((pos & 3) === 0) {
-        let pos32 = pos >> 2;
-        const last32 = pos32 + (len >> 2) - 1;
+        let pos32 = pos >>> 2;
+        const last32 = pos32 + (len >>> 2) - 1;
         uint32[pos32] = scratchUint32[scratchPos32];
         uint32[++pos32] = scratchUint32[++scratchPos32];
         while (pos32 < last32) {
@@ -8236,9 +8236,9 @@ function copyFromScratch(scratchPos32, len) {
             }
         }
     } else if ((pos & 1) === 0) {
-        let pos16 = pos >> 1,
+        let pos16 = pos >>> 1,
             scratchPos16 = scratchPos32 << 1;
-        const last16 = pos16 + (len >> 1) - 1;
+        const last16 = pos16 + (len >>> 1) - 1;
         uint16[pos16] = scratchUint16[scratchPos16];
         uint16[++pos16] = scratchUint16[++scratchPos16];
         uint16[++pos16] = scratchUint16[++scratchPos16];
@@ -8292,7 +8292,7 @@ serialize.replaceFinalizeJsWord = () => {
         const len = scratchUint32[storePos32];
         if (len <= 7) {
             if (len > 0) {
-                const pos32 = pos >> 2;
+                const pos32 = pos >>> 2;
                 uint32[pos32] = scratchUint32[storePos32 + 1];
                 if (len > 4) uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
             }
@@ -8314,7 +8314,7 @@ serialize.replaceFinalizeJsWord = () => {
 
             buff[pos + 7] = len;
         } else {
-            const pos32 = pos >> 2;
+            const pos32 = pos >>> 2;
             // Length always stored little-endian, regardless of machine architecture
             // TODO Need to alter next line to write as little-endian on big-endian systems
             uint32[pos32] = len;

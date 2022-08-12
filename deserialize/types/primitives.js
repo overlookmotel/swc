@@ -47,7 +47,7 @@ module.exports = {
             if (
                 len & 128
             ) {
-                const pos32 = pos >> 2;
+                const pos32 = pos >>> 2;
                 // Length always stored little-endian, regardless of machine architecture
                 // TODO Need to alter next line to read as little-endian on big-endian systems
                 len = uint32[pos32];
@@ -174,7 +174,7 @@ module.exports = {
             const len = scratchUint32[storePos32];
             if (len <= 7) {
                 if (len > 0) {
-                    const pos32 = pos >> 2;
+                    const pos32 = pos >>> 2;
                     uint32[pos32] = scratchUint32[storePos32 + 1];
                     if (len > 4)
                         uint32[pos32 + 1] = scratchUint32[storePos32 + 2];
@@ -197,7 +197,7 @@ module.exports = {
 
                 buff[pos + 7] = len;
             } else {
-                const pos32 = pos >> 2;
+                const pos32 = pos >>> 2;
                 // Length always stored little-endian, regardless of machine architecture
                 // TODO Need to alter next line to write as little-endian on big-endian systems
                 uint32[pos32] = len;
@@ -245,7 +245,7 @@ module.exports = {
             if (
                 len & 128
             ) {
-                const pos32 = pos >> 2;
+                const pos32 = pos >>> 2;
                 // Length always stored little-endian, regardless of machine architecture
                 // TODO Need to alter next line to read as little-endian on big-endian systems
                 len = uint32[pos32];
@@ -381,15 +381,15 @@ module.exports = {
 
     Number: Custom({
         deserialize(pos) {
-            return float64[pos >> 3];
+            return float64[pos >>> 3];
         },
         serialize(num) {
-            const storePos64 = allocScratch(2) >> 1;
+            const storePos64 = allocScratch(2) >>> 1;
             scratchFloat64[storePos64] = num;
             return storePos64;
         },
         finalize(storePos64) {
-            float64[pos >> 3] = scratchFloat64[storePos64];
+            float64[pos >>> 3] = scratchFloat64[storePos64];
             pos += 8;
         },
         length: 8,
@@ -398,7 +398,7 @@ module.exports = {
 
     Span: Custom({
         deserialize(pos) {
-            const pos32 = pos >> 2;
+            const pos32 = pos >>> 2;
             return {
                 start: uint32[pos32],
                 end: uint32[pos32 + 1],
@@ -414,7 +414,7 @@ module.exports = {
             return storePos32;
         },
         finalize(storePos32) {
-            const pos32 = pos >> 2;
+            const pos32 = pos >>> 2;
             uint32[pos32] = scratchUint32[storePos32];
             uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
             uint32[pos32 + 2] = scratchUint32[storePos32 + 2];

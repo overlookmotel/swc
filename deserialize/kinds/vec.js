@@ -77,7 +77,7 @@ class Vec extends Kind {
  * @returns {Array<*>} - Array of values
  */
 function deserializeVec(pos, deserialize, length) {
-    const pos32 = pos >> 2;
+    const pos32 = pos >>> 2;
 
     /* DEBUG_ONLY_START */
     console.log("Vec pointer target:", pos + int32[pos32]);
@@ -159,7 +159,7 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
  * @returns {undefined}
  */
 function finalizeVec(storePos32) {
-    const pos32 = pos >> 2;
+    const pos32 = pos >>> 2;
     int32[pos32] = scratchUint32[storePos32] - pos;
     uint32[pos32 + 1] = scratchUint32[storePos32 + 1];
     pos += 8;

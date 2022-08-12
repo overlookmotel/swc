@@ -119,7 +119,7 @@ class Node extends Kind {
         // NB Scratch must be allocated in 8-byte blocks
         return `function ${this.serializerName}(node) {
             const storePos32 = allocScratch(${
-                getAligned(this.propsWithPos.length * 4, 8) >> 2
+                getAligned(this.propsWithPos.length * 4, 8) >>> 2
             });
             ${serializeCodes.join("\n")}
             return storePos32;

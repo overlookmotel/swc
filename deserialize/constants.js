@@ -16,6 +16,9 @@ assert(SCRATCH_INITIAL_BUFFER_SIZE % 8 === 0);
 
 // Buffers cannot be larger than 2 GiB so address is always expressable in 31 bit unsigned int.
 // Buffer addresses are used as finalize data. 32nd bit of finalize data is sometimes used as a flag.
+// Additionally, addresses need to be manipulated with bitwise operators e.g. `>>>`.
+// JavaScript bitwise operators only operate on 32 bit values so `1 << 32` is treated as `0`,
+// so `1 << 31` is largest value that can be safely used.
 assert(SERIALIZE_MAX_BUFFER_SIZE <= 2 * 1024 * 1024 * 1024);
 assert(SCRATCH_MAX_BUFFER_SIZE <= 2 * 1024 * 1024 * 1024);
 

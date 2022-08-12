@@ -43,7 +43,7 @@ function deserialize(buffIn) {
     buff = Buffer.from(arrayBuffer);
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
-    float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >> 3);
+    float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >>> 3);
 
     // Skip over `VersionedSerializable` data
     return deserializeProgram(
@@ -72,13 +72,13 @@ function serialize(ast) {
     alloc(PROGRAM_LENGTH_PLUS_8); // 8 extra bytes for `VersionedSerializable` data
 
     // Add `VersionedSerializable` version
-    uint32[pos >> 2] = AST_VERSION;
+    uint32[pos >>> 2] = AST_VERSION;
     pos += 4;
 
     finalizeProgram(storePos32);
 
     // Add pointer to `VersionedSerializable` version as final Int32
-    int32[pos >> 2] = -PROGRAM_LENGTH_PLUS_4;
+    int32[pos >>> 2] = -PROGRAM_LENGTH_PLUS_4;
 
     return subarray.call(buff, 0, pos + 4);
 }
@@ -215,7 +215,7 @@ function allocScratch(bytes32) {
  */
 function allocScratchAligned(bytes) {
     const mod = bytes & 7;
-    return allocScratch((mod === 0 ? bytes : bytes + 8 - mod) >> 2);
+    return allocScratch((mod === 0 ? bytes : bytes + 8 - mod) >>> 2);
 }
 
 /**
@@ -278,8 +278,8 @@ function copyFromScratch(scratchPos32, len) {
     if ((pos & 3) === 0) {
         // Output position is aligned to 4 bytes.
         // Copy bulk as Uint32s.
-        let pos32 = pos >> 2;
-        const last32 = pos32 + (len >> 2) - 1;
+        let pos32 = pos >>> 2;
+        const last32 = pos32 + (len >>> 2) - 1;
         uint32[pos32] = scratchUint32[scratchPos32];
         uint32[++pos32] = scratchUint32[++scratchPos32];
         while (pos32 < last32) {
@@ -302,9 +302,9 @@ function copyFromScratch(scratchPos32, len) {
     } else if ((pos & 1) === 0) {
         // Output position is aligned to 2 bytes.
         // Copy bulk as Uint16s.
-        let pos16 = pos >> 1,
+        let pos16 = pos >>> 1,
             scratchPos16 = scratchPos32 << 1;
-        const last16 = pos16 + (len >> 1) - 1;
+        const last16 = pos16 + (len >>> 1) - 1;
         uint16[pos16] = scratchUint16[scratchPos16];
         uint16[++pos16] = scratchUint16[++scratchPos16];
         uint16[++pos16] = scratchUint16[++scratchPos16];

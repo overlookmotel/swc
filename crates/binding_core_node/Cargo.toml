@@ -29,6 +29,7 @@ napi-build = { version = "2" }
 [dependencies]
 anyhow = "1"
 backtrace = "0.3"
+criterion = "0.3.6"
 napi = { version = "2", default-features = false, features = [
   "napi3",
   "serde-json",

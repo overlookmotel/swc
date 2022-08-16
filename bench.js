@@ -11,6 +11,7 @@ const {
         parseSyncToBuffer,
         parseSyncNoReturn,
         parseSyncToBufferNoReturn,
+        parseSyncToBufferViaPtr,
         parseSyncRkyvNoBuffer,
         parseSyncNoSerialization,
     } = require("./index.js"),
@@ -49,8 +50,11 @@ async function run() {
 
     // Check buffer parser produces same result as `parseSync()`
     const astOrig = conformSpans(parseSync(code, parseOptions)),
-        astViaBuffer = conformSpans(parseSyncViaBuffer(code, parseOptions));
+        buff = parseSyncToBuffer(code, parseOptions),
+        astViaBuffer = conformSpans(deserialize(buff));
     assertEqual(astViaBuffer, astOrig);
+
+    console.log("Buffer length:", buff.length);
 
     // Run benchmark
     await b.suite(
@@ -64,6 +68,13 @@ async function run() {
         b.add("SWC with buffer serialization and deserialization", () => {
             parseSyncViaBuffer(code, parseOptions);
         }),
+
+        b.add(
+            "SWC with buffer serialization and buffer returned via ptr",
+            () => {
+                parseSyncToBufferViaPtr(code, parseOptions);
+            }
+        ),
 
         b.add("SWC with buffer serialization but no deserialization", () => {
             parseSyncToBuffer(code, parseOptions);
@@ -84,6 +95,7 @@ async function run() {
             parseSyncNoSerialization(code, parseOptions);
         }),
 
+        /*
         b.add("SWC with JSON serialization but no deserialization", () => {
             parseSyncRawJson(code, parseOptions);
         }),
@@ -99,6 +111,7 @@ async function run() {
         b.add("Acorn", () => {
             acornParse(code, { ecmaVersion: 2022 });
         }),
+        */
 
         b.cycle(),
         b.complete(),

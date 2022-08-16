@@ -105,6 +105,15 @@ impl PluginSerializedBytes {
         (self.field.as_ptr(), self.field.len())
     }
 
+    pub fn into_vec(mut self) -> Vec<u8> {
+        let mut field = self.field;
+        let len = field.len();
+        let capacity = field.capacity();
+        let ptr = field.as_mut_ptr();
+        mem::forget(field);
+        unsafe { Vec::from_raw_parts(ptr, len, capacity) }
+    }
+
     pub fn deserialize<W>(&self) -> Result<VersionedSerializable<W>, Error>
     where
         W: rkyv::Archive,

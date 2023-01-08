@@ -103,6 +103,20 @@ async function run() {
         b.cycle(),
         b.complete(),
 
+        // Setting `async` to `true` inserts a pause between cycles.
+        // Without this, every run comes straight after the last synchronously
+        // which prevents any garbage collection at all. The increased memory usage
+        // produces slower performance, so the benchmark is unrealistic.
+        // A "cycle" is not a single execution of a bench function, but a batch of
+        // a few hundred. This is how benchmark.js works.
+        // So it's still using more memory than is realistic. In an async program,
+        // memory would likely get freed earlier.
+        b.configure({
+            cases: {
+                async: true,
+            },
+        }),
+
         b.save({
             file: "react",
             folder: __dirname,

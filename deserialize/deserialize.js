@@ -2968,7 +2968,7 @@ function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
 
 function deserialize(buffIn) {
     const arrayBuffer = buffIn.buffer;
-    buff = Buffer.from(arrayBuffer);
+    buff = buffIn.byteOffset === 0 ? buffIn : new Uint8Array(arrayBuffer);
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >>> 3);

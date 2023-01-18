@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Context as _;
 use napi::{
-    bindgen_prelude::{AbortSignal, AsyncTask, Buffer},
+    bindgen_prelude::{AbortSignal, AsyncTask, Buffer, Uint8Array},
     Env, Task,
 };
 use swc::{
@@ -234,7 +234,7 @@ pub fn parse_sync_to_buffer(
     src: String,
     opts: Buffer,
     filename: Option<String>,
-) -> napi::Result<Buffer> {
+) -> napi::Result<Uint8Array> {
     swc_nodejs_common::init_default_trace_subscriber();
     let c = get_compiler();
 
@@ -269,9 +269,21 @@ pub fn parse_sync_to_buffer(
 
     let versioned_program = VersionedSerializable::new(program);
     let serialized = PluginSerializedBytes::try_serialize(&versioned_program).convert_err()?;
-    let slice = serialized.as_slice();
-    let buffer = Buffer::from(slice);
+    let mut aligned_vec = serialized.into_inner();
 
+    // Convert `AlignedVec` to `Uint8Array` using `Uint8Array::with_external_data`
+    // and handle dropping the `AlignedVec` manually, rather than transmuting it to
+    // `Vec<u8>` and allowing napi-rs to handle dropping it, to ensure it's
+    // deallocated with same layout as it was allocated with
+    // (`AlignedVec` has alignment 16 vs `Vec<u8>`'s alignment 1).
+    // Also avoiding `aligned_vec.to_vec()` because this copies memory.
+    let buffer = unsafe {
+        Uint8Array::with_external_data(
+            aligned_vec.as_mut_ptr(),
+            aligned_vec.len(),
+            move |_ptr, _len| drop(aligned_vec),
+        )
+    };
     Ok(buffer)
 }
 
@@ -315,8 +327,15 @@ pub fn parse_sync_to_buffer_no_return(
 
     let versioned_program = VersionedSerializable::new(program);
     let serialized = PluginSerializedBytes::try_serialize(&versioned_program).convert_err()?;
-    let slice = serialized.as_slice();
-    let _buffer = Buffer::from(slice);
+    let mut aligned_vec = serialized.into_inner();
+
+    let _buffer = unsafe {
+        Uint8Array::with_external_data(
+            aligned_vec.as_mut_ptr(),
+            aligned_vec.len(),
+            move |_ptr, _len| drop(aligned_vec),
+        )
+    };
 
     Ok("".to_string())
 }

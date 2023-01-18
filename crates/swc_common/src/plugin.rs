@@ -105,6 +105,10 @@ impl PluginSerializedBytes {
         (self.field.as_ptr(), self.field.len())
     }
 
+    pub fn into_inner(self) -> rkyv::AlignedVec {
+        self.field
+    }
+
     pub fn deserialize<W>(&self) -> Result<VersionedSerializable<W>, Error>
     where
         W: rkyv::Archive,

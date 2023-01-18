@@ -455,9 +455,12 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
 name = "convert_case"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb4a24b1aaf0fd0ce8b45161144d6f42cd91677fd5940fd431183eb023b3a2b8"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "copyless"
@@ -1619,13 +1622,14 @@ checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
 
 [[package]]
 name = "napi"
-version = "2.5.0"
+version = "2.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec369bd2ae196a21bb08fb53761e637862c3c0699da9cd21b6d954e32dda04b3"
+checksum = "bb76ccc19efa57f1d3b847a8cd451ce5a5a3f8ab655faf13f743591031cf31fa"
 dependencies = [
+ "bitflags",
  "ctor",
- "lazy_static",
  "napi-sys",
+ "once_cell",
  "serde",
  "serde_json",
  "thread_local",
@@ -1639,9 +1643,9 @@ checksum = "882a73d9ef23e8dc2ebbffb6a6ae2ef467c0f18ac10711e4cc59c5485d41df0e"
 
 [[package]]
 name = "napi-derive"
-version = "2.5.0"
+version = "2.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c0308f2313ee504b032bad9c75343d967e6ba27be2e3f19e89bb0ee8786b5b0"
+checksum = "47bff5a8ed70117bce55053a74ff8f423f90c48c704030609272e6e3bde1c5a4"
 dependencies = [
  "convert_case",
  "napi-derive-backend",
@@ -1652,9 +1656,9 @@ dependencies = [
 
 [[package]]
 name = "napi-derive-backend"
-version = "1.0.33"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c97606e865ebfca1c5d0c952e34969ca26b3c8ba0c246c569a2fc945719a78ea"
+checksum = "e13b412301aeebee17724fff6d73536e9ecb8387f10bbbf317a9f7a006cc1c5b"
 dependencies = [
  "convert_case",
  "once_cell",
@@ -1839,9 +1843,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.12.0"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7709cef83f0c1f58f666e746a08b21e0085f7440fa6a29cc194d68aac97a4225"
+checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 
 [[package]]
 name = "oorandom"
@@ -4626,6 +4630,12 @@ checksum = "d54590932941a9e9266f0832deed84ebe1bf2e4c9e4a3554d393d18f5e854bf9"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fdbf052a0783de01e944a6ce7a8cb939e295b1e7be835a1112c3b9a7f047a5a"
 
 [[package]]
 name = "unicode-width"

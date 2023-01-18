@@ -46,9 +46,14 @@ function deserialize(buffIn) {
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >>> 3);
 
     // Skip over `VersionedSerializable` data
-    return deserializeProgram(
+    const ast = deserializeProgram(
         buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH_PLUS_4
     );
+
+    // Allow buffer to be garbage collected
+    buff = int32 = uint32 = float64 = undefined;
+
+    return ast;
 }
 let buff, int32, uint32, float64;
 

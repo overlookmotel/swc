@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Context as _;
+use anyhow::{Context as _, Error};
 use napi::{
     bindgen_prelude::{AbortSignal, AsyncTask, Buffer},
     Env, JsBuffer, JsBufferValue, Ref, Task,
@@ -188,11 +188,13 @@ pub fn transform_sync_from_buffer(buff: Buffer, opts: Buffer) -> napi::Result<Tr
                 let len: i32 = bytes
                     .len()
                     .try_into()
-                    .expect("Should able to convert ptr length");
+                    .map_err(|_err| Error::msg("AST buffer must be no larger than 4 GiB"))
+                    .convert_err()?;
                 let program = unsafe {
                     deserialize_from_ptr(ptr, len)
                         .map(|v| v.into_inner())
-                        .expect("Should able to deserialize")
+                        .map_err(|_err| Error::msg("Failed to deserialize AST buffer"))
+                        .convert_err()?
                 };
 
                 c.process_js(handler, program, &options)

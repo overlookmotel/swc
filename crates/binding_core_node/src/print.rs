@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Error;
 use napi::{
     bindgen_prelude::{AbortSignal, AsyncTask, Buffer},
     Env, Task,
@@ -122,11 +123,13 @@ pub fn print_sync_from_buffer(buff: Buffer, options: Buffer) -> napi::Result<Tra
     let len: i32 = bytes
         .len()
         .try_into()
-        .expect("Should able to convert ptr length");
+        .map_err(|_err| Error::msg("AST buffer must be no larger than 4 GiB"))
+        .convert_err()?;
     let program: Program = unsafe {
         deserialize_from_ptr(ptr, len)
             .map(|v| v.into_inner())
-            .expect("Should able to deserialize")
+            .map_err(|_err| Error::msg("Failed to deserialize AST buffer"))
+            .convert_err()?
     };
 
     let options: Options = get_deserialized(&options)?;

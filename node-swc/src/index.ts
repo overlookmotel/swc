@@ -70,7 +70,7 @@ export class Compiler {
     return bindings.parseSyncNoReturn(src, toBuffer(options), filename);
   }
 
-  parseSyncToBuffer(src: string, options?: ParseOptions, filename?: string): Buffer {
+  parseSyncToBuffer(src: string, options?: ParseOptions, filename?: string): Uint8Array {
     options = options || { syntax: "ecmascript" };
     options.syntax = options.syntax || "ecmascript";
 
@@ -291,7 +291,7 @@ export function parseSyncNoReturn(src: string, options?: ParseOptions): String {
   return compiler.parseSyncNoReturn(src, options);
 }
 
-export function parseSyncToBuffer(src: string, options?: ParseOptions): Buffer {
+export function parseSyncToBuffer(src: string, options?: ParseOptions): Uint8Array {
   return compiler.parseSyncToBuffer(src, options);
 }
 

@@ -64,3 +64,4 @@ pkg/
 
 !bench.js
 !benchAll.js
+!benchPrint.js

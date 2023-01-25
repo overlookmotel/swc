@@ -5,6 +5,12 @@ use rkyv::{
 };
 use swc_ecma_ast::Program;
 
+// Minimum alignment required on buffer containing serialized AST.
+// If AST node types are changed in future to include e.g. a `u128` which
+// requires alignment of 16, increase value of `AST_ALIGNMENT` here
+// and in `deserialize/generate.js`.
+const AST_ALIGNMENT: usize = 8;
+
 #[inline]
 pub fn serialize(t: &Program) -> Result<AlignedVec, Error> {
     to_bytes::<_, 512>(t).map_err(|err| match err {
@@ -14,18 +20,27 @@ pub fn serialize(t: &Program) -> Result<AlignedVec, Error> {
     })
 }
 
+/// SAFETY: `bytes` must contain valid serialized `Program`.
 pub unsafe fn deserialize(bytes: &[u8]) -> Result<Program, Error> {
-    // Copy into aligned slice of bytes
-    // TODO If bytes already aligned on 16 (or maybe 8), can skip this step
-    let mut aligned_vec = AlignedVec::new();
-    aligned_vec.extend_from_slice(bytes);
-    let bytes = &aligned_vec[..];
+    // If `bytes` does not meet minimum alignment requirement, copy into aligned vec
+    // before deserializing, to achieve alignment.
+    // In practice, `Buffer`s passed via NAPI seem always to be aligned on at least
+    // 16 anyway, but this is just in case they aren't in some circumstances.
+    if (bytes.as_ptr() as usize) & (AST_ALIGNMENT - 1) != 0 {
+        let mut aligned_vec = AlignedVec::new();
+        aligned_vec.extend_from_slice(bytes);
+        let bytes = &aligned_vec[..];
 
-    // Unsafe if `bytes` does not contain valid serialized `Program`.
-    // The other invariant - that `bytes` must be aligned - is guaranteed by
-    // preceding code.
+        deserialize_from_aligned_slice(bytes)
+    } else {
+        deserialize_from_aligned_slice(bytes)
+    }
+}
+
+/// SAFETY: `bytes` must contain valid serialized `Program`.
+/// `bytes` must be aligned to `AST_ALIGNMENT`.
+unsafe fn deserialize_from_aligned_slice(bytes: &[u8]) -> Result<Program, Error> {
     let archived = archived_root::<Program>(bytes);
-
     archived
         .deserialize(&mut SharedDeserializeMap::new())
         .map_err(|_err| Error::msg("Failed to deserialize AST buffer"))

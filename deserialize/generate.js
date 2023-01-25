@@ -3,6 +3,7 @@
 // Modules
 const { writeFileSync } = require("fs"),
     pathJoin = require("path").join,
+    assert = require("assert"),
     prettier = require("prettier");
 
 // Imports
@@ -36,6 +37,19 @@ const { types } = require("./types/index.js"),
         debugAst,
     } = require("./utils.js"),
     { ...constants } = require("./constants.js");
+
+// Ensure all AST node types require alignment of no more than 8.
+// This makes sure that if an AST buffer is aligned on 8, all AST node types will be aligned correctly.
+// `rkyv::AlignedVec` is aligned on 16, but that's excessive for SWC's types.
+// If an AST node type is changed in future to include e.g. a `u128` which requires alignment of 16,
+// increase value of `AST_ALIGNMENT` here and in `crates/binding_core_node/src/ser.rs`.
+const AST_ALIGNMENT = 8;
+for (const type of Object.values(types)) {
+    assert(
+        type.align <= AST_ALIGNMENT,
+        `Alignment of AST node type '${type.name}' exceeds ${AST_ALIGNMENT}`
+    );
+}
 
 // Generate deserializer code
 

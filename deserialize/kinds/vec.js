@@ -83,6 +83,7 @@ function deserializeVec(pos, deserialize, length) {
     console.log("Vec pointer target:", pos + int32[pos32]);
     /* DEBUG_ONLY_END */
 
+    // Fast path for empty vecs
     const numEntries = uint32[pos32 + 1];
     if (numEntries === 0) return [];
     const entries = new Array(numEntries);

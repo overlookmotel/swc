@@ -2,8 +2,7 @@
 
 // Imports
 const {
-    PROGRAM_LENGTH_PLUS_4,
-    PROGRAM_LENGTH_PLUS_8,
+    PROGRAM_LENGTH,
     PROGRAM_ALIGN,
     SERIALIZE_INITIAL_BUFFER_SIZE,
     SCRATCH_INITIAL_BUFFER_SIZE32,
@@ -45,9 +44,8 @@ function deserialize(buffIn) {
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >>> 3);
 
-    // Skip over `VersionedSerializable` data
     const ast = deserializeProgram(
-        buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH_PLUS_4
+        buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH
     );
 
     // Allow buffer to be garbage collected
@@ -74,18 +72,9 @@ function serialize(ast) {
 
     const storePos32 = serializeProgram(ast);
     alignPos(PROGRAM_ALIGN);
-    alloc(PROGRAM_LENGTH_PLUS_8); // 8 extra bytes for `VersionedSerializable` data
-
-    // Add `VersionedSerializable` version
-    uint32[pos >>> 2] = AST_VERSION;
-    pos += 4;
-
+    alloc(PROGRAM_LENGTH);
     finalizeProgram(storePos32);
-
-    // Add pointer to `VersionedSerializable` version as final Int32
-    int32[pos >>> 2] = -PROGRAM_LENGTH_PLUS_4;
-
-    return subarray.call(buff, 0, pos + 4);
+    return subarray.call(buff, 0, pos);
 }
 let pos, scratchPos32;
 

@@ -14,6 +14,7 @@ mod bundle;
 mod minify;
 mod parse;
 mod print;
+mod ser;
 mod transform;
 mod util;
 

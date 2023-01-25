@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use anyhow::Error;
 use napi::{
     bindgen_prelude::{AbortSignal, AsyncTask, Buffer},
     Env, Task,
@@ -9,11 +8,10 @@ use swc::{
     config::{Options, SourceMapsConfig},
     Compiler, TransformOutput,
 };
-use swc_common::plugin::deserialize_from_ptr;
 use swc_ecma_ast::{EsVersion, Program};
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
 
-use crate::get_compiler;
+use crate::{get_compiler, ser};
 
 // ----- Printing -----
 
@@ -118,19 +116,8 @@ pub fn print_sync_from_buffer(buff: Buffer, options: Buffer) -> napi::Result<Tra
 
     let c = get_compiler();
 
-    let bytes: &[u8] = buff.as_ref();
-    let ptr = bytes.as_ptr();
-    let len: i32 = bytes
-        .len()
-        .try_into()
-        .map_err(|_err| Error::msg("AST buffer must be no larger than 2 GiB"))
-        .convert_err()?;
-    let program: Program = unsafe {
-        deserialize_from_ptr(ptr, len)
-            .map(|v| v.into_inner())
-            .map_err(|_err| Error::msg("Failed to deserialize AST buffer"))
-            .convert_err()?
-    };
+    let bytes = buff.as_ref();
+    let program = unsafe { ser::deserialize(bytes) }.convert_err()?;
 
     let options: Options = get_deserialized(&options)?;
 

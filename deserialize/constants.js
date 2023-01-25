@@ -27,10 +27,6 @@ module.exports = {
     SCRATCH_INITIAL_BUFFER_SIZE32: SCRATCH_INITIAL_BUFFER_SIZE / 4,
     SERIALIZE_MAX_BUFFER_SIZE,
     SCRATCH_MAX_BUFFER_SIZE32: SCRATCH_MAX_BUFFER_SIZE / 4,
-    // `AST_VERSION` from `VersionedSerializable((1, value))`
-    // https://github.com/swc-project/swc/blob/main/crates/swc_common/src/plugin/mod.rs
-    AST_VERSION: 1,
-    PROGRAM_LENGTH_PLUS_4: 0, // Will be set based on types
-    PROGRAM_LENGTH_PLUS_8: 0, // Will be set based on types
+    PROGRAM_LENGTH: 0, // Will be set based on types
     PROGRAM_ALIGN: 0, // Will be set based on types
 };

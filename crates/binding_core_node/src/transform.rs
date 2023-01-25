@@ -3,19 +3,19 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{Context as _, Error};
+use anyhow::Context as _;
 use napi::{
     bindgen_prelude::{AbortSignal, AsyncTask, Buffer},
     Env, JsBuffer, JsBufferValue, Ref, Task,
 };
 use path_clean::clean;
 use swc::{config::Options, Compiler, TransformOutput};
-use swc_common::{plugin::deserialize_from_ptr, FileName};
+use swc_common::FileName;
 use swc_ecma_ast::Program;
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
 use tracing::instrument;
 
-use crate::{get_compiler, util::try_with};
+use crate::{get_compiler, ser, util::try_with};
 
 /// Input to transform
 #[derive(Debug)]
@@ -183,19 +183,8 @@ pub fn transform_sync_from_buffer(buff: Buffer, opts: Buffer) -> napi::Result<Tr
         error_format,
         |handler| {
             c.run(|| {
-                let bytes: &[u8] = buff.as_ref();
-                let ptr = bytes.as_ptr();
-                let len: i32 = bytes
-                    .len()
-                    .try_into()
-                    .map_err(|_err| Error::msg("AST buffer must be no larger than 2 GiB"))
-                    .convert_err()?;
-                let program = unsafe {
-                    deserialize_from_ptr(ptr, len)
-                        .map(|v| v.into_inner())
-                        .map_err(|_err| Error::msg("Failed to deserialize AST buffer"))
-                        .convert_err()?
-                };
+                let bytes = buff.as_ref();
+                let program = unsafe { ser::deserialize(bytes) }.convert_err()?;
 
                 c.process_js(handler, program, &options)
             })

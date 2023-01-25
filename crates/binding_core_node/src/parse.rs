@@ -12,14 +12,10 @@ use swc::{
     config::{ErrorFormat, ParseOptions},
     Compiler,
 };
-use swc_common::{
-    comments::Comments,
-    plugin::{PluginSerializedBytes, VersionedSerializable},
-    FileName,
-};
+use swc_common::{comments::Comments, FileName};
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
 
-use crate::{get_compiler, util::try_with};
+use crate::{get_compiler, ser, util::try_with};
 
 // ----- Parsing -----
 
@@ -267,9 +263,7 @@ pub fn parse_sync_to_buffer(
     })
     .convert_err()?;
 
-    let versioned_program = VersionedSerializable::new(program);
-    let serialized = PluginSerializedBytes::try_serialize(&versioned_program).convert_err()?;
-    let mut aligned_vec = serialized.into_inner();
+    let mut aligned_vec = ser::serialize(&program).convert_err()?;
 
     // Convert `AlignedVec` to `Uint8Array` using `Uint8Array::with_external_data`
     // and handle dropping the `AlignedVec` manually, rather than transmuting it to
@@ -325,9 +319,7 @@ pub fn parse_sync_to_buffer_no_return(
     })
     .convert_err()?;
 
-    let versioned_program = VersionedSerializable::new(program);
-    let serialized = PluginSerializedBytes::try_serialize(&versioned_program).convert_err()?;
-    let mut aligned_vec = serialized.into_inner();
+    let mut aligned_vec = ser::serialize(&program).convert_err()?;
 
     let _buffer = unsafe {
         Uint8Array::with_external_data(
@@ -378,8 +370,7 @@ pub fn parse_sync_rkyv_no_buffer(
     })
     .convert_err()?;
 
-    let versioned_program = VersionedSerializable::new(program);
-    let _serialized = PluginSerializedBytes::try_serialize(&versioned_program).convert_err()?;
+    let _aligned_vec = ser::serialize(&program).convert_err()?;
 
     Ok("".to_string())
 }

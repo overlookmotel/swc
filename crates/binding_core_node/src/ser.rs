@@ -29,7 +29,7 @@ const BUFFER_SIZE_RATIO: usize = 16;
 /// Serializer is initialized with an `AlignedVec` which will hopefully be large
 /// enough to serialize whole AST into without reallocating.
 #[inline]
-pub fn serialize(t: &Program, src_len: usize) -> Result<AlignedVec, Error> {
+pub fn serialize(program: &Program, src_len: usize) -> Result<AlignedVec, Error> {
     let mut capacity = src_len.saturating_mul(BUFFER_SIZE_RATIO);
     if capacity <= usize::MAX >> 1 {
         capacity = capacity.checked_next_power_of_two().unwrap();
@@ -41,11 +41,13 @@ pub fn serialize(t: &Program, src_len: usize) -> Result<AlignedVec, Error> {
     let shared = SharedSerializeMap::default();
     let mut serializer = AllocSerializer::<512>::new(aligned_serializer, scratch, shared);
 
-    serializer.serialize_value(t).map_err(|err| match err {
-        CompositeSerializerError::SerializerError(e) => e.into(),
-        CompositeSerializerError::ScratchSpaceError(_e) => Error::msg("AllocScratchError"),
-        CompositeSerializerError::SharedError(_e) => Error::msg("SharedSerializeMapError"),
-    })?;
+    serializer
+        .serialize_value(program)
+        .map_err(|err| match err {
+            CompositeSerializerError::SerializerError(e) => e.into(),
+            CompositeSerializerError::ScratchSpaceError(_e) => Error::msg("AllocScratchError"),
+            CompositeSerializerError::SharedError(_e) => Error::msg("SharedSerializeMapError"),
+        })?;
     let aligned_vec = serializer.into_serializer().into_inner();
     Ok(aligned_vec)
 }

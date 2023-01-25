@@ -241,6 +241,8 @@ pub fn parse_sync_to_buffer(
         FileName::Anon
     };
 
+    let src_len = src.len();
+
     let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
@@ -263,7 +265,7 @@ pub fn parse_sync_to_buffer(
     })
     .convert_err()?;
 
-    let mut aligned_vec = ser::serialize(&program).convert_err()?;
+    let mut aligned_vec = ser::serialize(&program, src_len).convert_err()?;
 
     // Convert `AlignedVec` to `Uint8Array` using `Uint8Array::with_external_data`
     // and handle dropping the `AlignedVec` manually, rather than transmuting it to
@@ -297,6 +299,8 @@ pub fn parse_sync_to_buffer_no_return(
         FileName::Anon
     };
 
+    let src_len = src.len();
+
     let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
@@ -319,7 +323,7 @@ pub fn parse_sync_to_buffer_no_return(
     })
     .convert_err()?;
 
-    let mut aligned_vec = ser::serialize(&program).convert_err()?;
+    let mut aligned_vec = ser::serialize(&program, src_len).convert_err()?;
 
     let _buffer = unsafe {
         Uint8Array::with_external_data(
@@ -348,6 +352,8 @@ pub fn parse_sync_rkyv_no_buffer(
         FileName::Anon
     };
 
+    let src_len = src.len();
+
     let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
         c.run(|| {
             let fm = c.cm.new_source_file(filename, src);
@@ -370,7 +376,7 @@ pub fn parse_sync_rkyv_no_buffer(
     })
     .convert_err()?;
 
-    let _aligned_vec = ser::serialize(&program).convert_err()?;
+    let _aligned_vec = ser::serialize(&program, src_len).convert_err()?;
 
     Ok("".to_string())
 }

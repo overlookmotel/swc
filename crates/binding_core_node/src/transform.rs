@@ -188,7 +188,7 @@ pub fn transform_sync_from_buffer(buff: Buffer, opts: Buffer) -> napi::Result<Tr
                 let len: i32 = bytes
                     .len()
                     .try_into()
-                    .map_err(|_err| Error::msg("AST buffer must be no larger than 4 GiB"))
+                    .map_err(|_err| Error::msg("AST buffer must be no larger than 2 GiB"))
                     .convert_err()?;
                 let program = unsafe {
                     deserialize_from_ptr(ptr, len)

@@ -1,5 +1,7 @@
 use std::{
+    mem,
     path::{Path, PathBuf},
+    ptr::NonNull,
     sync::Arc,
 };
 
@@ -8,6 +10,7 @@ use napi::{
     bindgen_prelude::{AbortSignal, AsyncTask, Buffer, Uint8Array},
     Env, Task,
 };
+use rkyv::AlignedVec;
 use swc::{
     config::{ErrorFormat, ParseOptions},
     Compiler,
@@ -281,6 +284,116 @@ pub fn parse_sync_to_buffer(
         )
     };
     Ok(buffer)
+}
+
+struct CachedAlignedVec {
+    ptr: NonNull<u8>,
+    cap: usize,
+    len: usize,
+}
+
+static mut CACHED_VEC: CachedAlignedVec = CachedAlignedVec {
+    ptr: NonNull::dangling(),
+    cap: 0,
+    len: AlignedVec::ALIGNMENT, // Just the bytes used for recording length
+};
+
+#[napi]
+pub fn parse_sync_to_buffer_with_reuse(
+    src: String,
+    opts: Buffer,
+    filename: Option<String>,
+    reuse_buffer: bool,
+) -> napi::Result<Option<Uint8Array>> {
+    swc_nodejs_common::init_default_trace_subscriber();
+    let c = get_compiler();
+
+    let options: ParseOptions = get_deserialized(&opts)?;
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    let src_len = src.len();
+
+    let program = try_with(c.cm.clone(), false, ErrorFormat::Normal, |handler| {
+        c.run(|| {
+            let fm = c.cm.new_source_file(filename, src);
+
+            let comments = if options.comments {
+                Some(c.comments() as &dyn Comments)
+            } else {
+                None
+            };
+
+            c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+    })
+    .convert_err()?;
+
+    // `CACHED_VEC` is safe to read and mutate because it is only used in main
+    // thread, so no synchronization necessary
+    let mut aligned_vec = if reuse_buffer {
+        // Safe because `reuse_buffer` is only true if there is a cached vec and it's
+        // not been garbage collected yet, due to use of `WeakRef` on JS side.
+        // TODO Need to harden this.
+        // Cached `aligned_vec` will get dropped if serialization fails, but JS won't
+        // know that and may try to reuse it.
+        // Probably other problems too.
+        let aligned_vec: rkyv::AlignedVec = unsafe { mem::transmute_copy(&CACHED_VEC) };
+        let aligned_vec = ser::serialize_into(&program, aligned_vec).convert_err()?;
+
+        // If buffer has been reused (without changing memory location or capacity),
+        // return `None`
+        if aligned_vec.as_ptr() as usize == unsafe { &CACHED_VEC }.ptr.as_ptr() as usize {
+            if aligned_vec.capacity() == unsafe { &CACHED_VEC }.cap {
+                mem::forget(aligned_vec);
+                return Ok(None);
+            }
+
+            // Cannot have 2 buffers occupying same memory, as would lead to a double-free.
+            // TODO Deal with this gracefully, by copying the contents to a new `AlignedVec`
+            // and forgetting the old one.
+            // TODO Investigate how often this happens. If it's common, would be better to
+            // make the `AlignedVec` reallocate and get a new memory address at
+            // the point that it grows beyond capacity.
+            panic!("Buffer was extended and retains same memory address");
+        }
+
+        // Buffer was not reused. Probably it had to grow.
+        aligned_vec
+    } else {
+        ser::serialize(&program, src_len).convert_err()?
+    };
+
+    // Record details of vec so can be reused on a later call
+    unsafe {
+        CACHED_VEC.ptr = NonNull::new(aligned_vec.as_mut_ptr()).unwrap();
+        CACHED_VEC.cap = aligned_vec.capacity();
+    }
+
+    // Convert `AlignedVec` to `Uint8Array` using `Uint8Array::with_external_data`
+    // and handle dropping the `AlignedVec` manually, rather than transmuting it to
+    // `Vec<u8>` and allowing napi-rs to handle dropping it, to ensure it's
+    // deallocated with same layout as it was allocated with
+    // (`AlignedVec` has alignment 16 vs `Vec<u8>`'s alignment 1).
+    // Also avoiding `aligned_vec.to_vec()` because this copies memory.
+    let buffer = unsafe {
+        Uint8Array::with_external_data(
+            aligned_vec.as_mut_ptr(),
+            aligned_vec.capacity(),
+            move |_ptr, _len| drop(aligned_vec),
+        )
+    };
+    Ok(Some(buffer))
 }
 
 #[napi]

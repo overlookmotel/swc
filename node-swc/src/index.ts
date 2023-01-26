@@ -77,6 +77,13 @@ export class Compiler {
     return bindings.parseSyncToBuffer(src, toBuffer(options), filename);
   }
 
+  parseSyncToBufferWithReuse(src: string, reuseBuffer: boolean, options?: ParseOptions, filename?: string): Uint8Array {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    return bindings.parseSyncToBufferWithReuse(src, toBuffer(options), filename, reuseBuffer);
+  }
+
   parseSyncToBufferNoReturn(src: string, options?: ParseOptions, filename?: string): String {
     options = options || { syntax: "ecmascript" };
     options.syntax = options.syntax || "ecmascript";
@@ -293,6 +300,10 @@ export function parseSyncNoReturn(src: string, options?: ParseOptions): String {
 
 export function parseSyncToBuffer(src: string, options?: ParseOptions): Uint8Array {
   return compiler.parseSyncToBuffer(src, options);
+}
+
+export function parseSyncToBufferWithReuse(src: string, reuseBuffer: boolean, options?: ParseOptions): Uint8Array {
+  return compiler.parseSyncToBufferWithReuse(src, reuseBuffer, options);
 }
 
 export function parseSyncToBufferNoReturn(src: string, options?: ParseOptions): String {

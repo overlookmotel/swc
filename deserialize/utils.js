@@ -38,14 +38,15 @@ module.exports = {
  * @returns {Object} - AST
  */
 function deserialize(buffIn) {
-    const arrayBuffer = buffIn.buffer;
-    buff = buffIn.byteOffset === 0 ? buffIn : new Uint8Array(arrayBuffer);
+    const { buffer: arrayBuffer, byteOffset: offset } = buffIn;
+    buff = offset === 0 ? buffIn : new Uint8Array(arrayBuffer);
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >>> 3);
 
+    // Length of buffer stored in first 4 bytes
     const ast = deserializeProgram(
-        buffIn.byteOffset + buffIn.length - PROGRAM_LENGTH
+        offset + uint32[offset >> 2] - PROGRAM_LENGTH
     );
 
     // Allow buffer to be garbage collected

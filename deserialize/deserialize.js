@@ -2967,12 +2967,12 @@ function deserializeClassExpressionOrFunctionExpressionOrTsInterfaceDeclaration(
 }
 
 function deserialize(buffIn) {
-    const arrayBuffer = buffIn.buffer;
-    buff = buffIn.byteOffset === 0 ? buffIn : new Uint8Array(arrayBuffer);
+    const { buffer: arrayBuffer, byteOffset: offset } = buffIn;
+    buff = offset === 0 ? buffIn : new Uint8Array(arrayBuffer);
     int32 = new Int32Array(arrayBuffer);
     uint32 = new Uint32Array(arrayBuffer);
     float64 = new Float64Array(arrayBuffer, 0, arrayBuffer.byteLength >>> 3);
-    const ast = deserializeProgram(buffIn.byteOffset + buffIn.length - 36);
+    const ast = deserializeProgram(offset + uint32[offset >> 2] - 36);
     buff = int32 = uint32 = float64 = undefined;
     return ast;
 }

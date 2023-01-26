@@ -9,6 +9,7 @@ const b = require("benny"),
 const {
         parseSync,
         parseSyncToBuffer,
+        parseSyncToBufferWithReuse,
         parseSyncNoReturn,
         parseSyncToBufferNoReturn,
         parseSyncRkyvNoBuffer,
@@ -22,6 +23,27 @@ const {
 function parseSyncViaBuffer(code, options) {
     const buff = parseSyncToBuffer(code, options);
     return deserialize(buff);
+}
+
+let bufferCache;
+function parseSyncToBufferWithReuseNoDeserialize(code, options) {
+    let buff = bufferCache ? bufferCache.deref() : undefined;
+
+    if (buff) {
+        const newBuff = parseSyncToBufferWithReuse(code, true, options);
+        if (!newBuff) return buff;
+        buff = newBuff;
+    } else {
+        buff = parseSyncToBufferWithReuse(code, false, options);
+    }
+
+    bufferCache = new WeakRef(buff);
+
+    return buff;
+}
+
+function parseSyncViaBufferWithReuse(code, options) {
+    return deserialize(parseSyncToBufferWithReuseNoDeserialize(code, options));
 }
 
 function parseSyncRawJson(code, options, filename) {
@@ -52,6 +74,15 @@ async function run() {
         astViaBuffer = conformSpans(parseSyncViaBuffer(code, parseOptions));
     assertEqual(astViaBuffer, astOrig);
 
+    const astViaBuffer2 = conformSpans(
+        parseSyncViaBufferWithReuse(code, parseOptions)
+    );
+    assertEqual(astViaBuffer2, astOrig);
+    const astViaBuffer3 = conformSpans(
+        parseSyncViaBufferWithReuse(code, parseOptions)
+    );
+    assertEqual(astViaBuffer3, astOrig);
+
     // Run benchmark
     await b.suite(
         `${filename} (${filesize(code.length)})`,
@@ -65,9 +96,23 @@ async function run() {
             parseSyncViaBuffer(code, parseOptions);
         }),
 
+        b.add(
+            "SWC with buffer serialization and deserialization with buffer reuse",
+            () => {
+                parseSyncViaBufferWithReuse(code, parseOptions);
+            }
+        ),
+
         b.add("SWC with buffer serialization but no deserialization", () => {
             parseSyncToBuffer(code, parseOptions);
         }),
+
+        b.add(
+            "SWC with buffer serialization but no deserialization with buffer reuse",
+            () => {
+                parseSyncToBufferWithReuseNoDeserialize(code, parseOptions);
+            }
+        ),
 
         b.add(
             "SWC with buffer serialization but buffer not returned to JS",

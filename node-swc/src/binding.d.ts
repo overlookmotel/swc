@@ -14,6 +14,7 @@ export function parse(src: string, options: Buffer, filename?: string | undefine
 export function parseSync(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncToBuffer(src: string, opts: Buffer, filename?: string | undefined | null): Uint8Array
+export function parseSyncToBufferWithReuse(src: string, opts: Buffer, filename: string | undefined | null, reuseBuffer: boolean): Uint8Array | null
 export function parseSyncToBufferNoReturn(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncRkyvNoBuffer(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseSyncNoSerialization(src: string, opts: Buffer, filename?: string | undefined | null): string

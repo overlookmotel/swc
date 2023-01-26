@@ -1,3 +1,5 @@
+use std::mem;
+
 use anyhow::Error;
 use rkyv::{
     archived_root,
@@ -19,23 +21,40 @@ use swc_ecma_ast::Program;
 // and in `deserialize/generate.js`.
 const AST_ALIGNMENT: usize = 8;
 
+#[allow(clippy::assertions_on_constants)]
+const _: () = assert!(AST_ALIGNMENT <= AlignedVec::ALIGNMENT);
+
 // Typical ratio of length of JS code string to size of buffer required for AST.
 // Minified code can have ratio of more like 30, but non-minified code more like
 // 10. A value of 16 will likely result in buffer not having to be resized
 // during serialization, or at most only once.
-const BUFFER_SIZE_RATIO: usize = 16;
+const BUFFER_SIZE_RATIO: u32 = 16;
+
+const ZEROS: [u8; AlignedVec::ALIGNMENT] = [0; AlignedVec::ALIGNMENT];
+const _: () = assert!(AlignedVec::ALIGNMENT >= mem::size_of::<u32>());
 
 /// Serialize AST to `AlignedVec`.
 /// Serializer is initialized with an `AlignedVec` which will hopefully be large
 /// enough to serialize whole AST into without reallocating.
 #[inline]
 pub fn serialize(program: &Program, src_len: usize) -> Result<AlignedVec, Error> {
-    let mut capacity = src_len.saturating_mul(BUFFER_SIZE_RATIO);
-    if capacity <= usize::MAX >> 1 {
-        capacity = capacity.checked_next_power_of_two().unwrap();
+    let mut capacity = (src_len as u32).saturating_mul(BUFFER_SIZE_RATIO);
+    if capacity <= u32::MAX >> 1 {
+        capacity = if capacity < 256 {
+            256
+        } else {
+            capacity.checked_next_power_of_two().unwrap()
+        }
     }
+    let mut aligned_vec = AlignedVec::with_capacity(capacity as usize);
 
-    let aligned_vec = AlignedVec::with_capacity(capacity);
+    // Reserve bytes at start of vec to contain length
+    aligned_vec.extend_from_slice(&ZEROS);
+
+    serialize_into(program, aligned_vec)
+}
+
+pub fn serialize_into(program: &Program, aligned_vec: AlignedVec) -> Result<AlignedVec, Error> {
     let aligned_serializer = AlignedSerializer::new(aligned_vec);
     let scratch = FallbackScratch::<HeapScratch<512>, AllocScratch>::default();
     let shared = SharedSerializeMap::default();
@@ -48,7 +67,16 @@ pub fn serialize(program: &Program, src_len: usize) -> Result<AlignedVec, Error>
             CompositeSerializerError::ScratchSpaceError(_e) => Error::msg("AllocScratchError"),
             CompositeSerializerError::SharedError(_e) => Error::msg("SharedSerializeMapError"),
         })?;
-    let aligned_vec = serializer.into_serializer().into_inner();
+    let mut aligned_vec = serializer.into_serializer().into_inner();
+
+    // Write length at start
+    // TODO Write position of program in buffer instead of buffer length
+    let len = u32::try_from(aligned_vec.len())
+        .map_err(|_err| Error::msg("Serialized AST buffer larger than 4 GiB"))?;
+    unsafe {
+        *(aligned_vec.as_mut_ptr() as *mut u32) = len;
+    }
+
     Ok(aligned_vec)
 }
 

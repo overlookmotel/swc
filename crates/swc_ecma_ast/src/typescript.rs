@@ -396,6 +396,7 @@ pub struct TsKeywordType {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub enum TsKeywordTypeKind {
     #[serde(rename = "any")]
     TsAnyKeyword,
@@ -681,6 +682,7 @@ pub struct TsTypeOperator {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub enum TsTypeOperatorOp {
     /// `keyof`
     KeyOf,
@@ -711,6 +713,7 @@ pub struct TsIndexedAccessType {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub enum TruePlusMinus {
     True,
     Plus,
@@ -1075,6 +1078,7 @@ pub struct TsNonNullExpr {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub enum Accessibility {
     #[serde(rename = "public")]
     Public,

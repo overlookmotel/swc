@@ -244,3 +244,62 @@ where
         Ok(s.map(|s| s.into()))
     }
 }
+
+#[cfg(feature = "abomonation")]
+use std::io::{Result as IOResult, Write};
+
+#[cfg(feature = "abomonation")]
+use swc_atoms::JsWord;
+
+#[cfg(feature = "abomonation")]
+#[derive(Debug, Clone, Copy)]
+pub struct JsWordProxy;
+
+#[cfg(feature = "abomonation")]
+impl JsWordProxy {
+    #[inline]
+    fn entomb_with<W: Write>(_js_word: &JsWord, _write: &mut W) -> IOResult<()> {
+        // TODO
+        Ok(())
+    }
+
+    #[inline]
+    fn extent_with(_js_word: &JsWord) -> usize {
+        // TODO
+        0
+    }
+
+    #[inline]
+    fn exhume_with<'a, 'b>(_js_word: &'a mut JsWord, bytes: &'b mut [u8]) -> Option<&'b mut [u8]> {
+        // TODO
+        Some(bytes)
+    }
+}
+
+#[cfg(feature = "abomonation")]
+#[derive(Debug, Clone, Copy)]
+pub struct JsWordOptProxy;
+
+#[cfg(feature = "abomonation")]
+impl JsWordOptProxy {
+    #[inline]
+    fn entomb_with<W: Write>(_js_word: &Option<JsWord>, _write: &mut W) -> IOResult<()> {
+        // TODO
+        Ok(())
+    }
+
+    #[inline]
+    fn extent_with(_js_word: &Option<JsWord>) -> usize {
+        // TODO
+        0
+    }
+
+    #[inline]
+    fn exhume_with<'a, 'b>(
+        _js_word: &'a mut Option<JsWord>,
+        bytes: &'b mut [u8],
+    ) -> Option<&'b mut [u8]> {
+        // TODO
+        Some(bytes)
+    }
+}

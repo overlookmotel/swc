@@ -11,6 +11,7 @@ use swc_common::EqIgnoreSpan;
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub enum BinaryOp {
     /// `==`
     EqEq,
@@ -120,6 +121,7 @@ impl BinaryOp {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub enum AssignOp {
     /// `=`
     Assign,
@@ -193,6 +195,7 @@ impl AssignOp {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub enum UpdateOp {
     /// `++`
     PlusPlus,
@@ -210,6 +213,7 @@ pub enum UpdateOp {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub enum UnaryOp {
     /// `-`
     Minus,

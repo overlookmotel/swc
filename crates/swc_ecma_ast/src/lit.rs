@@ -66,11 +66,13 @@ bridge_lit_from!(BigInt, BigIntValue);
 pub struct BigInt {
     pub span: Span,
     #[cfg_attr(feature = "rkyv", with(EncodeBigInt))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(BigIntProxy))]
     pub value: BigIntValue,
 
     /// Use `None` value only for transformations to avoid recalculate
     /// characters in big integer
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 
@@ -153,6 +155,37 @@ impl From<BigIntValue> for BigInt {
     }
 }
 
+#[cfg(feature = "abomonation")]
+#[derive(Debug, Clone, Copy)]
+struct BigIntProxy;
+
+#[cfg(feature = "abomonation")]
+use std::io::{Result as IOResult, Write};
+
+#[cfg(feature = "abomonation")]
+impl BigIntProxy {
+    #[inline]
+    fn entomb_with<W: Write>(_bigint: &BigIntValue, _write: &mut W) -> IOResult<()> {
+        // TODO
+        Ok(())
+    }
+
+    #[inline]
+    fn extent_with(_bigint: &BigIntValue) -> usize {
+        // TODO
+        0
+    }
+
+    #[inline]
+    fn exhume_with<'a, 'b>(
+        _bigint: &'a mut BigIntValue,
+        bytes: &'b mut [u8],
+    ) -> Option<&'b mut [u8]> {
+        // TODO
+        Some(bytes)
+    }
+}
+
 /// A string literal.
 #[ast_node("StringLiteral")]
 #[derive(Eq, Hash)]
@@ -160,11 +193,13 @@ pub struct Str {
     pub span: Span,
 
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     pub value: JsWord,
 
     /// Use `None` value only for transformations to avoid recalculate escaped
     /// characters in strings
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 
@@ -274,10 +309,12 @@ pub struct Regex {
 
     #[serde(rename = "pattern")]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     pub exp: JsWord,
 
     #[serde(default)]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     pub flags: JsWord,
 }
 
@@ -325,6 +362,7 @@ pub struct Number {
     /// Use `None` value only for transformations to avoid recalculate
     /// characters in number literal
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 

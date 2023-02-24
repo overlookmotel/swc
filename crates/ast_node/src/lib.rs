@@ -224,6 +224,7 @@ pub fn ast_node(
                         deserialize = "__D: rkyv::de::SharedDeserializeRegistry"
                     ))
                 )]
+                #[cfg_attr(feature = "abomonation", derive(::abomonation_derive::Abomonation))]
                 #[serde(untagged)]
                 input
             }))
@@ -283,6 +284,7 @@ pub fn ast_node(
                         feature = "rkyv",
                         archive_attr(repr(C), derive(bytecheck::CheckBytes))
                     )]
+                    #[cfg_attr(feature = "abomonation", derive(::abomonation_derive::Abomonation))]
                     serde_tag
                     #[serde(rename_all = "camelCase")]
                     serde_rename

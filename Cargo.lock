@@ -13,6 +13,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "abomonation"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56e72913c99b1f927aa7bd59a41518fdd9995f63ffc8760f211609e0241c4fb2"
+
+[[package]]
+name = "abomonation_derive"
+version = "0.5.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "synstructure",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -48,6 +64,12 @@ checksum = "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "anes"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 
 [[package]]
 name = "ansi_term"
@@ -336,6 +358,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cast"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
+
+[[package]]
 name = "cc"
 version = "1.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -366,6 +394,33 @@ dependencies = [
  "time 0.1.43",
  "wasm-bindgen",
  "winapi",
+]
+
+[[package]]
+name = "ciborium"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0c137568cc60b904a7724001b35ce2630fd00d5d84805fbb608ab89509d788f"
+dependencies = [
+ "ciborium-io",
+ "ciborium-ll",
+ "serde",
+]
+
+[[package]]
+name = "ciborium-io"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "346de753af073cc87b52b2083a506b38ac176a44cfb05497b622e27be899b369"
+
+[[package]]
+name = "ciborium-ll"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "213030a2b5a4e0c0892b6652260cf6ccac84827b83a85a534e178e3906c4cf1b"
+dependencies = [
+ "ciborium-io",
+ "half",
 ]
 
 [[package]]
@@ -597,9 +652,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1604dafd25fba2fe2d5895a9da139f8dc9b319a5fe5354ca137cbbce4e178d10"
 dependencies = [
  "atty",
- "cast",
+ "cast 0.2.7",
  "clap 2.34.0",
- "criterion-plot",
+ "criterion-plot 0.4.4",
  "csv",
  "itertools",
  "lazy_static",
@@ -617,12 +672,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "criterion"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7c76e09c1aae2bc52b3d2f29e13c6572553b30c4aa1b8a49fd70de6412654cb"
+dependencies = [
+ "anes",
+ "atty",
+ "cast 0.3.0",
+ "ciborium",
+ "clap 3.1.0",
+ "criterion-plot 0.5.0",
+ "itertools",
+ "lazy_static",
+ "num-traits",
+ "oorandom",
+ "plotters",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tinytemplate",
+ "walkdir",
+]
+
+[[package]]
 name = "criterion-plot"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d00996de9f2f7559f7f4dc286073197f83e92256a59ed395f9aac01fe717da57"
 dependencies = [
- "cast",
+ "cast 0.2.7",
+ "itertools",
+]
+
+[[package]]
+name = "criterion-plot"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
+dependencies = [
+ "cast 0.3.0",
  "itertools",
 ]
 
@@ -2609,6 +2700,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
+name = "ser"
+version = "0.0.1"
+dependencies = [
+ "abomonation",
+ "abomonation_derive",
+ "criterion 0.4.0",
+ "rkyv",
+ "serde",
+ "serde_json",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_parser",
+ "swc_node_base",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.137"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2946,7 +3053,7 @@ dependencies = [
  "ansi_term",
  "anyhow",
  "base64 0.13.0",
- "criterion",
+ "criterion 0.3.5",
  "dashmap",
  "either",
  "indexmap",
@@ -2999,6 +3106,7 @@ dependencies = [
 name = "swc_atoms"
 version = "0.2.13"
 dependencies = [
+ "abomonation",
  "bytecheck",
  "once_cell",
  "rkyv",
@@ -3096,6 +3204,8 @@ dependencies = [
 name = "swc_common"
 version = "0.23.0"
 dependencies = [
+ "abomonation",
+ "abomonation_derive",
  "ahash",
  "anyhow",
  "arbitrary",
@@ -3104,7 +3214,7 @@ dependencies = [
  "better_scoped_tls",
  "bytecheck",
  "cfg-if 1.0.0",
- "criterion",
+ "criterion 0.3.5",
  "debug_unreachable",
  "either",
  "from_variant",
@@ -3237,7 +3347,7 @@ name = "swc_css_parser"
 version = "0.107.0"
 dependencies = [
  "bitflags",
- "criterion",
+ "criterion 0.3.5",
  "lexical",
  "serde",
  "serde_json",
@@ -3290,6 +3400,8 @@ dependencies = [
 name = "swc_ecma_ast"
 version = "0.84.0"
 dependencies = [
+ "abomonation",
+ "abomonation_derive",
  "arbitrary",
  "bitflags",
  "bytecheck",
@@ -3309,7 +3421,7 @@ dependencies = [
 name = "swc_ecma_codegen"
 version = "0.115.0"
 dependencies = [
- "criterion",
+ "criterion 0.3.5",
  "memchr",
  "num-bigint",
  "once_cell",
@@ -3414,7 +3526,7 @@ dependencies = [
  "anyhow",
  "arrayvec",
  "backtrace",
- "criterion",
+ "criterion 0.3.5",
  "indexmap",
  "num_cpus",
  "once_cell",
@@ -3450,7 +3562,7 @@ dependencies = [
 name = "swc_ecma_parser"
 version = "0.111.0"
 dependencies = [
- "criterion",
+ "criterion 0.3.5",
  "either",
  "enum_kind",
  "lexical",
@@ -3476,7 +3588,7 @@ version = "0.149.0"
 dependencies = [
  "ahash",
  "anyhow",
- "criterion",
+ "criterion 0.3.5",
  "dashmap",
  "indexmap",
  "once_cell",
@@ -3571,7 +3683,7 @@ version = "0.97.0"
 dependencies = [
  "better_scoped_tls",
  "bitflags",
- "criterion",
+ "criterion 0.3.5",
  "num_cpus",
  "once_cell",
  "phf",
@@ -3783,7 +3895,7 @@ dependencies = [
 name = "swc_ecma_transforms_typescript"
 version = "0.136.0"
 dependencies = [
- "criterion",
+ "criterion 0.3.5",
  "serde",
  "swc_atoms",
  "swc_common",
@@ -3882,7 +3994,7 @@ dependencies = [
  "ahash",
  "anyhow",
  "copyless",
- "criterion",
+ "criterion 0.3.5",
  "pretty_assertions",
  "rayon",
  "serde",
@@ -4003,7 +4115,7 @@ dependencies = [
 name = "swc_html_parser"
 version = "0.20.0"
 dependencies = [
- "criterion",
+ "criterion 0.3.5",
  "serde",
  "serde_json",
  "swc_atoms",
@@ -4141,7 +4253,7 @@ name = "swc_plugin_runner"
 version = "0.63.0"
 dependencies = [
  "anyhow",
- "criterion",
+ "criterion 0.3.5",
  "once_cell",
  "parking_lot",
  "serde",
@@ -4210,6 +4322,18 @@ checksum = "7ff7c592601f11445996a06f8ad0c27f094a58857c2f89e97974ab9235b92c52"
 dependencies = [
  "proc-macro2",
  "quote",
+ "unicode-xid",
+]
+
+[[package]]
+name = "synstructure"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
  "unicode-xid",
 ]
 

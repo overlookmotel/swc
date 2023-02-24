@@ -198,8 +198,10 @@ pub enum JSXAttrValue {
 pub struct JSXText {
     pub span: Span,
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     pub value: JsWord,
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     pub raw: JsWord,
 }
 

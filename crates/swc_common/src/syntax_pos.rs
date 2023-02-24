@@ -34,6 +34,7 @@ pub mod hygiene;
     derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)
 )]
 #[cfg_attr(feature = "rkyv", archive_attr(repr(C), derive(bytecheck::CheckBytes)))]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub struct Span {
     #[serde(rename = "start")]
     #[cfg_attr(feature = "rkyv", omit_bounds)]
@@ -1006,6 +1007,7 @@ pub trait Pos {
     derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)
 )]
 #[cfg_attr(feature = "rkyv", archive_attr(repr(C), derive(bytecheck::CheckBytes)))]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub struct BytePos(#[cfg_attr(feature = "rkyv", omit_bounds)] pub u32);
 
 impl BytePos {

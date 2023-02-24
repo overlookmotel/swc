@@ -24,8 +24,16 @@ rkyv-impl = [
   "swc_atoms/rkyv-impl",
   "swc_common/rkyv-impl",
 ]
+abomonation = [
+  "dep:abomonation",
+  "dep:abomonation_derive",
+  "swc_atoms/abomonation",
+  "swc_common/abomonation",
+]
 
 [dependencies]
+abomonation = {version = "0.7.3", optional = true}
+abomonation_derive = { version = "0.5.0", optional = true, path = "../../../abomonation_derive" }
 arbitrary = {version = "1", optional = true, features = ["derive"]}
 bitflags = "1"
 bytecheck = {version = "0.6.8", optional = true}

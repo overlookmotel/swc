@@ -26,6 +26,7 @@ use crate::typescript::TsTypeAnn;
     ))
 )]
 #[cfg_attr(feature = "rkyv", archive_attr(repr(C), derive(bytecheck::CheckBytes)))]
+#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 pub struct BindingIdent {
     #[span]
     #[serde(flatten)]
@@ -105,6 +106,7 @@ pub struct Ident {
     pub span: Span,
     #[serde(rename = "value")]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
+    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     pub sym: JsWord,
 
     /// TypeScript only. Used in case of an optional parameter.

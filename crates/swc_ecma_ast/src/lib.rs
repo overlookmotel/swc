@@ -259,29 +259,42 @@ use swc_atoms::JsWord;
 pub struct JsWordProxy;
 
 #[cfg(feature = "abomonation")]
+const U32_LEN: usize = std::mem::size_of::<u32>();
+
+#[cfg(feature = "abomonation")]
 impl JsWordProxy {
     #[inline]
     fn entomb_with<W: Write>(js_word: &JsWord, write: &mut W) -> IOResult<()> {
+        // Write length as u32, followed by string
+        let len = js_word.len() as u32;
+        write.write_all(&len.to_le_bytes())?;
         write.write_all(js_word.as_bytes())?;
         Ok(())
     }
 
     #[inline]
     fn extent_with(js_word: &JsWord) -> usize {
-        js_word.len()
+        U32_LEN + js_word.len()
     }
 
     #[inline]
     fn exhume_with<'a, 'b>(js_word: &'a mut JsWord, bytes: &'b mut [u8]) -> Option<&'b mut [u8]> {
-        if js_word.len() > bytes.len() {
+        if bytes.len() < U32_LEN {
             None
         } else {
-            unsafe {
-                let (mine, rest) = bytes.split_at_mut(js_word.len());
-                let s = str::from_utf8_unchecked(mine);
-                let atom = JsWord::from(s);
-                ptr::write(js_word, atom);
-                Some(rest)
+            let (len_bytes, rest) = bytes.split_at_mut(U32_LEN);
+            let len_bytes: [u8; U32_LEN] = [len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3]];
+            let len = u32::from_le_bytes(len_bytes) as usize;
+            if rest.len() < len {
+                None
+            } else {
+                unsafe {
+                    let (str_bytes, rest) = rest.split_at_mut(len);
+                    let s = str::from_utf8_unchecked(str_bytes);
+                    let atom = JsWord::from(s);
+                    ptr::write(js_word, atom);
+                    Some(rest)
+                }
             }
         }
     }

@@ -160,29 +160,80 @@ impl From<BigIntValue> for BigInt {
 struct BigIntProxy;
 
 #[cfg(feature = "abomonation")]
-use std::io::{Result as IOResult, Write};
+use std::{
+    io::{Result as IOResult, Write},
+    ptr,
+};
+
+#[cfg(feature = "abomonation")]
+use num_bigint::Sign;
+
+#[cfg(feature = "abomonation")]
+const U32_LEN: usize = std::mem::size_of::<u32>();
+
+#[cfg(feature = "abomonation")]
+const U8_LEN: usize = std::mem::size_of::<u8>();
 
 #[cfg(feature = "abomonation")]
 impl BigIntProxy {
     #[inline]
-    fn entomb_with<W: Write>(_bigint: &BigIntValue, _write: &mut W) -> IOResult<()> {
-        // TODO
+    fn entomb_with<W: Write>(bigint: &BigIntValue, write: &mut W) -> IOResult<()> {
+        // Write length as u32, then sign as u8, then body
+        let body_bytes = bigint.magnitude().to_bytes_le();
+        let len = body_bytes.len() as u32;
+        write.write_all(&len.to_le_bytes())?;
+
+        let sign_byte: u8 = match bigint.sign() {
+            Sign::Minus => 0,
+            Sign::NoSign => 1,
+            Sign::Plus => 2,
+        };
+        write.write_all(&[sign_byte])?;
+
+        write.write_all(&body_bytes)?;
+
         Ok(())
     }
 
     #[inline]
-    fn extent_with(_bigint: &BigIntValue) -> usize {
-        // TODO
-        0
+    fn extent_with(bigint: &BigIntValue) -> usize {
+        U32_LEN + U8_LEN + bigint.magnitude().to_bytes_le().len()
     }
 
     #[inline]
     fn exhume_with<'a, 'b>(
-        _bigint: &'a mut BigIntValue,
+        bigint: &'a mut BigIntValue,
         bytes: &'b mut [u8],
     ) -> Option<&'b mut [u8]> {
-        // TODO
-        Some(bytes)
+        if bytes.len() < U32_LEN + U8_LEN {
+            None
+        } else {
+            let (len_bytes, rest) = bytes.split_at_mut(U32_LEN);
+            let len_bytes: [u8; U32_LEN] = [len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3]];
+            let len = u32::from_le_bytes(len_bytes) as usize;
+
+            if rest.len() < len + U8_LEN {
+                None
+            } else {
+                let (sign_bytes, rest) = rest.split_at_mut(U8_LEN);
+                let sign = match sign_bytes[0] {
+                    0 => Sign::Minus,
+                    1 => Sign::NoSign,
+                    2 => Sign::Plus,
+                    _ => {
+                        return None;
+                    }
+                };
+
+                let (body_bytes, rest) = rest.split_at_mut(len);
+                let bigint_new = BigIntValue::from_bytes_le(sign, body_bytes);
+
+                unsafe {
+                    ptr::write(bigint, bigint_new);
+                }
+                Some(rest)
+            }
+        }
     }
 }
 

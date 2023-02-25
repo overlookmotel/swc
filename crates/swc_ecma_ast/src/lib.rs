@@ -246,7 +246,10 @@ where
 }
 
 #[cfg(feature = "abomonation")]
-use std::io::{Result as IOResult, Write};
+use std::{
+    io::{Result as IOResult, Write},
+    ptr, str,
+};
 
 #[cfg(feature = "abomonation")]
 use swc_atoms::JsWord;
@@ -258,21 +261,29 @@ pub struct JsWordProxy;
 #[cfg(feature = "abomonation")]
 impl JsWordProxy {
     #[inline]
-    fn entomb_with<W: Write>(_js_word: &JsWord, _write: &mut W) -> IOResult<()> {
-        // TODO
+    fn entomb_with<W: Write>(js_word: &JsWord, write: &mut W) -> IOResult<()> {
+        write.write_all(js_word.as_bytes())?;
         Ok(())
     }
 
     #[inline]
-    fn extent_with(_js_word: &JsWord) -> usize {
-        // TODO
-        0
+    fn extent_with(js_word: &JsWord) -> usize {
+        js_word.len()
     }
 
     #[inline]
-    fn exhume_with<'a, 'b>(_js_word: &'a mut JsWord, bytes: &'b mut [u8]) -> Option<&'b mut [u8]> {
-        // TODO
-        Some(bytes)
+    fn exhume_with<'a, 'b>(js_word: &'a mut JsWord, bytes: &'b mut [u8]) -> Option<&'b mut [u8]> {
+        if js_word.len() > bytes.len() {
+            None
+        } else {
+            unsafe {
+                let (mine, rest) = bytes.split_at_mut(js_word.len());
+                let s = str::from_utf8_unchecked(mine);
+                let atom = JsWord::from(s);
+                ptr::write(js_word, atom);
+                Some(rest)
+            }
+        }
     }
 }
 
@@ -283,23 +294,32 @@ pub struct JsWordOptProxy;
 #[cfg(feature = "abomonation")]
 impl JsWordOptProxy {
     #[inline]
-    fn entomb_with<W: Write>(_js_word: &Option<JsWord>, _write: &mut W) -> IOResult<()> {
-        // TODO
-        Ok(())
+    fn entomb_with<W: Write>(js_word: &Option<JsWord>, write: &mut W) -> IOResult<()> {
+        if let Some(js_word) = js_word {
+            JsWordProxy::entomb_with(js_word, write)
+        } else {
+            Ok(())
+        }
     }
 
     #[inline]
-    fn extent_with(_js_word: &Option<JsWord>) -> usize {
-        // TODO
-        0
+    fn extent_with(js_word: &Option<JsWord>) -> usize {
+        if let Some(js_word) = js_word {
+            JsWordProxy::extent_with(js_word)
+        } else {
+            0
+        }
     }
 
     #[inline]
     fn exhume_with<'a, 'b>(
-        _js_word: &'a mut Option<JsWord>,
+        js_word: &'a mut Option<JsWord>,
         bytes: &'b mut [u8],
     ) -> Option<&'b mut [u8]> {
-        // TODO
-        Some(bytes)
+        if let Some(js_word) = js_word {
+            JsWordProxy::exhume_with(js_word, bytes)
+        } else {
+            Some(bytes)
+        }
     }
 }

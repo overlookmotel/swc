@@ -265,37 +265,54 @@ const U32_LEN: usize = std::mem::size_of::<u32>();
 impl JsWordProxy {
     #[inline]
     fn entomb_with<W: Write>(js_word: &JsWord, write: &mut W) -> IOResult<()> {
-        // Write length as u32, followed by string
-        let len = js_word.len() as u32;
-        write.write_all(&len.to_le_bytes())?;
-        write.write_all(js_word.as_bytes())?;
+        // `JsWord` can be static, inline or dynamic.
+        // The first 2 representations are self-contained,
+        // so only need to add string to output if it's dynamic.
+        if js_word.is_dynamic() {
+            // Write length as u32, followed by string
+            let len = js_word.len() as u32;
+            write.write_all(&len.to_le_bytes())?;
+            write.write_all(js_word.as_bytes())?;
+        }
         Ok(())
     }
 
     #[inline]
     fn extent_with(js_word: &JsWord) -> usize {
-        U32_LEN + js_word.len()
+        if js_word.is_dynamic() {
+            U32_LEN + js_word.len()
+        } else {
+            0
+        }
     }
 
     #[inline]
     fn exhume_with<'a, 'b>(js_word: &'a mut JsWord, bytes: &'b mut [u8]) -> Option<&'b mut [u8]> {
+        // Nothing to do if string is not dynamic
+        if !js_word.is_dynamic() {
+            return Some(bytes);
+        }
+
         if bytes.len() < U32_LEN {
-            None
-        } else {
-            let (len_bytes, rest) = bytes.split_at_mut(U32_LEN);
-            let len_bytes: [u8; U32_LEN] = [len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3]];
-            let len = u32::from_le_bytes(len_bytes) as usize;
-            if rest.len() < len {
-                None
-            } else {
-                unsafe {
-                    let (str_bytes, rest) = rest.split_at_mut(len);
-                    let s = str::from_utf8_unchecked(str_bytes);
-                    let atom = JsWord::from(s);
-                    ptr::write(js_word, atom);
-                    Some(rest)
-                }
-            }
+            return None;
+        }
+
+        let (len_bytes, rest) = bytes.split_at_mut(U32_LEN);
+        let len_bytes: [u8; U32_LEN] = [len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3]];
+        let len = u32::from_le_bytes(len_bytes) as usize;
+        if rest.len() < len {
+            return None;
+        }
+
+        unsafe {
+            let (str_bytes, rest) = rest.split_at_mut(len);
+            let s = str::from_utf8_unchecked(str_bytes);
+            // This is inefficient. Could have serialized the string's hash,
+            // and avoided recalculating it here. But `JsWord` has no public API
+            // for creating a new `JsWord` with known hash.
+            let js_word_new = JsWord::from(s);
+            ptr::write(js_word, js_word_new);
+            Some(rest)
         }
     }
 }

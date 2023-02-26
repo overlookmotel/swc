@@ -259,7 +259,7 @@ use swc_atoms::JsWord;
 pub struct JsWordProxy;
 
 #[cfg(feature = "abomonation")]
-const U32_LEN: usize = std::mem::size_of::<u32>();
+const USIZE_LEN: usize = std::mem::size_of::<usize>();
 
 #[cfg(feature = "abomonation")]
 impl JsWordProxy {
@@ -269,9 +269,9 @@ impl JsWordProxy {
         // The first 2 representations are self-contained,
         // so only need to add string to output if it's dynamic.
         if js_word.is_dynamic() {
-            // Write length as u32, followed by string
-            let len = js_word.len() as u32;
-            write.write_all(&len.to_le_bytes())?;
+            // Write length as usize, followed by string
+            let len = js_word.len();
+            write.write_all(&len.to_ne_bytes())?;
             write.write_all(js_word.as_bytes())?;
         }
         Ok(())
@@ -280,7 +280,7 @@ impl JsWordProxy {
     #[inline]
     fn extent_with(js_word: &JsWord) -> usize {
         if js_word.is_dynamic() {
-            U32_LEN + js_word.len()
+            USIZE_LEN + js_word.len()
         } else {
             0
         }
@@ -293,13 +293,12 @@ impl JsWordProxy {
             return Some(bytes);
         }
 
-        if bytes.len() < U32_LEN {
+        if bytes.len() < USIZE_LEN {
             return None;
         }
 
-        let (len_bytes, rest) = bytes.split_at_mut(U32_LEN);
-        let len_bytes: [u8; U32_LEN] = [len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3]];
-        let len = u32::from_le_bytes(len_bytes) as usize;
+        let (len_bytes, rest) = bytes.split_at_mut(USIZE_LEN);
+        let len = usize::from_ne_bytes(len_bytes.try_into().unwrap());
         if rest.len() < len {
             return None;
         }

@@ -161,19 +161,13 @@ impl From<BigIntValue> for BigInt {
 #[derive(Debug, Clone, Copy)]
 struct BigIntProxy;
 
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
-use std::{
-    io::{Result as IOResult, Write},
-    ptr,
-};
-
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
+#[cfg(feature = "abomonation")]
 const USIZE_LEN: usize = std::mem::size_of::<usize>();
 
 #[cfg(feature = "abomonation")]
 impl BigIntProxy {
     #[inline]
-    fn entomb_with<W: Write>(bigint: &BigIntValue, write: &mut W) -> IOResult<()> {
+    fn entomb_with<W: std::io::Write>(bigint: &BigIntValue, write: &mut W) -> std::io::Result<()> {
         // Write length as usize, then body. Sign is stored inline.
         let body_bytes = bigint.magnitude().to_bytes_le();
         let len = body_bytes.len();
@@ -205,7 +199,7 @@ impl BigIntProxy {
                 let (body_bytes, rest) = rest.split_at_mut(len);
                 let bigint_new = BigIntValue::from_bytes_le(bigint.sign(), body_bytes);
                 unsafe {
-                    ptr::write(bigint, bigint_new);
+                    std::ptr::write(bigint, bigint_new);
                 }
                 Some(rest)
             }

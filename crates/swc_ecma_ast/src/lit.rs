@@ -168,30 +168,16 @@ use std::{
 };
 
 #[cfg(any(feature = "abomonation", feature = "ser_raw"))]
-use num_bigint::Sign;
-
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
-const U32_LEN: usize = std::mem::size_of::<u32>();
-
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
-const U8_LEN: usize = std::mem::size_of::<u8>();
+const USIZE_LEN: usize = std::mem::size_of::<usize>();
 
 #[cfg(feature = "abomonation")]
 impl BigIntProxy {
     #[inline]
     fn entomb_with<W: Write>(bigint: &BigIntValue, write: &mut W) -> IOResult<()> {
-        // Write length as u32, then sign as u8, then body
+        // Write length as usize, then body. Sign is stored inline.
         let body_bytes = bigint.magnitude().to_bytes_le();
-        let len = body_bytes.len() as u32;
-        write.write_all(&len.to_le_bytes())?;
-
-        let sign_byte: u8 = match bigint.sign() {
-            Sign::Minus => 0,
-            Sign::NoSign => 1,
-            Sign::Plus => 2,
-        };
-        write.write_all(&[sign_byte])?;
-
+        let len = body_bytes.len();
+        write.write_all(&len.to_ne_bytes())?;
         write.write_all(&body_bytes)?;
 
         Ok(())
@@ -199,7 +185,7 @@ impl BigIntProxy {
 
     #[inline]
     fn extent_with(bigint: &BigIntValue) -> usize {
-        U32_LEN + U8_LEN + bigint.magnitude().to_bytes_le().len()
+        USIZE_LEN + bigint.magnitude().to_bytes_le().len()
     }
 
     #[inline]
@@ -207,29 +193,17 @@ impl BigIntProxy {
         bigint: &'a mut BigIntValue,
         bytes: &'b mut [u8],
     ) -> Option<&'b mut [u8]> {
-        if bytes.len() < U32_LEN + U8_LEN {
+        if bytes.len() < USIZE_LEN {
             None
         } else {
-            let (len_bytes, rest) = bytes.split_at_mut(U32_LEN);
-            let len_bytes: [u8; U32_LEN] = [len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3]];
-            let len = u32::from_le_bytes(len_bytes) as usize;
+            let (len_bytes, rest) = bytes.split_at_mut(USIZE_LEN);
+            let len = usize::from_ne_bytes(len_bytes.try_into().unwrap());
 
-            if rest.len() < len + U8_LEN {
+            if rest.len() < len {
                 None
             } else {
-                let (sign_bytes, rest) = rest.split_at_mut(U8_LEN);
-                let sign = match sign_bytes[0] {
-                    0 => Sign::Minus,
-                    1 => Sign::NoSign,
-                    2 => Sign::Plus,
-                    _ => {
-                        return None;
-                    }
-                };
-
                 let (body_bytes, rest) = rest.split_at_mut(len);
-                let bigint_new = BigIntValue::from_bytes_le(sign, body_bytes);
-
+                let bigint_new = BigIntValue::from_bytes_le(bigint.sign(), body_bytes);
                 unsafe {
                     ptr::write(bigint, bigint_new);
                 }
@@ -242,18 +216,10 @@ impl BigIntProxy {
 #[cfg(feature = "ser_raw")]
 impl ser_raw::SerializeWith<BigIntValue> for BigIntProxy {
     fn serialize_data_with<S: ser_raw::Serializer>(bigint: &BigIntValue, serializer: &mut S) {
-        // Write length as u32, then sign as u8, then body
+        // Write length as usize, then body. Sign is stored inline.
         let body_bytes = bigint.magnitude().to_bytes_le();
-        let len = body_bytes.len() as u32;
-        serializer.push_bytes(&len.to_le_bytes());
-
-        let sign_byte: u8 = match bigint.sign() {
-            Sign::Minus => 0,
-            Sign::NoSign => 1,
-            Sign::Plus => 2,
-        };
-        serializer.push_bytes(&[sign_byte]);
-
+        let len = body_bytes.len();
+        serializer.push_bytes(&len.to_ne_bytes());
         serializer.push_bytes(&body_bytes);
     }
 }

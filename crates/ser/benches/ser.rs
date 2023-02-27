@@ -4,6 +4,7 @@ extern crate swc_node_base;
 
 use abomonation::encode;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+/*
 use rkyv::{
     ser::{
         serializers::{
@@ -14,6 +15,7 @@ use rkyv::{
     },
     AlignedVec,
 };
+*/
 use ser_raw::serialize_unaligned;
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
@@ -22,6 +24,7 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 fn bench_serializers(c: &mut Criterion) {
     let program = get_ast();
 
+    /*
     c.bench_function("serde", |b| {
         b.iter(|| {
             let _ = black_box(serialize_serde(&program));
@@ -33,6 +36,7 @@ fn bench_serializers(c: &mut Criterion) {
             let _ = black_box(serialize_rkyv(&program));
         });
     });
+    */
 
     c.bench_function("abomonation", |b| {
         b.iter(|| {
@@ -70,6 +74,7 @@ fn get_ast() -> Program {
     parser.parse_program().expect("failed to parse")
 }
 
+/*
 pub fn serialize_serde(program: &Program) -> String {
     serde_json::to_string(&program).unwrap()
 }
@@ -83,6 +88,7 @@ pub fn serialize_rkyv(program: &Program) -> AlignedVec {
     serializer.serialize_value(program).unwrap();
     serializer.into_serializer().into_inner()
 }
+*/
 
 pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
     let mut bytes = Vec::new();

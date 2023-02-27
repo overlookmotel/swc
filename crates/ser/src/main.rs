@@ -1,4 +1,5 @@
 use abomonation::encode;
+/*
 use rkyv::{
     ser::{
         serializers::{
@@ -9,6 +10,7 @@ use rkyv::{
     },
     AlignedVec,
 };
+*/
 use ser_raw::serialize_unaligned;
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
@@ -17,11 +19,13 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 pub fn main() {
     let program = get_ast();
 
+    /*
     let json = serialize_serde(&program);
     println!("serde bytes: {}", json.len());
 
     let rkyv_vec = serialize_rkyv(&program);
     println!("RKYV bytes: {}", rkyv_vec.len());
+    */
 
     let abom_vec = serialize_abomonation(&program);
     println!("abomonation bytes: {}", abom_vec.len());
@@ -46,6 +50,7 @@ fn get_ast() -> Program {
     parser.parse_program().expect("failed to parse")
 }
 
+/*
 pub fn serialize_serde(program: &Program) -> String {
     serde_json::to_string(program).unwrap()
 }
@@ -59,6 +64,7 @@ pub fn serialize_rkyv(program: &Program) -> AlignedVec {
     serializer.serialize_value(program).unwrap();
     serializer.into_serializer().into_inner()
 }
+*/
 
 pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
     let mut bytes = Vec::new();

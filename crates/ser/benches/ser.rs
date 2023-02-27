@@ -11,12 +11,12 @@ use rkyv::{
             AlignedSerializer, AllocScratch, AllocSerializer, FallbackScratch, HeapScratch,
             SharedSerializeMap,
         },
-        Serializer,
+        Serializer as RkyvSerializer,
     },
     AlignedVec,
 };
 */
-use ser_raw::serialize_unaligned;
+use ser_raw::{Serializer as RawSerializer, UnalignedSerializer};
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -80,7 +80,7 @@ fn serialize_serde(program: &Program) -> String {
 }
 
 fn serialize_rkyv(program: &Program) -> AlignedVec {
-    let aligned_vec = AlignedVec::new();
+    let aligned_vec = AlignedVec::with_capacity(228508);
     let aligned_serializer = AlignedSerializer::new(aligned_vec);
     let scratch = FallbackScratch::<HeapScratch<512>, AllocScratch>::default();
     let shared = SharedSerializeMap::default();
@@ -91,7 +91,7 @@ fn serialize_rkyv(program: &Program) -> AlignedVec {
 */
 
 fn serialize_abomonation(program: &Program) -> Vec<u8> {
-    let mut bytes = Vec::new();
+    let mut bytes = Vec::with_capacity(344980);
     unsafe {
         encode(program, &mut bytes).unwrap();
     }
@@ -99,7 +99,9 @@ fn serialize_abomonation(program: &Program) -> Vec<u8> {
 }
 
 fn serialize_raw(program: &Program) -> Vec<u8> {
-    serialize_unaligned(program)
+    let mut serializer = UnalignedSerializer::with_capacity(344980);
+    serializer.serialize_value(program);
+    serializer.into_vec()
 }
 
 criterion_group!(benches, bench_serializers);

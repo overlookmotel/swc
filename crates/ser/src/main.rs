@@ -9,6 +9,7 @@ use rkyv::{
     },
     AlignedVec,
 };
+use ser_raw::serialize_unaligned;
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -24,6 +25,9 @@ pub fn main() {
 
     let abom_vec = serialize_abomonation(&program);
     println!("abomonation bytes: {}", abom_vec.len());
+
+    let ser_raw_vec = serialize_raw(&program);
+    println!("ser_raw bytes: {}", ser_raw_vec.len());
 }
 
 fn get_ast() -> Program {
@@ -62,4 +66,8 @@ pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
         encode(program, &mut bytes).unwrap();
     }
     bytes
+}
+
+pub fn serialize_raw(program: &Program) -> Vec<u8> {
+    serialize_unaligned(program)
 }

@@ -225,6 +225,7 @@ pub fn ast_node(
                     ))
                 )]
                 #[cfg_attr(feature = "abomonation", derive(::abomonation_derive::Abomonation))]
+                #[cfg_attr(feature = "ser_raw", derive(::ser_raw::Serialize))]
                 #[serde(untagged)]
                 input
             }))
@@ -285,6 +286,7 @@ pub fn ast_node(
                         archive_attr(repr(C), derive(bytecheck::CheckBytes))
                     )]
                     #[cfg_attr(feature = "abomonation", derive(::abomonation_derive::Abomonation))]
+                    #[cfg_attr(feature = "ser_raw", derive(::ser_raw::Serialize))]
                     serde_tag
                     #[serde(rename_all = "camelCase")]
                     serde_rename

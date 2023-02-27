@@ -12,6 +12,7 @@ use swc_common::EqIgnoreSpan;
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum BinaryOp {
     /// `==`
     EqEq,
@@ -122,6 +123,7 @@ impl BinaryOp {
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum AssignOp {
     /// `=`
     Assign,
@@ -196,6 +198,7 @@ impl AssignOp {
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum UpdateOp {
     /// `++`
     PlusPlus,
@@ -214,6 +217,7 @@ pub enum UpdateOp {
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum UnaryOp {
     /// `-`
     Minus,

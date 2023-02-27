@@ -245,20 +245,20 @@ where
     }
 }
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 use std::{
     io::{Result as IOResult, Write},
     ptr, str,
 };
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 use swc_atoms::JsWord;
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 #[derive(Debug, Clone, Copy)]
 pub struct JsWordProxy;
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 const USIZE_LEN: usize = std::mem::size_of::<usize>();
 
 #[cfg(feature = "abomonation")]
@@ -316,7 +316,22 @@ impl JsWordProxy {
     }
 }
 
-#[cfg(feature = "abomonation")]
+#[cfg(feature = "ser_raw")]
+impl ser_raw::SerializeWith<JsWord> for JsWordProxy {
+    fn serialize_data_with<S: ser_raw::Serializer>(js_word: &JsWord, serializer: &mut S) {
+        // `JsWord` can be static, inline or dynamic.
+        // The first 2 representations are self-contained,
+        // so only need to add string to output if it's dynamic.
+        if js_word.is_dynamic() {
+            // Write length as usize, followed by string
+            let len = js_word.len();
+            serializer.push_bytes(&len.to_ne_bytes());
+            serializer.push_bytes(js_word.as_bytes());
+        }
+    }
+}
+
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 #[derive(Debug, Clone, Copy)]
 pub struct JsWordOptProxy;
 
@@ -349,6 +364,15 @@ impl JsWordOptProxy {
             JsWordProxy::exhume_with(js_word, bytes)
         } else {
             Some(bytes)
+        }
+    }
+}
+
+#[cfg(feature = "ser_raw")]
+impl ser_raw::SerializeWith<Option<JsWord>> for JsWordOptProxy {
+    fn serialize_data_with<S: ser_raw::Serializer>(js_word: &Option<JsWord>, serializer: &mut S) {
+        if let Some(js_word) = js_word {
+            JsWordProxy::serialize_data_with(js_word, serializer);
         }
     }
 }

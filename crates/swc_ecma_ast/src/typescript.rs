@@ -397,6 +397,7 @@ pub struct TsKeywordType {
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum TsKeywordTypeKind {
     #[serde(rename = "any")]
     TsAnyKeyword,
@@ -683,6 +684,7 @@ pub struct TsTypeOperator {
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum TsTypeOperatorOp {
     /// `keyof`
     KeyOf,
@@ -714,6 +716,7 @@ pub struct TsIndexedAccessType {
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum TruePlusMinus {
     True,
     Plus,
@@ -1079,6 +1082,7 @@ pub struct TsNonNullExpr {
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum Accessibility {
     #[serde(rename = "public")]
     Public,

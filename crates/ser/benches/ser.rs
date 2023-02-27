@@ -14,6 +14,7 @@ use rkyv::{
     },
     AlignedVec,
 };
+use ser_raw::serialize_unaligned;
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -36,6 +37,12 @@ fn bench_serializers(c: &mut Criterion) {
     c.bench_function("abomonation", |b| {
         b.iter(|| {
             let _ = black_box(serialize_abomonation(&program));
+        });
+    });
+
+    c.bench_function("ser_raw", |b| {
+        b.iter(|| {
+            let _ = black_box(serialize_raw(&program));
         });
     });
 }
@@ -83,6 +90,10 @@ pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
         encode(program, &mut bytes).unwrap();
     }
     bytes
+}
+
+pub fn serialize_raw(program: &Program) -> Vec<u8> {
+    serialize_unaligned(program)
 }
 
 criterion_group!(benches, bench_serializers);

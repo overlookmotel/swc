@@ -56,6 +56,11 @@ impl abomonation::Abomonation for Atom {
     // TODO
 }
 
+#[cfg(feature = "ser_raw")]
+impl ser_raw::Serialize for Atom {
+    // TODO
+}
+
 impl Deref for Atom {
     type Target = str;
 

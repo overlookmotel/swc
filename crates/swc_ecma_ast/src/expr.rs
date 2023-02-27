@@ -718,6 +718,7 @@ pub struct MetaPropExpr {
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub enum MetaPropKind {
     /// `new.target`
     NewTarget,
@@ -797,10 +798,12 @@ pub struct TplElement {
 
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordOptProxy))]
     pub cooked: Option<JsWord>,
 
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordProxy))]
     pub raw: JsWord,
 }
 
@@ -913,6 +916,7 @@ impl Take for Import {
     ))
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub struct ExprOrSpread {
     #[serde(default)]
     #[cfg_attr(feature = "rkyv", omit_bounds)]

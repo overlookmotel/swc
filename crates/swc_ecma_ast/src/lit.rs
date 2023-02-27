@@ -67,12 +67,14 @@ pub struct BigInt {
     pub span: Span,
     #[cfg_attr(feature = "rkyv", with(EncodeBigInt))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(BigIntProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(BigIntProxy))]
     pub value: BigIntValue,
 
     /// Use `None` value only for transformations to avoid recalculate
     /// characters in big integer
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 
@@ -155,23 +157,23 @@ impl From<BigIntValue> for BigInt {
     }
 }
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 #[derive(Debug, Clone, Copy)]
 struct BigIntProxy;
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 use std::{
     io::{Result as IOResult, Write},
     ptr,
 };
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 use num_bigint::Sign;
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 const U32_LEN: usize = std::mem::size_of::<u32>();
 
-#[cfg(feature = "abomonation")]
+#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 const U8_LEN: usize = std::mem::size_of::<u8>();
 
 #[cfg(feature = "abomonation")]
@@ -237,6 +239,25 @@ impl BigIntProxy {
     }
 }
 
+#[cfg(feature = "ser_raw")]
+impl ser_raw::SerializeWith<BigIntValue> for BigIntProxy {
+    fn serialize_data_with<S: ser_raw::Serializer>(bigint: &BigIntValue, serializer: &mut S) {
+        // Write length as u32, then sign as u8, then body
+        let body_bytes = bigint.magnitude().to_bytes_le();
+        let len = body_bytes.len() as u32;
+        serializer.push_bytes(&len.to_le_bytes());
+
+        let sign_byte: u8 = match bigint.sign() {
+            Sign::Minus => 0,
+            Sign::NoSign => 1,
+            Sign::Plus => 2,
+        };
+        serializer.push_bytes(&[sign_byte]);
+
+        serializer.push_bytes(&body_bytes);
+    }
+}
+
 /// A string literal.
 #[ast_node("StringLiteral")]
 #[derive(Eq, Hash)]
@@ -245,12 +266,14 @@ pub struct Str {
 
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordProxy))]
     pub value: JsWord,
 
     /// Use `None` value only for transformations to avoid recalculate escaped
     /// characters in strings
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 
@@ -361,11 +384,13 @@ pub struct Regex {
     #[serde(rename = "pattern")]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordProxy))]
     pub exp: JsWord,
 
     #[serde(default)]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordProxy))]
     pub flags: JsWord,
 }
 
@@ -414,6 +439,7 @@ pub struct Number {
     /// characters in number literal
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 

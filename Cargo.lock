@@ -2707,12 +2707,29 @@ dependencies = [
  "abomonation_derive",
  "criterion 0.4.0",
  "rkyv",
+ "ser_raw",
  "serde",
  "serde_json",
  "swc_common",
  "swc_ecma_ast",
  "swc_ecma_parser",
  "swc_node_base",
+]
+
+[[package]]
+name = "ser_raw"
+version = "0.0.1"
+dependencies = [
+ "ser_raw_derive",
+]
+
+[[package]]
+name = "ser_raw_derive"
+version = "0.0.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -3111,6 +3128,7 @@ dependencies = [
  "once_cell",
  "rkyv",
  "rustc-hash",
+ "ser_raw",
  "serde",
  "string_cache",
  "string_cache_codegen",
@@ -3224,6 +3242,7 @@ dependencies = [
  "rayon",
  "rkyv",
  "rustc-hash",
+ "ser_raw",
  "serde",
  "serde_json",
  "siphasher",
@@ -3409,6 +3428,7 @@ dependencies = [
  "num-bigint",
  "rkyv",
  "scoped-tls",
+ "ser_raw",
  "serde",
  "serde_json",
  "string_enum",

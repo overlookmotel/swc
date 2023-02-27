@@ -36,6 +36,7 @@ use crate::collections::AHashMap;
 )]
 #[cfg_attr(feature = "rkyv", archive_attr(repr(C), derive(bytecheck::CheckBytes)))]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
+#[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 pub struct SyntaxContext(#[cfg_attr(feature = "rkyv", omit_bounds)] u32);
 
 #[cfg(feature = "arbitrary")]

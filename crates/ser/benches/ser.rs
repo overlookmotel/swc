@@ -75,11 +75,11 @@ fn get_ast() -> Program {
 }
 
 /*
-pub fn serialize_serde(program: &Program) -> String {
+fn serialize_serde(program: &Program) -> String {
     serde_json::to_string(&program).unwrap()
 }
 
-pub fn serialize_rkyv(program: &Program) -> AlignedVec {
+fn serialize_rkyv(program: &Program) -> AlignedVec {
     let aligned_vec = AlignedVec::new();
     let aligned_serializer = AlignedSerializer::new(aligned_vec);
     let scratch = FallbackScratch::<HeapScratch<512>, AllocScratch>::default();
@@ -90,7 +90,7 @@ pub fn serialize_rkyv(program: &Program) -> AlignedVec {
 }
 */
 
-pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
+fn serialize_abomonation(program: &Program) -> Vec<u8> {
     let mut bytes = Vec::new();
     unsafe {
         encode(program, &mut bytes).unwrap();
@@ -98,7 +98,7 @@ pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
     bytes
 }
 
-pub fn serialize_raw(program: &Program) -> Vec<u8> {
+fn serialize_raw(program: &Program) -> Vec<u8> {
     serialize_unaligned(program)
 }
 

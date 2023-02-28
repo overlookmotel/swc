@@ -8,15 +8,18 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rkyv::{
     ser::{
         serializers::{
-            AlignedSerializer, AllocScratch, AllocSerializer, FallbackScratch, HeapScratch,
-            SharedSerializeMap,
+            AlignedSerializer as RkyvAlignedSerializer, AllocScratch, AllocSerializer,
+            FallbackScratch, HeapScratch, SharedSerializeMap,
         },
         Serializer as RkyvSerializer,
     },
     AlignedVec,
 };
 */
-use ser_raw::{Serializer as RawSerializer, UnalignedSerializer};
+use ser_raw::{
+    AlignedByteVec, AlignedSerializer as RawAlignedSerializer, Serializer as RawSerializer,
+    UnalignedSerializer,
+};
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -47,6 +50,12 @@ fn bench_serializers(c: &mut Criterion) {
     c.bench_function("ser_raw", |b| {
         b.iter(|| {
             let _ = black_box(serialize_raw(&program));
+        });
+    });
+
+    c.bench_function("ser_raw aligned", |b| {
+        b.iter(|| {
+            let _ = black_box(serialize_raw_aligned(&program));
         });
     });
 }
@@ -100,6 +109,16 @@ fn serialize_abomonation(program: &Program) -> Vec<u8> {
 
 fn serialize_raw(program: &Program) -> Vec<u8> {
     let mut serializer = UnalignedSerializer::with_capacity(344980);
+    serializer.serialize_value(program);
+    serializer.into_vec()
+}
+
+const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
+const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
+
+fn serialize_raw_aligned(program: &Program) -> AlignedByteVec<OUTPUT_ALIGNMENT> {
+    let mut serializer =
+        RawAlignedSerializer::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::with_capacity(345432);
     serializer.serialize_value(program);
     serializer.into_vec()
 }

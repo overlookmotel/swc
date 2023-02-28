@@ -3,15 +3,18 @@ use abomonation::encode;
 use rkyv::{
     ser::{
         serializers::{
-            AlignedSerializer, AllocScratch, AllocSerializer, FallbackScratch, HeapScratch,
-            SharedSerializeMap,
+            AlignedSerializer as RkyvAlignedSerializer, AllocScratch, AllocSerializer,
+            FallbackScratch, HeapScratch, SharedSerializeMap,
         },
-        Serializer,
+        Serializer as RkyvSerializer,
     },
     AlignedVec,
 };
 */
-use ser_raw::serialize_unaligned;
+use ser_raw::{
+    serialize_unaligned, AlignedByteVec, AlignedSerializer as RawAlignedSerializer,
+    Serializer as RawSerializer,
+};
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -32,6 +35,9 @@ pub fn main() {
 
     let ser_raw_vec = serialize_raw(&program);
     println!("ser_raw bytes: {}", ser_raw_vec.len());
+
+    let ser_raw_aligned_vec = serialize_raw_aligned(&program);
+    println!("ser_raw aligned bytes: {}", ser_raw_aligned_vec.len());
 }
 
 fn get_ast() -> Program {
@@ -76,4 +82,13 @@ pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
 
 pub fn serialize_raw(program: &Program) -> Vec<u8> {
     serialize_unaligned(program)
+}
+
+const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
+const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
+
+fn serialize_raw_aligned(program: &Program) -> AlignedByteVec<OUTPUT_ALIGNMENT> {
+    let mut serializer = RawAlignedSerializer::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::new();
+    serializer.serialize_value(program);
+    serializer.into_vec()
 }

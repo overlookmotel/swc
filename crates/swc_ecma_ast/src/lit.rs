@@ -211,10 +211,9 @@ impl BigIntProxy {
 impl ser_raw::SerializeWith<BigIntValue> for BigIntProxy {
     fn serialize_data_with<S: ser_raw::Serializer>(bigint: &BigIntValue, serializer: &mut S) {
         // Write length as usize, then body. Sign is stored inline.
-        let body_bytes = bigint.magnitude().to_bytes_le();
-        let len = body_bytes.len();
-        serializer.push_bytes(&len.to_ne_bytes());
-        serializer.push_bytes(&body_bytes);
+        let body = bigint.magnitude().to_bytes_le();
+        serializer.push(&body.len());
+        serializer.push_bytes(body.as_slice());
     }
 }
 

@@ -324,8 +324,7 @@ impl ser_raw::SerializeWith<JsWord> for JsWordProxy {
         // so only need to add string to output if it's dynamic.
         if js_word.is_dynamic() {
             // Write length as usize, followed by string
-            let len = js_word.len();
-            serializer.push_bytes(&len.to_ne_bytes());
+            serializer.push(&js_word.len());
             serializer.push_bytes(js_word.as_bytes());
         }
     }

@@ -2,7 +2,7 @@ extern crate swc_node_base;
 
 // use std::path::Path;
 
-use abomonation::encode;
+// use abomonation::encode;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 /*
 use rkyv::{
@@ -41,11 +41,13 @@ fn bench_serializers(c: &mut Criterion) {
     });
     */
 
+    /*
     c.bench_function("abomonation", |b| {
         b.iter(|| {
             let _ = black_box(serialize_abomonation(&program));
         });
     });
+    */
 
     c.bench_function("ser_raw", |b| {
         b.iter(|| {
@@ -99,6 +101,7 @@ fn serialize_rkyv(program: &Program) -> AlignedVec {
 }
 */
 
+/*
 fn serialize_abomonation(program: &Program) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(344980);
     unsafe {
@@ -106,6 +109,7 @@ fn serialize_abomonation(program: &Program) -> Vec<u8> {
     }
     bytes
 }
+*/
 
 fn serialize_raw(program: &Program) -> Vec<u8> {
     let mut serializer = UnalignedSerializer::with_capacity(344980);

@@ -1,4 +1,4 @@
-use abomonation::encode;
+// use abomonation::encode;
 /*
 use rkyv::{
     ser::{
@@ -30,8 +30,10 @@ pub fn main() {
     println!("RKYV bytes: {}", rkyv_vec.len());
     */
 
+    /*
     let abom_vec = serialize_abomonation(&program);
     println!("abomonation bytes: {}", abom_vec.len());
+    */
 
     let ser_raw_vec = serialize_raw(&program);
     println!("ser_raw bytes: {}", ser_raw_vec.len());
@@ -72,6 +74,7 @@ pub fn serialize_rkyv(program: &Program) -> AlignedVec {
 }
 */
 
+/*
 pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
     let mut bytes = Vec::new();
     unsafe {
@@ -79,6 +82,7 @@ pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
     }
     bytes
 }
+*/
 
 pub fn serialize_raw(program: &Program) -> Vec<u8> {
     serialize_unaligned(program)

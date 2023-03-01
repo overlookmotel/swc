@@ -2703,8 +2703,6 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 name = "ser"
 version = "0.0.1"
 dependencies = [
- "abomonation",
- "abomonation_derive",
  "criterion 0.4.0",
  "ser_raw",
  "swc_common",

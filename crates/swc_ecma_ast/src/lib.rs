@@ -246,19 +246,19 @@ where
 }
 
 #[cfg(any(feature = "abomonation", feature = "ser_raw"))]
-use std::{
-    io::{Result as IOResult, Write},
-    ptr, str,
-};
-
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 use swc_atoms::JsWord;
 
 #[cfg(any(feature = "abomonation", feature = "ser_raw"))]
 #[derive(Debug, Clone, Copy)]
 pub struct JsWordProxy;
 
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
+#[cfg(feature = "abomonation")]
+use std::{
+    io::{Result as IOResult, Write},
+    ptr, str,
+};
+
+#[cfg(feature = "abomonation")]
 const USIZE_LEN: usize = std::mem::size_of::<usize>();
 
 #[cfg(feature = "abomonation")]

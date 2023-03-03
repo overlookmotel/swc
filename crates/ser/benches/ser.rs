@@ -16,10 +16,7 @@ use rkyv::{
     AlignedVec,
 };
 */
-use ser_raw::{
-    AlignedByteVec, AlignedSerializer as RawAlignedSerializer, Serializer as RawSerializer,
-    UnalignedSerializer,
-};
+use ser_raw::{AlignedByteVec, BaseSerializer, Serializer as RawSerializer, UnalignedSerializer};
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -49,15 +46,15 @@ fn bench_serializers(c: &mut Criterion) {
     });
     */
 
-    c.bench_function("ser_raw", |b| {
+    c.bench_function("ser_raw unaligned", |b| {
         b.iter(|| {
-            let _ = black_box(serialize_raw(&program));
+            let _ = black_box(serialize_raw_unaligned(&program));
         });
     });
 
-    c.bench_function("ser_raw aligned", |b| {
+    c.bench_function("ser_raw base", |b| {
         b.iter(|| {
-            let _ = black_box(serialize_raw_aligned(&program));
+            let _ = black_box(serialize_raw_base(&program));
         });
     });
 }
@@ -111,7 +108,7 @@ fn serialize_abomonation(program: &Program) -> Vec<u8> {
 }
 */
 
-fn serialize_raw(program: &Program) -> Vec<u8> {
+fn serialize_raw_unaligned(program: &Program) -> Vec<u8> {
     let mut serializer = UnalignedSerializer::with_capacity(344980);
     serializer.serialize_value(program);
     serializer.into_vec()
@@ -120,9 +117,8 @@ fn serialize_raw(program: &Program) -> Vec<u8> {
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
 
-fn serialize_raw_aligned(program: &Program) -> AlignedByteVec<OUTPUT_ALIGNMENT> {
-    let mut serializer =
-        RawAlignedSerializer::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::with_capacity(345432);
+fn serialize_raw_base(program: &Program) -> AlignedByteVec<OUTPUT_ALIGNMENT> {
+    let mut serializer = BaseSerializer::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::with_capacity(345432);
     serializer.serialize_value(program);
     serializer.into_vec()
 }

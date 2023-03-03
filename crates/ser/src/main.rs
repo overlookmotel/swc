@@ -11,10 +11,7 @@ use rkyv::{
     AlignedVec,
 };
 */
-use ser_raw::{
-    serialize_unaligned, AlignedByteVec, AlignedSerializer as RawAlignedSerializer,
-    Serializer as RawSerializer,
-};
+use ser_raw::{AlignedByteVec, BaseSerializer, Serializer as RawSerializer, UnalignedSerializer};
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::Program;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -35,11 +32,11 @@ pub fn main() {
     println!("abomonation bytes: {}", abom_vec.len());
     */
 
-    let ser_raw_vec = serialize_raw(&program);
-    println!("ser_raw bytes: {}", ser_raw_vec.len());
+    let ser_raw_unaligned_vec = serialize_raw_unaligned(&program);
+    println!("ser_raw unaligned bytes: {}", ser_raw_unaligned_vec.len());
 
-    let ser_raw_aligned_vec = serialize_raw_aligned(&program);
-    println!("ser_raw aligned bytes: {}", ser_raw_aligned_vec.len());
+    let ser_raw_base_vec = serialize_raw_base(&program);
+    println!("ser_raw base bytes: {}", ser_raw_base_vec.len());
 }
 
 fn get_ast() -> Program {
@@ -84,15 +81,17 @@ pub fn serialize_abomonation(program: &Program) -> Vec<u8> {
 }
 */
 
-pub fn serialize_raw(program: &Program) -> Vec<u8> {
-    serialize_unaligned(program)
+pub fn serialize_raw_unaligned(program: &Program) -> Vec<u8> {
+    let mut serializer = UnalignedSerializer::new();
+    serializer.serialize_value(program);
+    serializer.into_vec()
 }
 
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
 
-fn serialize_raw_aligned(program: &Program) -> AlignedByteVec<OUTPUT_ALIGNMENT> {
-    let mut serializer = RawAlignedSerializer::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::new();
+fn serialize_raw_base(program: &Program) -> AlignedByteVec<OUTPUT_ALIGNMENT> {
+    let mut serializer = BaseSerializer::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::new();
     serializer.serialize_value(program);
     serializer.into_vec()
 }

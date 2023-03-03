@@ -109,7 +109,9 @@ fn serialize_abomonation(program: &Program) -> Vec<u8> {
 */
 
 fn serialize_raw_unaligned(program: &Program) -> Vec<u8> {
-    let mut serializer = UnalignedSerializer::with_capacity(344980);
+    // Only requires 344980, but giving it same as `BaseSerializer` for fairer
+    // comparison
+    let mut serializer = UnalignedSerializer::with_capacity(345432);
     serializer.serialize_value(program);
     serializer.into_vec()
 }

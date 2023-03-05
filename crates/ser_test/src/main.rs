@@ -25,7 +25,7 @@ fn serialize_raw_unaligned(program: &Program) -> Vec<u8> {
 
 fn serialize_raw_base(program: &Program) -> AlignedByteVec<8> {
     let mut serializer =
-        BaseSerializer::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::with_capacity(CAPACITY);
+        BaseSerializer::<_, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::with_capacity(CAPACITY);
     serializer.serialize_value(program);
     serializer.into_vec()
 }

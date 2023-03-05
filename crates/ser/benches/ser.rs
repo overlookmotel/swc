@@ -59,29 +59,27 @@ fn bench_serializers(c: &mut Criterion) {
     */
 
     c.bench_function("ser_raw unaligned", |b| {
+        use ser_raw::{Serializer, UnalignedSerializer};
+        // Only requires 344980, but giving it same as `BaseSerializer` for fairer
+        // comparison
+        let mut buf = Vec::with_capacity(CAPACITY);
         b.iter(|| {
-            use ser_raw::{Serializer, UnalignedSerializer};
-
-            let _ = black_box({
-                // Only requires 344980, but giving it same as `BaseSerializer` for fairer
-                // comparison
-                let mut serializer = UnalignedSerializer::with_capacity(CAPACITY);
-                serializer.serialize_value(&program);
-                serializer.into_vec()
-            });
+            let mut serializer = UnalignedSerializer::from_vec(&mut buf);
+            serializer.serialize_value(&program);
+            black_box(&mut buf);
+            buf.clear();
         });
     });
 
     c.bench_function("ser_raw base", |b| {
+        use ser_raw::{AlignedByteVec, BaseSerializer, Serializer};
+        let mut buf = AlignedByteVec::with_capacity(CAPACITY);
         b.iter(|| {
-            use ser_raw::{BaseSerializer, Serializer};
-
-            let _ = black_box({
-                let mut serializer =
-                    BaseSerializer::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::with_capacity(CAPACITY);
-                serializer.serialize_value(&program);
-                serializer.into_vec()
-            });
+            let mut serializer =
+                BaseSerializer::<_, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::from_vec(&mut buf);
+            serializer.serialize_value(&program);
+            black_box(&mut buf);
+            buf.clear();
         });
     });
 }

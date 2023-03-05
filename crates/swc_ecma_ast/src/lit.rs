@@ -67,14 +67,14 @@ pub struct BigInt {
     pub span: Span,
     #[cfg_attr(feature = "rkyv", with(EncodeBigInt))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(BigIntProxy))]
-    #[cfg_attr(feature = "ser_raw", ser_raw_with(BigIntProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_with(BigIntProxy))]
     pub value: BigIntValue,
 
     /// Use `None` value only for transformations to avoid recalculate
     /// characters in big integer
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
-    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordOptProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 
@@ -225,14 +225,14 @@ pub struct Str {
 
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
-    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordProxy))]
     pub value: JsWord,
 
     /// Use `None` value only for transformations to avoid recalculate escaped
     /// characters in strings
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
-    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordOptProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 
@@ -343,13 +343,13 @@ pub struct Regex {
     #[serde(rename = "pattern")]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
-    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordProxy))]
     pub exp: JsWord,
 
     #[serde(default)]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
-    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordProxy))]
     pub flags: JsWord,
 }
 
@@ -398,7 +398,7 @@ pub struct Number {
     /// characters in number literal
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
     #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
-    #[cfg_attr(feature = "ser_raw", ser_raw_with(crate::JsWordOptProxy))]
+    #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
 

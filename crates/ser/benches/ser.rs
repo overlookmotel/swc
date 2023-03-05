@@ -7,6 +7,7 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
+const MAX_VALUE_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const CAPACITY: usize = 345432;
 
 fn bench_serializers(c: &mut Criterion) {
@@ -75,8 +76,12 @@ fn bench_serializers(c: &mut Criterion) {
         use ser_raw::{AlignedByteVec, BaseSerializer, Serializer};
         let mut buf = AlignedByteVec::with_capacity(CAPACITY);
         b.iter(|| {
-            let mut serializer =
-                BaseSerializer::<_, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::from_vec(&mut buf);
+            let mut serializer = BaseSerializer::<
+                _,
+                OUTPUT_ALIGNMENT,
+                VALUE_ALIGNMENT,
+                MAX_VALUE_ALIGNMENT,
+            >::from_vec(&mut buf);
             serializer.serialize_value(&program);
             black_box(&mut buf);
             buf.clear();

@@ -7,6 +7,7 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
+const MAX_VALUE_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const CAPACITY: usize = 345432;
 
 pub fn main() {
@@ -25,7 +26,9 @@ fn serialize_raw_unaligned(program: &Program) -> Vec<u8> {
 
 fn serialize_raw_base(program: &Program) -> AlignedByteVec<8> {
     let mut serializer =
-        BaseSerializer::<_, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT>::with_capacity(CAPACITY);
+        BaseSerializer::<_, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
+            CAPACITY,
+        );
     serializer.serialize_value(program);
     serializer.into_vec()
 }

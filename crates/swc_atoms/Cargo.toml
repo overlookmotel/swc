@@ -15,7 +15,6 @@ bench = false
 [features]
 rkyv-impl = ["rkyv", "bytecheck"]
 abomonation = ["dep:abomonation"]
-ser_raw = ["dep:ser_raw"]
 
 [dependencies]
 abomonation = { version = "0.7.3", optional = true }
@@ -23,7 +22,6 @@ bytecheck = { version = "0.6.8", optional = true }
 once_cell = "1"
 rkyv = { version = "0.7.39", optional = true }
 rustc-hash = "1.1.0"
-ser_raw = { version = "0.0.1", optional = true, path = "../../../../crates/ser_raw/ser_raw" }
 serde = "1"
 string_cache = "0.8.4"
 

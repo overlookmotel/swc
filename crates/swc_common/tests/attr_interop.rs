@@ -25,6 +25,7 @@ pub struct Tuple(#[span] HasSpan, usize, usize);
 #[cfg_attr(feature = "rkyv", archive_attr(repr(C), derive(bytecheck::CheckBytes)))]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
+#[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub struct HasSpan {
     #[cfg_attr(feature = "rkyv", omit_bounds)]
     pub span: Span,

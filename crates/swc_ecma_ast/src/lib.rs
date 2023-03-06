@@ -95,6 +95,9 @@ mod source_map;
 mod stmt;
 mod typescript;
 
+#[cfg(feature = "ser_raw")]
+pub mod ser;
+
 /// Represents a invalid node.
 #[ast_node("Invalid")]
 #[derive(Eq, Hash, Copy, EqIgnoreSpan)]
@@ -317,16 +320,10 @@ impl JsWordProxy {
 }
 
 #[cfg(feature = "ser_raw")]
-impl ser_raw::SerializeWith<JsWord> for JsWordProxy {
-    fn serialize_data_with<S: ser_raw::Serializer>(js_word: &JsWord, serializer: &mut S) {
-        // `JsWord` can be static, inline or dynamic.
-        // The first 2 representations are self-contained,
-        // so only need to add string to output if it's dynamic.
-        if js_word.is_dynamic() {
-            // Write length as usize, followed by string
-            serializer.push(&js_word.len());
-            serializer.push_bytes(js_word.as_bytes());
-        }
+impl<S: ser::AstSerializer> ser_raw::SerializeWith<JsWord, S> for JsWordProxy {
+    #[inline]
+    fn serialize_data_with(js_word: &JsWord, serializer: &mut S) {
+        serializer.serialize_js_word(js_word);
     }
 }
 
@@ -368,8 +365,8 @@ impl JsWordOptProxy {
 }
 
 #[cfg(feature = "ser_raw")]
-impl ser_raw::SerializeWith<Option<JsWord>> for JsWordOptProxy {
-    fn serialize_data_with<S: ser_raw::Serializer>(js_word: &Option<JsWord>, serializer: &mut S) {
+impl<S: ser::AstSerializer> ser_raw::SerializeWith<Option<JsWord>, S> for JsWordOptProxy {
+    fn serialize_data_with(js_word: &Option<JsWord>, serializer: &mut S) {
         if let Some(js_word) = js_word {
             JsWordProxy::serialize_data_with(js_word, serializer);
         }

@@ -6,9 +6,9 @@ use swc_ecma_ast::Program;
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
-const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
-const MAX_VALUE_ALIGNMENT: usize = std::mem::align_of::<u64>();
-const CAPACITY: usize = 345432;
+const CAPACITY: usize = 345600;
+const NUM_STRINGS: usize = 152;
+const STRING_DATA_LEN: usize = 2116;
 
 fn bench_serializers(c: &mut Criterion) {
     let program = get_ast();
@@ -59,30 +59,59 @@ fn bench_serializers(c: &mut Criterion) {
     });
     */
 
-    c.bench_function("ser_raw unaligned", |b| {
-        use ser_raw::{Serializer, UnalignedSerializer};
-        // Only requires 344980, but giving it same as `BaseSerializer` for fairer
-        // comparison
+    c.bench_function("ser_raw unaligned no strings", |b| {
+        // Only requires 341648
         let mut buf = Vec::with_capacity(CAPACITY);
         b.iter(|| {
-            let mut serializer = UnalignedSerializer::from_vec(&mut buf);
-            serializer.serialize_value(black_box(&program));
+            swc_ecma_ast::ser::UnalignedSerializerNoStrings::serialize(
+                black_box(&program),
+                &mut buf,
+            );
             black_box(&mut buf);
             buf.clear();
         });
     });
 
-    c.bench_function("ser_raw base", |b| {
-        use ser_raw::{AlignedByteVec, BaseSerializer, Serializer};
-        let mut buf = AlignedByteVec::with_capacity(CAPACITY);
+    c.bench_function("ser_raw base no strings", |b| {
+        // Only requires 341648
+        let mut buf = ser_raw::AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
         b.iter(|| {
-            let mut serializer = BaseSerializer::<
-                _,
-                OUTPUT_ALIGNMENT,
-                VALUE_ALIGNMENT,
-                MAX_VALUE_ALIGNMENT,
-            >::from_vec(&mut buf);
-            serializer.serialize_value(black_box(&program));
+            swc_ecma_ast::ser::AlignedSerializerNoStrings::serialize(black_box(&program), &mut buf);
+            black_box(&mut buf);
+            buf.clear();
+        });
+    });
+
+    c.bench_function("ser_raw base fast strings", |b| {
+        // Does require 345596
+        let mut buf = ser_raw::AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
+        b.iter(|| {
+            swc_ecma_ast::ser::AlignedSerializerFastStrings::serialize(
+                black_box(&program),
+                &mut buf,
+                NUM_STRINGS,
+                STRING_DATA_LEN,
+            );
+            black_box(&mut buf);
+            buf.clear();
+        });
+    });
+
+    c.bench_function("ser_raw unaligned with strings", |b| {
+        // Only requires 344980
+        let mut buf = Vec::with_capacity(CAPACITY);
+        b.iter(|| {
+            swc_ecma_ast::ser::UnalignedSerializer::serialize(black_box(&program), &mut buf);
+            black_box(&mut buf);
+            buf.clear();
+        });
+    });
+
+    c.bench_function("ser_raw base with strings", |b| {
+        // Only requires 345432
+        let mut buf = ser_raw::AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
+        b.iter(|| {
+            swc_ecma_ast::ser::AlignedSerializer::serialize(black_box(&program), &mut buf);
             black_box(&mut buf);
             buf.clear();
         });

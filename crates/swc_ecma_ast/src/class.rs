@@ -254,6 +254,7 @@ pub struct Decorator {
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
+#[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum MethodKind {
     #[serde(rename = "method")]
     Method,

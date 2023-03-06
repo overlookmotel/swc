@@ -1,36 +1,42 @@
 extern crate swc_node_base;
 
-use ser_raw::{AlignedByteVec, BaseSerializer, Serializer, UnalignedSerializer};
+use ser_raw::AlignedByteVec;
 use swc_common::{sync::Lrc, FileName, SourceMap};
-use swc_ecma_ast::Program;
+use swc_ecma_ast::{ser, Program};
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
-const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
-const MAX_VALUE_ALIGNMENT: usize = std::mem::align_of::<u64>();
-const CAPACITY: usize = 345432;
+const CAPACITY: usize = 345600;
+const NUM_STRINGS: usize = 152;
+const STRING_DATA_LEN: usize = 2116;
 
 pub fn main() {
     let program = get_ast();
-    dbg!(serialize_raw_unaligned(&program).len());
-    dbg!(serialize_raw_base(&program).len());
-}
 
-fn serialize_raw_unaligned(program: &Program) -> Vec<u8> {
-    // Only requires 344980, but giving it same as `BaseSerializer` for fairer
-    // comparison
-    let mut serializer = UnalignedSerializer::with_capacity(CAPACITY);
-    serializer.serialize_value(program);
-    serializer.into_vec()
-}
+    // Only requires 341648
+    let mut buf = Vec::with_capacity(CAPACITY);
+    ser::UnalignedSerializerNoStrings::serialize(&program, &mut buf);
+    println!("UnalignedSerializerNoStrings {}", buf.len());
 
-fn serialize_raw_base(program: &Program) -> AlignedByteVec<8> {
-    let mut serializer =
-        BaseSerializer::<_, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
-            CAPACITY,
-        );
-    serializer.serialize_value(program);
-    serializer.into_vec()
+    // Only requires 341648
+    let mut buf = AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
+    ser::AlignedSerializerNoStrings::serialize(&program, &mut buf);
+    println!("AlignedSerializerNoStrings {}", buf.len());
+
+    // Does require 345596
+    let mut buf = AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
+    ser::AlignedSerializerFastStrings::serialize(&program, &mut buf, NUM_STRINGS, STRING_DATA_LEN);
+    println!("AlignedSerializerFastStrings {}", buf.len());
+
+    // Only requires 344980
+    let mut buf = Vec::with_capacity(CAPACITY);
+    ser::UnalignedSerializer::serialize(&program, &mut buf);
+    println!("UnalignedSerializer {}", buf.len());
+
+    // Only requires 345432
+    let mut buf = AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
+    ser::AlignedSerializer::serialize(&program, &mut buf);
+    println!("AlignedSerializer {}", buf.len());
 }
 
 fn get_ast() -> Program {

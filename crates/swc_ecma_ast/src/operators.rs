@@ -13,6 +13,7 @@ use swc_common::EqIgnoreSpan;
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
+#[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum BinaryOp {
     /// `==`
     EqEq,
@@ -124,6 +125,7 @@ impl BinaryOp {
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
+#[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum AssignOp {
     /// `=`
     Assign,
@@ -199,6 +201,7 @@ impl AssignOp {
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
+#[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum UpdateOp {
     /// `++`
     PlusPlus,
@@ -218,6 +221,7 @@ pub enum UpdateOp {
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
+#[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum UnaryOp {
     /// `-`
     Minus,

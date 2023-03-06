@@ -719,6 +719,7 @@ pub struct MetaPropExpr {
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
+#[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum MetaPropKind {
     /// `new.target`
     NewTarget,
@@ -917,6 +918,7 @@ impl Take for Import {
 )]
 #[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
+#[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub struct ExprOrSpread {
     #[serde(default)]
     #[cfg_attr(feature = "rkyv", omit_bounds)]

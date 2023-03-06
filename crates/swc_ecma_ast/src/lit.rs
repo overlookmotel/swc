@@ -208,8 +208,8 @@ impl BigIntProxy {
 }
 
 #[cfg(feature = "ser_raw")]
-impl ser_raw::SerializeWith<BigIntValue> for BigIntProxy {
-    fn serialize_data_with<S: ser_raw::Serializer>(bigint: &BigIntValue, serializer: &mut S) {
+impl<S: ser::AstSerializer> ser_raw::SerializeWith<BigIntValue, S> for BigIntProxy {
+    fn serialize_data_with(bigint: &BigIntValue, serializer: &mut S) {
         // Write length as usize, then body. Sign is stored inline.
         let body = bigint.magnitude().to_bytes_le();
         serializer.push(&body.len());

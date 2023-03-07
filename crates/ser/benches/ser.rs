@@ -66,7 +66,7 @@ fn bench_serializers(c: &mut Criterion) {
         let mut buf = Vec::with_capacity(CAPACITY);
         b.iter(|| {
             let mut serializer = UnalignedSerializer::from_vec(&mut buf);
-            serializer.serialize_value(&program);
+            serializer.serialize_value(black_box(&program));
             black_box(&mut buf);
             buf.clear();
         });
@@ -82,7 +82,7 @@ fn bench_serializers(c: &mut Criterion) {
                 VALUE_ALIGNMENT,
                 MAX_VALUE_ALIGNMENT,
             >::from_vec(&mut buf);
-            serializer.serialize_value(&program);
+            serializer.serialize_value(black_box(&program));
             black_box(&mut buf);
             buf.clear();
         });

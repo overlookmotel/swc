@@ -1,6 +1,8 @@
 use std::{
     borrow::{Borrow, BorrowMut},
-    cmp, ptr,
+    cmp,
+    collections::HashMap,
+    mem, ptr,
 };
 
 pub use ser::AstSerializer;
@@ -94,6 +96,111 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer
             self.string_lengths.push(js_word.len() as u32);
             self.string_data.extend_from_slice(js_word.as_bytes());
             self.push(&index);
+        }
+    }
+
+    #[inline]
+    fn inner(&self) -> &Self::InnerSerializer {
+        &self.inner
+    }
+
+    #[inline]
+    fn inner_mut(&mut self) -> &mut Self::InnerSerializer {
+        &mut self.inner
+    }
+}
+
+pub struct AlignedSerializerFastStringsDeduped<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> {
+    inner: InnerAlignedSerializer<Buf>,
+    string_lengths: Vec<u32>,
+    string_data: Vec<u8>,
+    string_lookup: HashMap<&'static JsWord, u32>,
+}
+
+impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializerFastStringsDeduped<Buf> {
+    pub fn serialize<T: Serialize<Self>>(
+        t: &T,
+        mut buf: Buf,
+        num_strings: usize,
+        string_data_len: usize,
+    ) {
+        // Reserve 8 bytes for pointer to strings + len.
+        // Sufficient capacity has been requested above.
+        // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
+        let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
+        assert!(buf.borrow().capacity() >= required_capacity);
+        unsafe { buf.borrow_mut().set_len(required_capacity) };
+
+        let mut serializer = Self {
+            inner: InnerAlignedSerializer::from_vec(buf),
+            string_lengths: Vec::with_capacity(num_strings),
+            string_data: Vec::with_capacity(string_data_len),
+            string_lookup: HashMap::with_capacity(num_strings),
+        };
+        serializer.serialize_value(t);
+
+        let mut inner = serializer.inner.into_vec();
+        let string_lengths = serializer.string_lengths;
+        let string_data = serializer.string_data;
+        let buf = inner.borrow_mut();
+
+        // Get position we're writing string data at
+        let pos = buf.len();
+
+        // Reserve space for string data (lengths and strings themselves)
+        let bytes = string_lengths.len() * 4 + string_data.len();
+        buf.reserve(bytes);
+
+        unsafe {
+            // Write string lengths
+            let src = string_lengths.as_ptr();
+            let dst = buf.as_mut_ptr() as *mut u32;
+            ptr::copy_nonoverlapping(src, dst, string_lengths.len());
+
+            // Write string data
+            let src = string_data.as_ptr();
+            let dst = buf.as_mut_ptr();
+            ptr::copy_nonoverlapping(src, dst, string_data.len());
+
+            buf.set_len(pos + bytes);
+
+            // Write position of string length data + number of strings at start
+            // of buffer (each as a `u32`)
+            (buf.as_mut_ptr() as *mut u32).write(pos as u32);
+            (buf.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
+        }
+    }
+}
+
+impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer
+    for AlignedSerializerFastStringsDeduped<Buf>
+{
+    type InnerSerializer = InnerAlignedSerializer<Buf>;
+
+    #[inline]
+    fn serialize_js_word(&mut self, js_word: &JsWord) {
+        // `JsWord` can be static, inline or dynamic.
+        // The first 2 representations are self-contained,
+        // so only need to add string to output if it's dynamic.
+        if js_word.is_dynamic() {
+            let index = match self.string_lookup.get(js_word) {
+                Some(index) => *index,
+                None => {
+                    let index = self.string_lengths.len() as u32;
+                    self.string_lengths.push(js_word.len() as u32);
+                    self.string_data.extend_from_slice(js_word.as_bytes());
+                    // `js_word` isn't really `&'static`, but we know it'll live as long as the hash
+                    // map because we have an immutable reference to the AST
+                    // containing the JsWord, which means it can't be dropped.
+                    // TODO: Find proper way to express this with lifetimes!
+                    let js_word = unsafe { mem::transmute::<_, &'static JsWord>(js_word) };
+                    self.string_lookup.insert(js_word, index);
+                    index
+                }
+            };
+
+            // Store as `usize` to avoid having to align buffer
+            self.push(&(index as usize));
         }
     }
 
@@ -288,6 +395,7 @@ macro_rules! impl_serializer {
     };
 }
 impl_serializer!(AlignedSerializerFastStrings<B>, AlignedVec);
+impl_serializer!(AlignedSerializerFastStringsDeduped<B>, AlignedVec);
 impl_serializer!(AlignedSerializer<B>, AlignedVec);
 impl_serializer!(AlignedSerializerNoStrings<B>, AlignedVec);
 impl_serializer!(UnalignedSerializer<B>, Vec<u8>);

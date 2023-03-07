@@ -8,6 +8,7 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const CAPACITY: usize = 345600;
 const NUM_STRINGS: usize = 152;
+const NUM_UNIQUE_STRINGS: usize = 102;
 const STRING_DATA_LEN: usize = 2116;
 
 fn bench_serializers(c: &mut Criterion) {
@@ -90,6 +91,21 @@ fn bench_serializers(c: &mut Criterion) {
                 black_box(&program),
                 &mut buf,
                 NUM_STRINGS,
+                STRING_DATA_LEN,
+            );
+            black_box(&mut buf);
+            buf.clear();
+        });
+    });
+
+    c.bench_function("ser_raw base fast strings deduped", |b| {
+        // Does require 345596
+        let mut buf = ser_raw::AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
+        b.iter(|| {
+            swc_ecma_ast::ser::AlignedSerializerFastStringsDeduped::serialize(
+                black_box(&program),
+                &mut buf,
+                NUM_UNIQUE_STRINGS,
                 STRING_DATA_LEN,
             );
             black_box(&mut buf);

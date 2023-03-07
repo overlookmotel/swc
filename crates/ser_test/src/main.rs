@@ -8,6 +8,7 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const CAPACITY: usize = 345600;
 const NUM_STRINGS: usize = 152;
+const NUM_UNIQUE_STRINGS: usize = 102;
 const STRING_DATA_LEN: usize = 2116;
 
 pub fn main() {
@@ -27,6 +28,16 @@ pub fn main() {
     let mut buf = AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
     ser::AlignedSerializerFastStrings::serialize(&program, &mut buf, NUM_STRINGS, STRING_DATA_LEN);
     println!("AlignedSerializerFastStrings {}", buf.len());
+
+    // Only requires 344909
+    let mut buf = AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
+    ser::AlignedSerializerFastStringsDeduped::serialize(
+        &program,
+        &mut buf,
+        NUM_UNIQUE_STRINGS,
+        STRING_DATA_LEN,
+    );
+    println!("AlignedSerializerFastStringsDeduped {}", buf.len());
 
     // Only requires 344980
     let mut buf = Vec::with_capacity(CAPACITY);

@@ -350,13 +350,23 @@ macro_rules! impl_serializer {
     ($ty:ty, $out:ty) => {
         impl<B: BorrowMut<$out>> Serializer for $ty {
             #[inline]
-            fn push_bytes(&mut self, bytes: &[u8]) {
-                self.inner_mut().push_bytes(bytes);
+            fn push<T>(&mut self, value: &T) {
+                self.inner_mut().push(value);
             }
 
             #[inline]
             fn push_slice<T>(&mut self, slice: &[T]) {
                 self.inner_mut().push_slice(slice);
+            }
+
+            #[inline]
+            fn push_bytes(&mut self, bytes: &[u8]) {
+                self.inner_mut().push_bytes(bytes);
+            }
+
+            #[inline]
+            fn push_raw<T>(&mut self, value: &T) {
+                self.inner_mut().push_raw(value);
             }
 
             #[inline]

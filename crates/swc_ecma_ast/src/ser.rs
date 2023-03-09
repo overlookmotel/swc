@@ -1,9 +1,4 @@
-use std::{
-    borrow::{Borrow, BorrowMut},
-    cmp,
-    collections::HashMap,
-    mem, ptr,
-};
+use std::{borrow::BorrowMut, cmp, collections::HashMap, mem, ptr};
 
 pub use ser::AstSerializer;
 use ser_raw::{
@@ -21,13 +16,13 @@ type AlignedVec = AlignedByteVec<OUTPUT_ALIGNMENT>;
 type InnerAlignedSerializer<Buf> =
     BaseSerializer<Buf, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>;
 
-pub struct AlignedSerializerFastStrings<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> {
+pub struct AlignedSerializerFastStrings<Buf: BorrowMut<AlignedVec>> {
     inner: InnerAlignedSerializer<Buf>,
     string_lengths: Vec<u32>,
     string_data: Vec<u8>,
 }
 
-impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializerFastStrings<Buf> {
+impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerFastStrings<Buf> {
     pub fn serialize<T: Serialize<Self>>(
         t: &T,
         mut buf: Buf,
@@ -81,9 +76,7 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializerFastStrin
     }
 }
 
-impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer
-    for AlignedSerializerFastStrings<Buf>
-{
+impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerFastStrings<Buf> {
     type InnerSerializer = InnerAlignedSerializer<Buf>;
 
     #[inline]
@@ -110,14 +103,14 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer
     }
 }
 
-pub struct AlignedSerializerFastStringsDeduped<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> {
+pub struct AlignedSerializerFastStringsDeduped<Buf: BorrowMut<AlignedVec>> {
     inner: InnerAlignedSerializer<Buf>,
     string_lengths: Vec<u32>,
     string_data: Vec<u8>,
     string_lookup: HashMap<&'static JsWord, u32>,
 }
 
-impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializerFastStringsDeduped<Buf> {
+impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerFastStringsDeduped<Buf> {
     pub fn serialize<T: Serialize<Self>>(
         t: &T,
         mut buf: Buf,
@@ -172,9 +165,7 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializerFastStrin
     }
 }
 
-impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer
-    for AlignedSerializerFastStringsDeduped<Buf>
-{
+impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerFastStringsDeduped<Buf> {
     type InnerSerializer = InnerAlignedSerializer<Buf>;
 
     #[inline]
@@ -215,11 +206,11 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer
     }
 }
 
-pub struct AlignedSerializer<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> {
+pub struct AlignedSerializer<Buf: BorrowMut<AlignedVec>> {
     inner: InnerAlignedSerializer<Buf>,
 }
 
-impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializer<Buf> {
+impl<Buf: BorrowMut<AlignedVec>> AlignedSerializer<Buf> {
     pub fn serialize<T: Serialize<Self>>(t: &T, buf: Buf) {
         let mut serializer = Self {
             inner: InnerAlignedSerializer::from_vec(buf),
@@ -228,7 +219,7 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializer<Buf> {
     }
 }
 
-impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer for AlignedSerializer<Buf> {
+impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializer<Buf> {
     type InnerSerializer = InnerAlignedSerializer<Buf>;
 
     #[inline]
@@ -254,11 +245,11 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer for AlignedS
     }
 }
 
-pub struct AlignedSerializerNoStrings<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> {
+pub struct AlignedSerializerNoStrings<Buf: BorrowMut<AlignedVec>> {
     inner: InnerAlignedSerializer<Buf>,
 }
 
-impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializerNoStrings<Buf> {
+impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerNoStrings<Buf> {
     pub fn serialize<T: Serialize<Self>>(t: &T, buf: Buf) {
         let mut serializer = Self {
             inner: InnerAlignedSerializer::from_vec(buf),
@@ -267,9 +258,7 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AlignedSerializerNoStrings
     }
 }
 
-impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer
-    for AlignedSerializerNoStrings<Buf>
-{
+impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerNoStrings<Buf> {
     type InnerSerializer = InnerAlignedSerializer<Buf>;
 
     #[inline]
@@ -288,11 +277,11 @@ impl<Buf: Borrow<AlignedVec> + BorrowMut<AlignedVec>> AstSerializer
 
 /// `UnalignedSerializer` wrapped to add `push_js_word` method.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
-pub struct UnalignedSerializer<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> {
+pub struct UnalignedSerializer<Buf: BorrowMut<Vec<u8>>> {
     inner: BaseUnalignedSerializer<Buf>,
 }
 
-impl<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> UnalignedSerializer<Buf> {
+impl<Buf: BorrowMut<Vec<u8>>> UnalignedSerializer<Buf> {
     pub fn serialize<T: Serialize<Self>>(t: &T, buf: Buf) {
         let mut serializer = Self {
             inner: BaseUnalignedSerializer::from_vec(buf),
@@ -301,7 +290,7 @@ impl<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> UnalignedSerializer<Buf> {
     }
 }
 
-impl<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> AstSerializer for UnalignedSerializer<Buf> {
+impl<Buf: BorrowMut<Vec<u8>>> AstSerializer for UnalignedSerializer<Buf> {
     type InnerSerializer = BaseUnalignedSerializer<Buf>;
 
     #[inline]
@@ -327,11 +316,11 @@ impl<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> AstSerializer for UnalignedSeria
     }
 }
 
-pub struct UnalignedSerializerNoStrings<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> {
+pub struct UnalignedSerializerNoStrings<Buf: BorrowMut<Vec<u8>>> {
     inner: BaseUnalignedSerializer<Buf>,
 }
 
-impl<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> UnalignedSerializerNoStrings<Buf> {
+impl<Buf: BorrowMut<Vec<u8>>> UnalignedSerializerNoStrings<Buf> {
     pub fn serialize<T: Serialize<Self>>(t: &T, buf: Buf) {
         let mut serializer = Self {
             inner: BaseUnalignedSerializer::from_vec(buf),
@@ -340,9 +329,7 @@ impl<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> UnalignedSerializerNoStrings<Buf
     }
 }
 
-impl<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> AstSerializer
-    for UnalignedSerializerNoStrings<Buf>
-{
+impl<Buf: BorrowMut<Vec<u8>>> AstSerializer for UnalignedSerializerNoStrings<Buf> {
     type InnerSerializer = BaseUnalignedSerializer<Buf>;
 
     #[inline]
@@ -361,7 +348,7 @@ impl<Buf: Borrow<Vec<u8>> + BorrowMut<Vec<u8>>> AstSerializer
 
 macro_rules! impl_serializer {
     ($ty:ty, $out:ty) => {
-        impl<B: Borrow<$out> + BorrowMut<$out>> Serializer for $ty {
+        impl<B: BorrowMut<$out>> Serializer for $ty {
             #[inline]
             fn push_bytes(&mut self, bytes: &[u8]) {
                 self.inner_mut().push_bytes(bytes);

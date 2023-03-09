@@ -7,9 +7,9 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const CAPACITY: usize = 345600;
-const NUM_STRINGS: usize = 152;
-const NUM_UNIQUE_STRINGS: usize = 102;
-const STRING_DATA_LEN: usize = 2116;
+// const NUM_STRINGS: usize = 152;
+// const NUM_UNIQUE_STRINGS: usize = 102;
+// const STRING_DATA_LEN: usize = 2116;
 
 pub fn main() {
     let program = get_ast();
@@ -24,6 +24,7 @@ pub fn main() {
     ser::AlignedSerializerNoStrings::serialize(&program, &mut buf);
     println!("AlignedSerializerNoStrings {}", buf.len());
 
+    /*
     // Does require 345596
     let mut buf = AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
     ser::AlignedSerializerFastStrings::serialize(&program, &mut buf, NUM_STRINGS, STRING_DATA_LEN);
@@ -48,6 +49,7 @@ pub fn main() {
     let mut buf = AlignedByteVec::<OUTPUT_ALIGNMENT>::with_capacity(CAPACITY);
     ser::AlignedSerializer::serialize(&program, &mut buf);
     println!("AlignedSerializer {}", buf.len());
+    */
 }
 
 fn get_ast() -> Program {

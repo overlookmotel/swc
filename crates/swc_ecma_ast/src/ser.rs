@@ -2,8 +2,8 @@ use std::{borrow::BorrowMut, cmp, collections::HashMap, mem, ptr};
 
 pub use ser::AstSerializer;
 use ser_raw::{
-    AlignedByteVec, BaseSerializer, Serialize, Serializer,
-    UnalignedSerializer as BaseUnalignedSerializer,
+    storage::{AlignedVec, ContiguousStorage, Storage, UnalignedVec},
+    BaseSerializer, Serialize, Serializer, UnalignedSerializer as BaseUnalignedSerializer,
 };
 use swc_atoms::JsWord;
 
@@ -12,20 +12,20 @@ const OUTPUT_ALIGNMENT: usize = mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = mem::align_of::<usize>();
 const MAX_VALUE_ALIGNMENT: usize = mem::align_of::<u64>();
 
-type AlignedVec = AlignedByteVec<OUTPUT_ALIGNMENT>;
-type InnerAlignedSerializer<Buf> =
-    BaseSerializer<Buf, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>;
+type AlignedStore = AlignedVec<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>;
+type InnerAlignedSerializer<Store> =
+    BaseSerializer<Store, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>;
 
-pub struct AlignedSerializerFastStrings<Buf: BorrowMut<AlignedVec>> {
-    inner: InnerAlignedSerializer<Buf>,
+pub struct AlignedSerializerFastStrings<Store: BorrowMut<AlignedStore>> {
+    inner: InnerAlignedSerializer<Store>,
     string_lengths: Vec<u32>,
     string_data: Vec<u8>,
 }
 
-impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerFastStrings<Buf> {
+impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
     pub fn serialize<T: Serialize<Self>>(
         t: &T,
-        mut buf: Buf,
+        mut store: Store,
         num_strings: usize,
         string_data_len: usize,
     ) {
@@ -33,11 +33,11 @@ impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerFastStrings<Buf> {
         // Sufficient capacity has been requested above.
         // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
         let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
-        assert!(buf.borrow().capacity() >= required_capacity);
-        unsafe { buf.borrow_mut().set_len(required_capacity) };
+        assert!(store.borrow().capacity() >= required_capacity);
+        unsafe { store.borrow_mut().set_len(required_capacity) };
 
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_vec(buf),
+            inner: InnerAlignedSerializer::from_store(store),
             string_lengths: Vec::with_capacity(num_strings),
             string_data: Vec::with_capacity(string_data_len),
         };
@@ -46,38 +46,38 @@ impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerFastStrings<Buf> {
         let mut inner = serializer.inner.into_vec();
         let string_lengths = serializer.string_lengths;
         let string_data = serializer.string_data;
-        let buf = inner.borrow_mut();
+        let store = inner.borrow_mut();
 
         // Get position we're writing string data at
-        let pos = buf.len();
+        let pos = store.len();
 
         // Reserve space for string data (lengths and strings themselves)
         let bytes = string_lengths.len() * 4 + string_data.len();
-        buf.reserve(bytes);
+        store.reserve(bytes);
 
         unsafe {
             // Write string lengths
             let src = string_lengths.as_ptr();
-            let dst = buf.as_mut_ptr() as *mut u32;
+            let dst = store.as_mut_ptr() as *mut u32;
             ptr::copy_nonoverlapping(src, dst, string_lengths.len());
 
             // Write string data
             let src = string_data.as_ptr();
-            let dst = buf.as_mut_ptr();
+            let dst = store.as_mut_ptr();
             ptr::copy_nonoverlapping(src, dst, string_data.len());
 
-            buf.set_len(pos + bytes);
+            store.set_len(pos + bytes);
 
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
-            (buf.as_mut_ptr() as *mut u32).write(pos as u32);
-            (buf.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
+            (store.as_mut_ptr() as *mut u32).write(pos as u32);
+            (store.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
         }
     }
 }
 
-impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerFastStrings<Buf> {
-    type InnerSerializer = InnerAlignedSerializer<Buf>;
+impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializerFastStrings<Store> {
+    type InnerSerializer = InnerAlignedSerializer<Store>;
 
     #[inline]
     fn serialize_js_word(&mut self, js_word: &JsWord) {
@@ -103,17 +103,17 @@ impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerFastStrings<
     }
 }
 
-pub struct AlignedSerializerFastStringsDeduped<Buf: BorrowMut<AlignedVec>> {
-    inner: InnerAlignedSerializer<Buf>,
+pub struct AlignedSerializerFastStringsDeduped<Store: BorrowMut<AlignedStore>> {
+    inner: InnerAlignedSerializer<Store>,
     string_lengths: Vec<u32>,
     string_data: Vec<u8>,
     string_lookup: HashMap<&'static JsWord, u32>,
 }
 
-impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerFastStringsDeduped<Buf> {
+impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> {
     pub fn serialize<T: Serialize<Self>>(
         t: &T,
-        mut buf: Buf,
+        mut store: Store,
         num_strings: usize,
         string_data_len: usize,
     ) {
@@ -121,11 +121,11 @@ impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerFastStringsDeduped<Buf> {
         // Sufficient capacity has been requested above.
         // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
         let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
-        assert!(buf.borrow().capacity() >= required_capacity);
-        unsafe { buf.borrow_mut().set_len(required_capacity) };
+        assert!(store.borrow().capacity() >= required_capacity);
+        unsafe { store.borrow_mut().set_len(required_capacity) };
 
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_vec(buf),
+            inner: InnerAlignedSerializer::from_store(store),
             string_lengths: Vec::with_capacity(num_strings),
             string_data: Vec::with_capacity(string_data_len),
             string_lookup: HashMap::with_capacity(num_strings),
@@ -135,38 +135,38 @@ impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerFastStringsDeduped<Buf> {
         let mut inner = serializer.inner.into_vec();
         let string_lengths = serializer.string_lengths;
         let string_data = serializer.string_data;
-        let buf = inner.borrow_mut();
+        let store = inner.borrow_mut();
 
         // Get position we're writing string data at
-        let pos = buf.len();
+        let pos = store.len();
 
         // Reserve space for string data (lengths and strings themselves)
         let bytes = string_lengths.len() * 4 + string_data.len();
-        buf.reserve(bytes);
+        store.reserve(bytes);
 
         unsafe {
             // Write string lengths
             let src = string_lengths.as_ptr();
-            let dst = buf.as_mut_ptr() as *mut u32;
+            let dst = store.as_mut_ptr() as *mut u32;
             ptr::copy_nonoverlapping(src, dst, string_lengths.len());
 
             // Write string data
             let src = string_data.as_ptr();
-            let dst = buf.as_mut_ptr();
+            let dst = store.as_mut_ptr();
             ptr::copy_nonoverlapping(src, dst, string_data.len());
 
-            buf.set_len(pos + bytes);
+            store.set_len(pos + bytes);
 
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
-            (buf.as_mut_ptr() as *mut u32).write(pos as u32);
-            (buf.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
+            (store.as_mut_ptr() as *mut u32).write(pos as u32);
+            (store.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
         }
     }
 }
 
-impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerFastStringsDeduped<Buf> {
-    type InnerSerializer = InnerAlignedSerializer<Buf>;
+impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializerFastStringsDeduped<Store> {
+    type InnerSerializer = InnerAlignedSerializer<Store>;
 
     #[inline]
     fn serialize_js_word(&mut self, js_word: &JsWord) {
@@ -206,21 +206,21 @@ impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerFastStringsD
     }
 }
 
-pub struct AlignedSerializer<Buf: BorrowMut<AlignedVec>> {
-    inner: InnerAlignedSerializer<Buf>,
+pub struct AlignedSerializer<Store: BorrowMut<AlignedStore>> {
+    inner: InnerAlignedSerializer<Store>,
 }
 
-impl<Buf: BorrowMut<AlignedVec>> AlignedSerializer<Buf> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, buf: Buf) {
+impl<Store: BorrowMut<AlignedStore>> AlignedSerializer<Store> {
+    pub fn serialize<T: Serialize<Self>>(t: &T, store: Store) {
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_vec(buf),
+            inner: InnerAlignedSerializer::from_store(store),
         };
         serializer.serialize_value(t);
     }
 }
 
-impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializer<Buf> {
-    type InnerSerializer = InnerAlignedSerializer<Buf>;
+impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializer<Store> {
+    type InnerSerializer = InnerAlignedSerializer<Store>;
 
     #[inline]
     fn serialize_js_word(&mut self, js_word: &JsWord) {
@@ -245,21 +245,21 @@ impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializer<Buf> {
     }
 }
 
-pub struct AlignedSerializerNoStrings<Buf: BorrowMut<AlignedVec>> {
-    inner: InnerAlignedSerializer<Buf>,
+pub struct AlignedSerializerNoStrings<Store: BorrowMut<AlignedStore>> {
+    inner: InnerAlignedSerializer<Store>,
 }
 
-impl<Buf: BorrowMut<AlignedVec>> AlignedSerializerNoStrings<Buf> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, buf: Buf) {
+impl<Store: BorrowMut<AlignedStore>> AlignedSerializerNoStrings<Store> {
+    pub fn serialize<T: Serialize<Self>>(t: &T, store: Store) {
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_vec(buf),
+            inner: InnerAlignedSerializer::from_store(store),
         };
         serializer.serialize_value(t);
     }
 }
 
-impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerNoStrings<Buf> {
-    type InnerSerializer = InnerAlignedSerializer<Buf>;
+impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializerNoStrings<Store> {
+    type InnerSerializer = InnerAlignedSerializer<Store>;
 
     #[inline]
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
@@ -277,21 +277,21 @@ impl<Buf: BorrowMut<AlignedVec>> AstSerializer for AlignedSerializerNoStrings<Bu
 
 /// `UnalignedSerializer` wrapped to add `push_js_word` method.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
-pub struct UnalignedSerializer<Buf: BorrowMut<Vec<u8>>> {
-    inner: BaseUnalignedSerializer<Buf>,
+pub struct UnalignedSerializer<Store: BorrowMut<UnalignedVec>> {
+    inner: BaseUnalignedSerializer<Store>,
 }
 
-impl<Buf: BorrowMut<Vec<u8>>> UnalignedSerializer<Buf> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, buf: Buf) {
+impl<Store: BorrowMut<UnalignedVec>> UnalignedSerializer<Store> {
+    pub fn serialize<T: Serialize<Self>>(t: &T, store: Store) {
         let mut serializer = Self {
-            inner: BaseUnalignedSerializer::from_vec(buf),
+            inner: BaseUnalignedSerializer::from_store(store),
         };
         serializer.serialize_value(t);
     }
 }
 
-impl<Buf: BorrowMut<Vec<u8>>> AstSerializer for UnalignedSerializer<Buf> {
-    type InnerSerializer = BaseUnalignedSerializer<Buf>;
+impl<Store: BorrowMut<UnalignedVec>> AstSerializer for UnalignedSerializer<Store> {
+    type InnerSerializer = BaseUnalignedSerializer<Store>;
 
     #[inline]
     fn serialize_js_word(&mut self, js_word: &JsWord) {
@@ -316,21 +316,21 @@ impl<Buf: BorrowMut<Vec<u8>>> AstSerializer for UnalignedSerializer<Buf> {
     }
 }
 
-pub struct UnalignedSerializerNoStrings<Buf: BorrowMut<Vec<u8>>> {
-    inner: BaseUnalignedSerializer<Buf>,
+pub struct UnalignedSerializerNoStrings<Store: BorrowMut<UnalignedVec>> {
+    inner: BaseUnalignedSerializer<Store>,
 }
 
-impl<Buf: BorrowMut<Vec<u8>>> UnalignedSerializerNoStrings<Buf> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, buf: Buf) {
+impl<Store: BorrowMut<UnalignedVec>> UnalignedSerializerNoStrings<Store> {
+    pub fn serialize<T: Serialize<Self>>(t: &T, store: Store) {
         let mut serializer = Self {
-            inner: BaseUnalignedSerializer::from_vec(buf),
+            inner: BaseUnalignedSerializer::from_store(store),
         };
         serializer.serialize_value(t);
     }
 }
 
-impl<Buf: BorrowMut<Vec<u8>>> AstSerializer for UnalignedSerializerNoStrings<Buf> {
-    type InnerSerializer = BaseUnalignedSerializer<Buf>;
+impl<Store: BorrowMut<UnalignedVec>> AstSerializer for UnalignedSerializerNoStrings<Store> {
+    type InnerSerializer = BaseUnalignedSerializer<Store>;
 
     #[inline]
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
@@ -391,9 +391,9 @@ macro_rules! impl_serializer {
         }
     };
 }
-impl_serializer!(AlignedSerializerFastStrings<B>, AlignedVec);
-impl_serializer!(AlignedSerializerFastStringsDeduped<B>, AlignedVec);
-impl_serializer!(AlignedSerializer<B>, AlignedVec);
-impl_serializer!(AlignedSerializerNoStrings<B>, AlignedVec);
-impl_serializer!(UnalignedSerializer<B>, Vec<u8>);
-impl_serializer!(UnalignedSerializerNoStrings<B>, Vec<u8>);
+impl_serializer!(AlignedSerializerFastStrings<B>, AlignedStore);
+impl_serializer!(AlignedSerializerFastStringsDeduped<B>, AlignedStore);
+impl_serializer!(AlignedSerializer<B>, AlignedStore);
+impl_serializer!(AlignedSerializerNoStrings<B>, AlignedStore);
+impl_serializer!(UnalignedSerializer<B>, UnalignedVec);
+impl_serializer!(UnalignedSerializerNoStrings<B>, UnalignedVec);

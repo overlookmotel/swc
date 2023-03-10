@@ -25,7 +25,7 @@ pub struct AlignedSerializerFastStrings<Store: BorrowMut<AlignedStore>> {
 impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
     pub fn serialize<T: Serialize<Self>>(
         t: &T,
-        mut store: Store,
+        mut storage: Store,
         num_strings: usize,
         string_data_len: usize,
     ) {
@@ -33,45 +33,45 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
         // Sufficient capacity has been requested above.
         // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
         let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
-        assert!(store.borrow().capacity() >= required_capacity);
-        unsafe { store.borrow_mut().set_len(required_capacity) };
+        assert!(storage.borrow().capacity() >= required_capacity);
+        unsafe { storage.borrow_mut().set_len(required_capacity) };
 
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_store(store),
+            inner: InnerAlignedSerializer::from_store(storage),
             string_lengths: Vec::with_capacity(num_strings),
             string_data: Vec::with_capacity(string_data_len),
         };
         serializer.serialize_value(t);
 
-        let mut inner = serializer.inner.into_vec();
+        let mut storage = serializer.inner.into_vec();
         let string_lengths = serializer.string_lengths;
         let string_data = serializer.string_data;
-        let store = inner.borrow_mut();
+        let storage = storage.borrow_mut();
 
         // Get position we're writing string data at
-        let pos = store.len();
+        let pos = storage.len();
 
         // Reserve space for string data (lengths and strings themselves)
         let bytes = string_lengths.len() * 4 + string_data.len();
-        store.reserve(bytes);
+        storage.reserve(bytes);
 
         unsafe {
             // Write string lengths
             let src = string_lengths.as_ptr();
-            let dst = store.as_mut_ptr() as *mut u32;
+            let dst = storage.as_mut_ptr() as *mut u32;
             ptr::copy_nonoverlapping(src, dst, string_lengths.len());
 
             // Write string data
             let src = string_data.as_ptr();
-            let dst = store.as_mut_ptr();
+            let dst = storage.as_mut_ptr();
             ptr::copy_nonoverlapping(src, dst, string_data.len());
 
-            store.set_len(pos + bytes);
+            storage.set_len(pos + bytes);
 
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
-            (store.as_mut_ptr() as *mut u32).write(pos as u32);
-            (store.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
+            (storage.as_mut_ptr() as *mut u32).write(pos as u32);
+            (storage.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
         }
     }
 }
@@ -113,7 +113,7 @@ pub struct AlignedSerializerFastStringsDeduped<Store: BorrowMut<AlignedStore>> {
 impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> {
     pub fn serialize<T: Serialize<Self>>(
         t: &T,
-        mut store: Store,
+        mut storage: Store,
         num_strings: usize,
         string_data_len: usize,
     ) {
@@ -121,46 +121,46 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> 
         // Sufficient capacity has been requested above.
         // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
         let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
-        assert!(store.borrow().capacity() >= required_capacity);
-        unsafe { store.borrow_mut().set_len(required_capacity) };
+        assert!(storage.borrow().capacity() >= required_capacity);
+        unsafe { storage.borrow_mut().set_len(required_capacity) };
 
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_store(store),
+            inner: InnerAlignedSerializer::from_store(storage),
             string_lengths: Vec::with_capacity(num_strings),
             string_data: Vec::with_capacity(string_data_len),
             string_lookup: HashMap::with_capacity(num_strings),
         };
         serializer.serialize_value(t);
 
-        let mut inner = serializer.inner.into_vec();
+        let mut storage = serializer.inner.into_vec();
         let string_lengths = serializer.string_lengths;
         let string_data = serializer.string_data;
-        let store = inner.borrow_mut();
+        let storage = storage.borrow_mut();
 
         // Get position we're writing string data at
-        let pos = store.len();
+        let pos = storage.len();
 
         // Reserve space for string data (lengths and strings themselves)
         let bytes = string_lengths.len() * 4 + string_data.len();
-        store.reserve(bytes);
+        storage.reserve(bytes);
 
         unsafe {
             // Write string lengths
             let src = string_lengths.as_ptr();
-            let dst = store.as_mut_ptr() as *mut u32;
+            let dst = storage.as_mut_ptr() as *mut u32;
             ptr::copy_nonoverlapping(src, dst, string_lengths.len());
 
             // Write string data
             let src = string_data.as_ptr();
-            let dst = store.as_mut_ptr();
+            let dst = storage.as_mut_ptr();
             ptr::copy_nonoverlapping(src, dst, string_data.len());
 
-            store.set_len(pos + bytes);
+            storage.set_len(pos + bytes);
 
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
-            (store.as_mut_ptr() as *mut u32).write(pos as u32);
-            (store.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
+            (storage.as_mut_ptr() as *mut u32).write(pos as u32);
+            (storage.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
         }
     }
 }
@@ -211,9 +211,9 @@ pub struct AlignedSerializer<Store: BorrowMut<AlignedStore>> {
 }
 
 impl<Store: BorrowMut<AlignedStore>> AlignedSerializer<Store> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, store: Store) {
+    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_store(store),
+            inner: InnerAlignedSerializer::from_store(storage),
         };
         serializer.serialize_value(t);
     }
@@ -250,9 +250,9 @@ pub struct AlignedSerializerNoStrings<Store: BorrowMut<AlignedStore>> {
 }
 
 impl<Store: BorrowMut<AlignedStore>> AlignedSerializerNoStrings<Store> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, store: Store) {
+    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_store(store),
+            inner: InnerAlignedSerializer::from_store(storage),
         };
         serializer.serialize_value(t);
     }
@@ -282,9 +282,9 @@ pub struct UnalignedSerializer<Store: BorrowMut<UnalignedVec>> {
 }
 
 impl<Store: BorrowMut<UnalignedVec>> UnalignedSerializer<Store> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, store: Store) {
+    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
-            inner: BaseUnalignedSerializer::from_store(store),
+            inner: BaseUnalignedSerializer::from_store(storage),
         };
         serializer.serialize_value(t);
     }
@@ -321,9 +321,9 @@ pub struct UnalignedSerializerNoStrings<Store: BorrowMut<UnalignedVec>> {
 }
 
 impl<Store: BorrowMut<UnalignedVec>> UnalignedSerializerNoStrings<Store> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, store: Store) {
+    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
-            inner: BaseUnalignedSerializer::from_store(store),
+            inner: BaseUnalignedSerializer::from_store(storage),
         };
         serializer.serialize_value(t);
     }

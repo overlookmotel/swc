@@ -64,29 +64,29 @@ fn bench_serializers(c: &mut Criterion) {
     c.bench_function("ser_raw unaligned no strings", |b| {
         use ser_raw::storage::{Storage, UnalignedVec};
         // Only requires 341648
-        let mut store = UnalignedVec::with_capacity(CAPACITY);
+        let mut storage = UnalignedVec::with_capacity(CAPACITY);
         b.iter(|| {
             swc_ecma_ast::ser::UnalignedSerializerNoStrings::serialize(
                 black_box(&program),
-                &mut store,
+                &mut storage,
             );
-            black_box(&mut store);
-            store.clear();
+            black_box(&mut storage);
+            storage.clear();
         });
     });
 
     c.bench_function("ser_raw base no strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Only requires 341648
-        let mut store =
+        let mut storage =
             AlignedVec::<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(CAPACITY);
         b.iter(|| {
             swc_ecma_ast::ser::AlignedSerializerNoStrings::serialize(
                 black_box(&program),
-                &mut store,
+                &mut storage,
             );
-            black_box(&mut store);
-            store.clear();
+            black_box(&mut storage);
+            storage.clear();
         });
     });
 
@@ -94,57 +94,57 @@ fn bench_serializers(c: &mut Criterion) {
     c.bench_function("ser_raw base fast strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Does require 345596
-        let mut store =
+        let mut storage =
             AlignedVec::<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(CAPACITY);
         b.iter(|| {
             swc_ecma_ast::ser::AlignedSerializerFastStrings::serialize(
                 black_box(&program),
-                &mut store,
+                &mut storage,
                 NUM_STRINGS,
                 STRING_DATA_LEN,
             );
-            black_box(&mut store);
-            store.clear();
+            black_box(&mut storage);
+            storage.clear();
         });
     });
 
     c.bench_function("ser_raw base fast strings deduped", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Does require 345596
-        let mut store =
+        let mut storage =
             AlignedVec::<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(CAPACITY);
         b.iter(|| {
             swc_ecma_ast::ser::AlignedSerializerFastStringsDeduped::serialize(
                 black_box(&program),
-                &mut store,
+                &mut storage,
                 NUM_UNIQUE_STRINGS,
                 STRING_DATA_LEN,
             );
-            black_box(&mut store);
-            store.clear();
+            black_box(&mut storage);
+            storage.clear();
         });
     });
 
     c.bench_function("ser_raw unaligned with strings", |b| {
         use ser_raw::storage::{Storage, UnalignedVec};
         // Only requires 344980
-        let mut store = UnalignedVec::with_capacity(CAPACITY);
+        let mut storage = UnalignedVec::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::UnalignedSerializer::serialize(black_box(&program), &mut store);
-            black_box(&mut store);
-            store.clear();
+            swc_ecma_ast::ser::UnalignedSerializer::serialize(black_box(&program), &mut storage);
+            black_box(&mut storage);
+            storage.clear();
         });
     });
 
     c.bench_function("ser_raw base with strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Only requires 345432
-        let mut store =
+        let mut storage =
             AlignedVec::<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::AlignedSerializer::serialize(black_box(&program), &mut store);
-            black_box(&mut store);
-            store.clear();
+            swc_ecma_ast::ser::AlignedSerializer::serialize(black_box(&program), &mut storage);
+            black_box(&mut storage);
+            storage.clear();
         });
     });
     */

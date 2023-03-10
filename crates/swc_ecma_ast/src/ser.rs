@@ -30,7 +30,6 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
         string_data_len: usize,
     ) {
         // Reserve 8 bytes for pointer to strings + len.
-        // Sufficient capacity has been requested above.
         // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
         let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
         assert!(storage.borrow().capacity() >= required_capacity);
@@ -118,7 +117,6 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> 
         string_data_len: usize,
     ) {
         // Reserve 8 bytes for pointer to strings + len.
-        // Sufficient capacity has been requested above.
         // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
         let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
         assert!(storage.borrow().capacity() >= required_capacity);

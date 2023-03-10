@@ -370,8 +370,8 @@ macro_rules! impl_serializer {
             }
 
             #[inline]
-            fn push_slice_raw<T>(&mut self, slice: &[T]) {
-                self.inner_mut().push_slice_raw(slice);
+            fn push_raw_slice<T>(&mut self, slice: &[T]) {
+                self.inner_mut().push_raw_slice(slice);
             }
 
             #[inline]

@@ -8,9 +8,9 @@ use ser_raw::{
 use swc_atoms::JsWord;
 
 // On 64-bit systems, these are all 8
-const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
-const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
-const MAX_VALUE_ALIGNMENT: usize = std::mem::align_of::<u64>();
+const OUTPUT_ALIGNMENT: usize = mem::align_of::<u64>();
+const VALUE_ALIGNMENT: usize = mem::align_of::<usize>();
+const MAX_VALUE_ALIGNMENT: usize = mem::align_of::<u64>();
 
 type AlignedVec = AlignedByteVec<OUTPUT_ALIGNMENT>;
 type InnerAlignedSerializer<Buf> =

@@ -37,13 +37,13 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
         unsafe { storage.borrow_mut().set_len(required_capacity) };
 
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_store(storage),
+            inner: InnerAlignedSerializer::from_storage(storage),
             string_lengths: Vec::with_capacity(num_strings),
             string_data: Vec::with_capacity(string_data_len),
         };
         serializer.serialize_value(t);
 
-        let mut storage = serializer.inner.into_vec();
+        let mut storage = serializer.inner.into_storage();
         let string_lengths = serializer.string_lengths;
         let string_data = serializer.string_data;
         let storage = storage.borrow_mut();
@@ -125,14 +125,14 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> 
         unsafe { storage.borrow_mut().set_len(required_capacity) };
 
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_store(storage),
+            inner: InnerAlignedSerializer::from_storage(storage),
             string_lengths: Vec::with_capacity(num_strings),
             string_data: Vec::with_capacity(string_data_len),
             string_lookup: HashMap::with_capacity(num_strings),
         };
         serializer.serialize_value(t);
 
-        let mut storage = serializer.inner.into_vec();
+        let mut storage = serializer.inner.into_storage();
         let string_lengths = serializer.string_lengths;
         let string_data = serializer.string_data;
         let storage = storage.borrow_mut();
@@ -213,7 +213,7 @@ pub struct AlignedSerializer<Store: BorrowMut<AlignedStore>> {
 impl<Store: BorrowMut<AlignedStore>> AlignedSerializer<Store> {
     pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_store(storage),
+            inner: InnerAlignedSerializer::from_storage(storage),
         };
         serializer.serialize_value(t);
     }
@@ -252,7 +252,7 @@ pub struct AlignedSerializerNoStrings<Store: BorrowMut<AlignedStore>> {
 impl<Store: BorrowMut<AlignedStore>> AlignedSerializerNoStrings<Store> {
     pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
-            inner: InnerAlignedSerializer::from_store(storage),
+            inner: InnerAlignedSerializer::from_storage(storage),
         };
         serializer.serialize_value(t);
     }
@@ -284,7 +284,7 @@ pub struct UnalignedSerializer<Store: BorrowMut<UnalignedVec>> {
 impl<Store: BorrowMut<UnalignedVec>> UnalignedSerializer<Store> {
     pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
-            inner: BaseUnalignedSerializer::from_store(storage),
+            inner: BaseUnalignedSerializer::from_storage(storage),
         };
         serializer.serialize_value(t);
     }
@@ -323,7 +323,7 @@ pub struct UnalignedSerializerNoStrings<Store: BorrowMut<UnalignedVec>> {
 impl<Store: BorrowMut<UnalignedVec>> UnalignedSerializerNoStrings<Store> {
     pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
-            inner: BaseUnalignedSerializer::from_store(storage),
+            inner: BaseUnalignedSerializer::from_storage(storage),
         };
         serializer.serialize_value(t);
     }

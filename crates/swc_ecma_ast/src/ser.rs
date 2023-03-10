@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, cmp, collections::HashMap, mem, ptr};
+use std::{borrow::BorrowMut, cmp, collections::HashMap, mem};
 
 pub use ser::AstSerializer;
 use ser_raw::{
@@ -12,7 +12,7 @@ const OUTPUT_ALIGNMENT: usize = mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = mem::align_of::<usize>();
 const MAX_VALUE_ALIGNMENT: usize = mem::align_of::<u64>();
 
-type AlignedStore = AlignedVec<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>;
+type AlignedStore = AlignedVec<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>;
 type InnerAlignedSerializer<Store> =
     BaseSerializer<Store, OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>;
 
@@ -47,26 +47,15 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
         let string_data = serializer.string_data;
         let storage = storage.borrow_mut();
 
-        // Get position we're writing string data at
+        // Get position we're writing string lengths at
+        storage.align_for::<u32>(); // Should be a no-op because will be aligned to `VALUE_ALIGNMENT` anyway
         let pos = storage.len();
 
-        // Reserve space for string data (lengths and strings themselves)
-        let bytes = string_lengths.len() * 4 + string_data.len();
-        storage.reserve(bytes);
+        // Write string lengths + data
+        storage.push_slice(&string_lengths);
+        storage.push_bytes(&string_data);
 
         unsafe {
-            // Write string lengths
-            let src = string_lengths.as_ptr();
-            let dst = storage.as_mut_ptr() as *mut u32;
-            ptr::copy_nonoverlapping(src, dst, string_lengths.len());
-
-            // Write string data
-            let src = string_data.as_ptr();
-            let dst = storage.as_mut_ptr();
-            ptr::copy_nonoverlapping(src, dst, string_data.len());
-
-            storage.set_len(pos + bytes);
-
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
             (storage.as_mut_ptr() as *mut u32).write(pos as u32);
@@ -135,26 +124,15 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> 
         let string_data = serializer.string_data;
         let storage = storage.borrow_mut();
 
-        // Get position we're writing string data at
+        // Get position we're writing string lengths at
+        storage.align_for::<u32>(); // Should be a no-op because will be aligned to `VALUE_ALIGNMENT` anyway
         let pos = storage.len();
 
-        // Reserve space for string data (lengths and strings themselves)
-        let bytes = string_lengths.len() * 4 + string_data.len();
-        storage.reserve(bytes);
+        // Write string lengths + data
+        storage.push_slice(&string_lengths);
+        storage.push_bytes(&string_data);
 
         unsafe {
-            // Write string lengths
-            let src = string_lengths.as_ptr();
-            let dst = storage.as_mut_ptr() as *mut u32;
-            ptr::copy_nonoverlapping(src, dst, string_lengths.len());
-
-            // Write string data
-            let src = string_data.as_ptr();
-            let dst = storage.as_mut_ptr();
-            ptr::copy_nonoverlapping(src, dst, string_data.len());
-
-            storage.set_len(pos + bytes);
-
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
             (storage.as_mut_ptr() as *mut u32).write(pos as u32);

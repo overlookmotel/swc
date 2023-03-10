@@ -6,6 +6,7 @@ use swc_ecma_ast::{ser, Program};
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
+const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
 const MAX_VALUE_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const CAPACITY: usize = 345600;
 // const NUM_STRINGS: usize = 152;
@@ -21,13 +22,19 @@ pub fn main() {
     println!("UnalignedSerializerNoStrings {}", storage.len());
 
     // Only requires 341648
-    let mut storage = AlignedVec::<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(CAPACITY);
+    let mut storage =
+        AlignedVec::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
+            CAPACITY,
+        );
     ser::AlignedSerializerNoStrings::serialize(&program, &mut storage);
     println!("AlignedSerializerNoStrings {}", storage.len());
 
     /*
-    // Does require 345596
-    let mut storage = AlignedVec::<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(CAPACITY);
+    // Does require 345600
+    let mut storage =
+        AlignedVec::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
+            CAPACITY,
+        );
     ser::AlignedSerializerFastStrings::serialize(
         &program,
         &mut storage,
@@ -36,8 +43,11 @@ pub fn main() {
     );
     println!("AlignedSerializerFastStrings {}", storage.len());
 
-    // Only requires 344909
-    let mut storage = AlignedVec::<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(CAPACITY);
+    // Only requires 344912
+    let mut storage =
+        AlignedVec::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
+            CAPACITY,
+        );
     ser::AlignedSerializerFastStringsDeduped::serialize(
         &program,
         &mut storage,
@@ -52,7 +62,10 @@ pub fn main() {
     println!("UnalignedSerializer {}", storage.len());
 
     // Only requires 345432
-    let mut storage = AlignedVec::<OUTPUT_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(CAPACITY);
+    let mut storage =
+        AlignedVec::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
+            CAPACITY,
+        );
     ser::AlignedSerializer::serialize(&program, &mut storage);
     println!("AlignedSerializer {}", storage.len());
     */

@@ -18,8 +18,9 @@ macro_rules! impl_unaligned {
     ($ty:ty) => {
         impl<Store: BorrowMut<UnalignedVec>> Serializer for $ty {
             #[inline]
-            fn push_slice<T>(&mut self, slice: &[T]) {
+            fn push_and_process_slice<T, P: FnOnce(&mut Self)>(&mut self, slice: &[T], process: P) {
                 self.push_raw_slice(slice);
+                process(self);
             }
 
             #[inline]
@@ -49,8 +50,9 @@ macro_rules! impl_aligned {
     ($ty:ty) => {
         impl<Store: BorrowMut<AlignedStore>> Serializer for $ty {
             #[inline]
-            fn push_slice<T>(&mut self, slice: &[T]) {
+            fn push_and_process_slice<T, P: FnOnce(&mut Self)>(&mut self, slice: &[T], process: P) {
                 self.push_raw_slice(slice);
+                process(self);
             }
 
             #[inline]

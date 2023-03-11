@@ -208,8 +208,14 @@ impl BigIntProxy {
 }
 
 #[cfg(feature = "ser_raw")]
-impl<S: ser::AstSerializer> ser_raw::SerializeWith<BigIntValue, S> for BigIntProxy {
-    fn serialize_data_with(bigint: &BigIntValue, serializer: &mut S) {
+impl<Ser, Store, BorrowedStore> ser_raw::SerializeWith<BigIntValue, Ser, Store, BorrowedStore>
+    for BigIntProxy
+where
+    Ser: ser_raw::Serializer<Store, BorrowedStore> + ser::AstSerializer,
+    Store: ser_raw::storage::Storage,
+    BorrowedStore: std::borrow::BorrowMut<Store>,
+{
+    fn serialize_data_with(bigint: &BigIntValue, serializer: &mut Ser) {
         // Write length as usize, then body. Sign is stored inline.
         let body = bigint.magnitude().to_bytes_le();
         serializer.push(&body.len());

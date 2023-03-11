@@ -16,76 +16,45 @@ const MAX_CAPACITY: usize = aligned_max_u32_capacity(OUTPUT_ALIGNMENT);
 type AlignedStore =
     AlignedVec<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT, MAX_CAPACITY>;
 
-macro_rules! impl_unaligned {
-    ($ty:ty) => {
-        impl<Store: BorrowMut<UnalignedVec>> Serializer for $ty {
-            #[inline]
-            fn push_and_process_slice<T, P: FnOnce(&mut Self)>(&mut self, slice: &[T], process: P) {
-                self.push_raw_slice(slice);
-                process(self);
+macro_rules! impl_serializer {
+    ($ty:ty, $store:ty) => {
+        impl<BorrowedStore> Serializer<$store, BorrowedStore> for $ty
+        where
+            BorrowedStore: BorrowMut<$store>,
+        {
+            fn storage(&self) -> &$store {
+                self.storage.borrow()
             }
 
-            #[inline]
-            fn push_bytes(&mut self, bytes: &[u8]) {
-                self.storage.borrow_mut().push_bytes(bytes);
+            fn storage_mut(&mut self) -> &mut $store {
+                self.storage.borrow_mut()
             }
 
-            #[inline]
-            fn push_raw_slice<T>(&mut self, slice: &[T]) {
-                self.storage.borrow_mut().push_slice(slice);
+            fn from_storage(storage: BorrowedStore) -> Self {
+                Self { storage }
             }
 
-            #[inline]
-            fn capacity(&self) -> usize {
-                self.storage.borrow().capacity()
-            }
-
-            #[inline]
-            fn pos(&self) -> usize {
-                self.storage.borrow().len()
-            }
-        }
-    };
-}
-
-macro_rules! impl_aligned {
-    ($ty:ty) => {
-        impl<Store: BorrowMut<AlignedStore>> Serializer for $ty {
-            #[inline]
-            fn push_and_process_slice<T, P: FnOnce(&mut Self)>(&mut self, slice: &[T], process: P) {
-                self.push_raw_slice(slice);
-                process(self);
-            }
-
-            #[inline]
-            fn push_raw_slice<T>(&mut self, slice: &[T]) {
-                self.storage.borrow_mut().push_slice(slice);
-            }
-
-            #[inline]
-            fn capacity(&self) -> usize {
-                self.storage.borrow().capacity()
-            }
-
-            #[inline]
-            fn pos(&self) -> usize {
-                self.storage.borrow().len()
+            fn into_storage(self) -> BorrowedStore {
+                self.storage
             }
         }
     };
 }
 
 /// Aligned serializer which stores strings on end of output.
-pub struct AlignedSerializerFastStrings<Store: BorrowMut<AlignedStore>> {
-    storage: Store,
+pub struct AlignedSerializerFastStrings<BorrowedStore: BorrowMut<AlignedStore>> {
+    storage: BorrowedStore,
     string_lengths: Vec<u32>,
     string_data: Vec<u8>,
 }
 
-impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
-    pub fn serialize<T: Serialize<Self>>(
+impl<BorrowedStore> AlignedSerializerFastStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    pub fn serialize<T: Serialize<Self, AlignedStore, BorrowedStore>>(
         t: &T,
-        mut storage: Store,
+        mut storage: BorrowedStore,
         num_strings: usize,
         string_data_len: usize,
     ) {
@@ -132,7 +101,10 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
     }
 }
 
-impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializerFastStrings<Store> {
+impl<BorrowedStore> AstSerializer for AlignedSerializerFastStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
     #[inline]
     fn serialize_js_word(&mut self, js_word: &JsWord) {
         // `JsWord` can be static, inline or dynamic.
@@ -147,21 +119,48 @@ impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializerFastStri
     }
 }
 
-impl_aligned!(AlignedSerializerFastStrings<Store>);
+impl<BorrowedStore> Serializer<AlignedStore, BorrowedStore>
+    for AlignedSerializerFastStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    fn storage(&self) -> &AlignedStore {
+        self.storage.borrow()
+    }
+
+    fn storage_mut(&mut self) -> &mut AlignedStore {
+        self.storage.borrow_mut()
+    }
+
+    fn from_storage(storage: BorrowedStore) -> Self {
+        Self {
+            storage,
+            string_lengths: Vec::new(),
+            string_data: Vec::new(),
+        }
+    }
+
+    fn into_storage(self) -> BorrowedStore {
+        self.storage
+    }
+}
 
 /// Aligned serializer which stores strings on end of output with deduplication
 /// of strings which are repeated more than once.
-pub struct AlignedSerializerFastStringsDeduped<Store: BorrowMut<AlignedStore>> {
-    storage: Store,
+pub struct AlignedSerializerFastStringsDeduped<BorrowedStore: BorrowMut<AlignedStore>> {
+    storage: BorrowedStore,
     string_lengths: Vec<u32>,
     string_data: Vec<u8>,
     string_lookup: HashMap<&'static JsWord, u32>,
 }
 
-impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> {
-    pub fn serialize<T: Serialize<Self>>(
+impl<BorrowedStore> AlignedSerializerFastStringsDeduped<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    pub fn serialize<T: Serialize<Self, AlignedStore, BorrowedStore>>(
         t: &T,
-        mut storage: Store,
+        mut storage: BorrowedStore,
         num_strings: usize,
         string_data_len: usize,
     ) {
@@ -204,7 +203,10 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> 
     }
 }
 
-impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializerFastStringsDeduped<Store> {
+impl<BorrowedStore> AstSerializer for AlignedSerializerFastStringsDeduped<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
     #[inline]
     fn serialize_js_word(&mut self, js_word: &JsWord) {
         // `JsWord` can be static, inline or dynamic.
@@ -233,22 +235,56 @@ impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializerFastStri
     }
 }
 
-impl_aligned!(AlignedSerializerFastStringsDeduped<Store>);
+impl<BorrowedStore> Serializer<AlignedStore, BorrowedStore>
+    for AlignedSerializerFastStringsDeduped<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    fn storage(&self) -> &AlignedStore {
+        self.storage.borrow()
+    }
+
+    fn storage_mut(&mut self) -> &mut AlignedStore {
+        self.storage.borrow_mut()
+    }
+
+    fn from_storage(storage: BorrowedStore) -> Self {
+        Self {
+            storage,
+            string_lengths: Vec::new(),
+            string_data: Vec::new(),
+            string_lookup: HashMap::new(),
+        }
+    }
+
+    fn into_storage(self) -> BorrowedStore {
+        self.storage
+    }
+}
 
 /// Aligned serializer with strings.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
-pub struct AlignedSerializer<Store: BorrowMut<AlignedStore>> {
-    storage: Store,
+pub struct AlignedSerializer<BorrowedStore: BorrowMut<AlignedStore>> {
+    storage: BorrowedStore,
 }
 
-impl<Store: BorrowMut<AlignedStore>> AlignedSerializer<Store> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
+impl<BorrowedStore> AlignedSerializer<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    pub fn serialize<T: Serialize<Self, AlignedStore, BorrowedStore>>(
+        t: &T,
+        storage: BorrowedStore,
+    ) {
         let mut serializer = Self { storage };
         serializer.serialize_value(t);
     }
 }
 
-impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializer<Store> {
+impl<BorrowedStore> AstSerializer for AlignedSerializer<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
     #[inline]
     fn serialize_js_word(&mut self, js_word: &JsWord) {
         // `JsWord` can be static, inline or dynamic.
@@ -262,27 +298,36 @@ impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializer<Store> 
     }
 }
 
-impl_aligned!(AlignedSerializer<Store>);
+impl_serializer!(AlignedSerializer<BorrowedStore>, AlignedStore);
 
 /// Aligned serializer without strings.
 /// `push_js_word` discards strings.
-pub struct AlignedSerializerNoStrings<Store: BorrowMut<AlignedStore>> {
-    storage: Store,
+pub struct AlignedSerializerNoStrings<BorrowedStore: BorrowMut<AlignedStore>> {
+    storage: BorrowedStore,
 }
 
-impl<Store: BorrowMut<AlignedStore>> AlignedSerializerNoStrings<Store> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
+impl<BorrowedStore> AlignedSerializerNoStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    pub fn serialize<T: Serialize<Self, AlignedStore, BorrowedStore>>(
+        t: &T,
+        storage: BorrowedStore,
+    ) {
         let mut serializer = Self { storage };
         serializer.serialize_value(t);
     }
 }
 
-impl<Store: BorrowMut<AlignedStore>> AstSerializer for AlignedSerializerNoStrings<Store> {
+impl<BorrowedStore> AstSerializer for AlignedSerializerNoStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
     #[inline]
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl_aligned!(AlignedSerializerNoStrings<Store>);
+impl_serializer!(AlignedSerializerNoStrings<BorrowedStore>, AlignedStore);
 
 /// Unaligned serializer with strings.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
@@ -290,14 +335,23 @@ pub struct UnalignedSerializer<Store: BorrowMut<UnalignedVec>> {
     storage: Store,
 }
 
-impl<Store: BorrowMut<UnalignedVec>> UnalignedSerializer<Store> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
+impl<BorrowedStore> UnalignedSerializer<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<UnalignedVec>,
+{
+    pub fn serialize<T: Serialize<Self, UnalignedVec, BorrowedStore>>(
+        t: &T,
+        storage: BorrowedStore,
+    ) {
         let mut serializer = Self { storage };
         serializer.serialize_value(t);
     }
 }
 
-impl<Store: BorrowMut<UnalignedVec>> AstSerializer for UnalignedSerializer<Store> {
+impl<BorrowedStore> AstSerializer for UnalignedSerializer<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<UnalignedVec>,
+{
     #[inline]
     fn serialize_js_word(&mut self, js_word: &JsWord) {
         // `JsWord` can be static, inline or dynamic.
@@ -311,7 +365,7 @@ impl<Store: BorrowMut<UnalignedVec>> AstSerializer for UnalignedSerializer<Store
     }
 }
 
-impl_unaligned!(UnalignedSerializer<Store>);
+impl_serializer!(UnalignedSerializer<BorrowedStore>, UnalignedVec);
 
 /// Unaligned serializer without strings.
 /// `push_js_word` discards strings.
@@ -319,16 +373,25 @@ pub struct UnalignedSerializerNoStrings<Store: BorrowMut<UnalignedVec>> {
     storage: Store,
 }
 
-impl<Store: BorrowMut<UnalignedVec>> UnalignedSerializerNoStrings<Store> {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
+impl<BorrowedStore> UnalignedSerializerNoStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<UnalignedVec>,
+{
+    pub fn serialize<T: Serialize<Self, UnalignedVec, BorrowedStore>>(
+        t: &T,
+        storage: BorrowedStore,
+    ) {
         let mut serializer = Self { storage };
         serializer.serialize_value(t);
     }
 }
 
-impl<Store: BorrowMut<UnalignedVec>> AstSerializer for UnalignedSerializerNoStrings<Store> {
+impl<BorrowedStore> AstSerializer for UnalignedSerializerNoStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<UnalignedVec>,
+{
     #[inline]
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl_unaligned!(UnalignedSerializerNoStrings<Store>);
+impl_serializer!(UnalignedSerializerNoStrings<BorrowedStore>, UnalignedVec);

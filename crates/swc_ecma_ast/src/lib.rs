@@ -320,9 +320,15 @@ impl JsWordProxy {
 }
 
 #[cfg(feature = "ser_raw")]
-impl<S: ser::AstSerializer> ser_raw::SerializeWith<JsWord, S> for JsWordProxy {
+impl<Ser, Store, BorrowedStore> ser_raw::SerializeWith<JsWord, Ser, Store, BorrowedStore>
+    for JsWordProxy
+where
+    Ser: ser_raw::Serializer<Store, BorrowedStore> + ser::AstSerializer,
+    Store: ser_raw::storage::Storage,
+    BorrowedStore: std::borrow::BorrowMut<Store>,
+{
     #[inline]
-    fn serialize_data_with(js_word: &JsWord, serializer: &mut S) {
+    fn serialize_data_with(js_word: &JsWord, serializer: &mut Ser) {
         serializer.serialize_js_word(js_word);
     }
 }
@@ -365,8 +371,14 @@ impl JsWordOptProxy {
 }
 
 #[cfg(feature = "ser_raw")]
-impl<S: ser::AstSerializer> ser_raw::SerializeWith<Option<JsWord>, S> for JsWordOptProxy {
-    fn serialize_data_with(js_word: &Option<JsWord>, serializer: &mut S) {
+impl<Ser, Store, BorrowedStore> ser_raw::SerializeWith<Option<JsWord>, Ser, Store, BorrowedStore>
+    for JsWordOptProxy
+where
+    Ser: ser_raw::Serializer<Store, BorrowedStore> + ser::AstSerializer,
+    Store: ser_raw::storage::Storage,
+    BorrowedStore: std::borrow::BorrowMut<Store>,
+{
+    fn serialize_data_with(js_word: &Option<JsWord>, serializer: &mut Ser) {
         if let Some(js_word) = js_word {
             JsWordProxy::serialize_data_with(js_word, serializer);
         }

@@ -8,6 +8,7 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
 const MAX_VALUE_ALIGNMENT: usize = std::mem::align_of::<u64>();
+const MAX_CAPACITY: usize = ser_raw::storage::aligned_max_u32_capacity(OUTPUT_ALIGNMENT);
 const CAPACITY: usize = 345600;
 // const NUM_STRINGS: usize = 152;
 // const NUM_UNIQUE_STRINGS: usize = 102;
@@ -79,10 +80,12 @@ fn bench_serializers(c: &mut Criterion) {
     c.bench_function("ser_raw base no strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Only requires 341648
-        let mut storage =
-            AlignedVec::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
-                CAPACITY,
-            );
+        let mut storage = AlignedVec::<
+            OUTPUT_ALIGNMENT,
+            VALUE_ALIGNMENT,
+            MAX_VALUE_ALIGNMENT,
+            MAX_CAPACITY,
+        >::with_capacity(CAPACITY);
         b.iter(|| {
             swc_ecma_ast::ser::AlignedSerializerNoStrings::serialize(
                 black_box(&program),
@@ -97,10 +100,12 @@ fn bench_serializers(c: &mut Criterion) {
     c.bench_function("ser_raw base fast strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Does require 345600
-        let mut storage =
-            AlignedVec::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
-                CAPACITY,
-            );
+        let mut storage = AlignedVec::<
+            OUTPUT_ALIGNMENT,
+            VALUE_ALIGNMENT,
+            MAX_VALUE_ALIGNMENT,
+            MAX_CAPACITY,
+        >::with_capacity(CAPACITY);
         b.iter(|| {
             swc_ecma_ast::ser::AlignedSerializerFastStrings::serialize(
                 black_box(&program),
@@ -116,10 +121,12 @@ fn bench_serializers(c: &mut Criterion) {
     c.bench_function("ser_raw base fast strings deduped", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Only requires 344912
-        let mut storage =
-            AlignedVec::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
-                CAPACITY,
-            );
+        let mut storage = AlignedVec::<
+            OUTPUT_ALIGNMENT,
+            VALUE_ALIGNMENT,
+            MAX_VALUE_ALIGNMENT,
+            MAX_CAPACITY,
+        >::with_capacity(CAPACITY);
         b.iter(|| {
             swc_ecma_ast::ser::AlignedSerializerFastStringsDeduped::serialize(
                 black_box(&program),
@@ -146,10 +153,12 @@ fn bench_serializers(c: &mut Criterion) {
     c.bench_function("ser_raw base with strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Only requires 345432
-        let mut storage =
-            AlignedVec::<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>::with_capacity(
-                CAPACITY,
-            );
+        let mut storage = AlignedVec::<
+            OUTPUT_ALIGNMENT,
+            VALUE_ALIGNMENT,
+            MAX_VALUE_ALIGNMENT,
+            MAX_CAPACITY,
+        >::with_capacity(CAPACITY);
         b.iter(|| {
             swc_ecma_ast::ser::AlignedSerializer::serialize(black_box(&program), &mut storage);
             black_box(&mut storage);

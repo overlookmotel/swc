@@ -2,17 +2,19 @@ use std::{borrow::BorrowMut, cmp, collections::HashMap, mem};
 
 pub use ser::AstSerializer;
 use ser_raw::{
-    storage::{AlignedVec, ContiguousStorage, Storage, UnalignedVec},
+    storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
     Serialize, Serializer,
 };
 use swc_atoms::JsWord;
 
-// On 64-bit systems, these are all 8
+// On 64-bit systems, alignments are all 8
 const OUTPUT_ALIGNMENT: usize = mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = mem::align_of::<usize>();
 const MAX_VALUE_ALIGNMENT: usize = mem::align_of::<u64>();
+const MAX_CAPACITY: usize = aligned_max_u32_capacity(OUTPUT_ALIGNMENT);
 
-type AlignedStore = AlignedVec<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT>;
+type AlignedStore =
+    AlignedVec<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT, MAX_CAPACITY>;
 
 macro_rules! impl_unaligned {
     ($ty:ty) => {

@@ -89,7 +89,12 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
         num_strings: usize,
         string_data_len: usize,
     ) {
-        // Reserve 8 bytes for pointer to strings + len.
+        // Reserve space for pointer to strings + len (as `u32`s).
+        // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
+        storage.borrow_mut().align_for::<u32>();
+        let metadata_pos = storage.borrow().len();
+        storage.borrow_mut().push_empty_const_slice::<u32, 2>();
+
         // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
         let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
         assert!(storage.borrow().capacity() >= required_capacity);
@@ -121,8 +126,8 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
         unsafe {
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
-            storage.write(&(pos as u32), 0);
-            storage.write(&(string_lengths.len() as u32), 4);
+            storage.write(&(pos as u32), metadata_pos);
+            storage.write(&(string_lengths.len() as u32), metadata_pos + 4);
         }
     }
 }
@@ -160,11 +165,11 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> 
         num_strings: usize,
         string_data_len: usize,
     ) {
-        // Reserve 8 bytes for pointer to strings + len.
-        // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
-        let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
-        assert!(storage.borrow().capacity() >= required_capacity);
-        unsafe { storage.borrow_mut().set_len(required_capacity) };
+        // Reserve space for pointer to strings + len (as `u32`s).
+        // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
+        storage.borrow_mut().align_for::<u32>();
+        let metadata_pos = storage.borrow().len();
+        storage.borrow_mut().push_empty_const_slice::<u32, 2>();
 
         let mut serializer = Self {
             storage,
@@ -192,9 +197,9 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> 
 
         unsafe {
             // Write position of string length data + number of strings at start
-            // of buffer. Write each as a `u32`
-            storage.write(&(pos as u32), 0);
-            storage.write(&(string_lengths.len() as u32), 4);
+            // of buffer (each as a `u32`)
+            storage.write(&(pos as u32), metadata_pos);
+            storage.write(&(string_lengths.len() as u32), metadata_pos + 4);
         }
     }
 }

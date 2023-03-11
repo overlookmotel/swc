@@ -121,8 +121,8 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStrings<Store> {
         unsafe {
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
-            (storage.as_mut_ptr() as *mut u32).write(pos as u32);
-            (storage.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
+            storage.write(&(pos as u32), 0);
+            storage.write(&(string_lengths.len() as u32), 4);
         }
     }
 }
@@ -192,9 +192,9 @@ impl<Store: BorrowMut<AlignedStore>> AlignedSerializerFastStringsDeduped<Store> 
 
         unsafe {
             // Write position of string length data + number of strings at start
-            // of buffer (each as a `u32`)
-            (storage.as_mut_ptr() as *mut u32).write(pos as u32);
-            (storage.as_mut_ptr().offset(4) as *mut u32).write(string_lengths.len() as u32);
+            // of buffer. Write each as a `u32`
+            storage.write(&(pos as u32), 0);
+            storage.write(&(string_lengths.len() as u32), 4);
         }
     }
 }

@@ -2,6 +2,7 @@ use std::{borrow::BorrowMut, cmp, collections::HashMap, mem};
 
 pub use ser::AstSerializer;
 use ser_raw::{
+    impl_pure_copy_serializer,
     storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
     PureCopySerializer, Serialize, Serializer, SerializerStorage,
 };
@@ -19,6 +20,7 @@ type AlignedStore =
 macro_rules! impl_serializer {
     ($ty:tt, $store:ty) => {
         impl<Store: BorrowMut<$store>> PureCopySerializer for $ty<Store> {}
+        impl_pure_copy_serializer!($ty<Store> where Store: BorrowMut<$store>);
 
         impl<Store: BorrowMut<$store>> SerializerStorage for $ty<Store> {
             type Store = $store;

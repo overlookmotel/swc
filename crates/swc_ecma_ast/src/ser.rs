@@ -17,10 +17,10 @@ type AlignedStore =
     AlignedVec<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT, MAX_CAPACITY>;
 
 macro_rules! impl_serializer {
-    ($ty:ty, $store:ty) => {
-        impl<Store: BorrowMut<$store>> PureCopySerializer for $ty {}
+    ($ty:tt, $store:ty) => {
+        impl<Store: BorrowMut<$store>> PureCopySerializer for $ty<Store> {}
 
-        impl<Store: BorrowMut<$store>> SerializerStorage for $ty {
+        impl<Store: BorrowMut<$store>> SerializerStorage for $ty<Store> {
             type Store = $store;
 
             fn storage(&self) -> &$store {
@@ -112,7 +112,7 @@ where
     }
 }
 
-impl_serializer!(AlignedSerializerFastStrings<Store>, AlignedStore);
+impl_serializer!(AlignedSerializerFastStrings, AlignedStore);
 
 /// Aligned serializer which stores strings on end of output with deduplication
 /// of strings which are repeated more than once.
@@ -204,7 +204,7 @@ where
     }
 }
 
-impl_serializer!(AlignedSerializerFastStringsDeduped<Store>, AlignedStore);
+impl_serializer!(AlignedSerializerFastStringsDeduped, AlignedStore);
 
 /// Aligned serializer with strings.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
@@ -239,7 +239,7 @@ where
     }
 }
 
-impl_serializer!(AlignedSerializer<Store>, AlignedStore);
+impl_serializer!(AlignedSerializer, AlignedStore);
 
 /// Aligned serializer without strings.
 /// `push_js_word` discards strings.
@@ -265,7 +265,7 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl_serializer!(AlignedSerializerNoStrings<Store>, AlignedStore);
+impl_serializer!(AlignedSerializerNoStrings, AlignedStore);
 
 /// Unaligned serializer with strings.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
@@ -300,7 +300,7 @@ where
     }
 }
 
-impl_serializer!(UnalignedSerializer<Store>, UnalignedVec);
+impl_serializer!(UnalignedSerializer, UnalignedVec);
 
 /// Unaligned serializer without strings.
 /// `push_js_word` discards strings.
@@ -326,4 +326,4 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl_serializer!(UnalignedSerializerNoStrings<Store>, UnalignedVec);
+impl_serializer!(UnalignedSerializerNoStrings, UnalignedVec);

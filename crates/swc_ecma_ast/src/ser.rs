@@ -243,7 +243,7 @@ where
         if js_word.is_dynamic() {
             // Write length as usize, followed by string
             self.push(&js_word.len());
-            self.push_bytes(js_word.as_bytes());
+            self.push_raw_bytes(js_word.as_bytes());
         }
     }
 }
@@ -304,7 +304,7 @@ where
         if js_word.is_dynamic() {
             // Write length as usize, followed by string
             self.push(&js_word.len());
-            self.push_bytes(js_word.as_bytes());
+            self.push_raw_bytes(js_word.as_bytes());
         }
     }
 }

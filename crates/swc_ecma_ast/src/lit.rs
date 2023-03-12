@@ -216,7 +216,7 @@ where
         // Write length as usize, then body. Sign is stored inline.
         let body = bigint.magnitude().to_bytes_le();
         serializer.push(&body.len());
-        serializer.push_bytes(body.as_slice());
+        serializer.push_raw_bytes(body.as_slice());
     }
 }
 

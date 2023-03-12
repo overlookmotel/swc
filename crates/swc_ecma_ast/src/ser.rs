@@ -3,7 +3,7 @@ use std::{borrow::BorrowMut, cmp, collections::HashMap, mem};
 pub use ser::AstSerializer;
 use ser_raw::{
     storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
-    Serialize, Serializer,
+    PureCopySerializer, Serialize, Serializer, SerializerStorage,
 };
 use swc_atoms::JsWord;
 
@@ -18,10 +18,9 @@ type AlignedStore =
 
 macro_rules! impl_serializer {
     ($ty:ty, $store:ty) => {
-        impl<Store> Serializer for $ty
-        where
-            Store: BorrowMut<$store>,
-        {
+        impl<Store: BorrowMut<$store>> PureCopySerializer for $ty {}
+
+        impl<Store: BorrowMut<$store>> SerializerStorage for $ty {
             type Store = $store;
 
             fn storage(&self) -> &$store {

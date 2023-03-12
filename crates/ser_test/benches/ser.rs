@@ -97,6 +97,22 @@ fn bench_serializers(c: &mut Criterion) {
     });
 
     /*
+    c.bench_function("ser_raw pos no strings", |b| {
+        use ser_raw::storage::{AlignedVec, Storage};
+        // Only requires 341648
+        let mut storage = AlignedVec::<
+            OUTPUT_ALIGNMENT,
+            VALUE_ALIGNMENT,
+            MAX_VALUE_ALIGNMENT,
+            MAX_CAPACITY,
+        >::with_capacity(CAPACITY);
+        b.iter(|| {
+            swc_ecma_ast::ser::PosSerializerNoStrings::serialize(black_box(&program), &mut storage);
+            black_box(&mut storage);
+            storage.clear();
+        });
+    });
+
     c.bench_function("ser_raw base fast strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Does require 345600

@@ -2,9 +2,10 @@ use std::{borrow::BorrowMut, cmp, collections::HashMap, mem};
 
 pub use ser::AstSerializer;
 use ser_raw::{
-    impl_pure_copy_serializer,
+    impl_pos_tracking_serializer, impl_pure_copy_serializer,
     storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
-    PureCopySerializer, Serialize, Serializer, SerializerStorage,
+    PosMapping, PosTrackingSerializer, PureCopySerializer, Serialize, Serializer,
+    SerializerStorage,
 };
 use swc_atoms::JsWord;
 
@@ -17,11 +18,17 @@ const MAX_CAPACITY: usize = aligned_max_u32_capacity(OUTPUT_ALIGNMENT);
 type AlignedStore =
     AlignedVec<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT, MAX_CAPACITY>;
 
-macro_rules! impl_serializer {
+macro_rules! impl_pure_serializer {
     ($ty:tt, $store:ty) => {
         impl<Store: BorrowMut<$store>> PureCopySerializer for $ty<Store> {}
         impl_pure_copy_serializer!($ty<Store> where Store: BorrowMut<$store>);
 
+        impl_serializer_store!($ty, $store);
+    };
+}
+
+macro_rules! impl_serializer_store {
+    ($ty:tt, $store:ty) => {
         impl<Store: BorrowMut<$store>> SerializerStorage for $ty<Store> {
             type Store = $store;
 
@@ -114,7 +121,7 @@ where
     }
 }
 
-impl_serializer!(AlignedSerializerFastStrings, AlignedStore);
+impl_pure_serializer!(AlignedSerializerFastStrings, AlignedStore);
 
 /// Aligned serializer which stores strings on end of output with deduplication
 /// of strings which are repeated more than once.
@@ -206,7 +213,7 @@ where
     }
 }
 
-impl_serializer!(AlignedSerializerFastStringsDeduped, AlignedStore);
+impl_pure_serializer!(AlignedSerializerFastStringsDeduped, AlignedStore);
 
 /// Aligned serializer with strings.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
@@ -241,7 +248,7 @@ where
     }
 }
 
-impl_serializer!(AlignedSerializer, AlignedStore);
+impl_pure_serializer!(AlignedSerializer, AlignedStore);
 
 /// Aligned serializer without strings.
 /// `push_js_word` discards strings.
@@ -267,7 +274,7 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl_serializer!(AlignedSerializerNoStrings, AlignedStore);
+impl_pure_serializer!(AlignedSerializerNoStrings, AlignedStore);
 
 /// Unaligned serializer with strings.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
@@ -302,7 +309,7 @@ where
     }
 }
 
-impl_serializer!(UnalignedSerializer, UnalignedVec);
+impl_pure_serializer!(UnalignedSerializer, UnalignedVec);
 
 /// Unaligned serializer without strings.
 /// `push_js_word` discards strings.
@@ -328,4 +335,49 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl_serializer!(UnalignedSerializerNoStrings, UnalignedVec);
+impl_pure_serializer!(UnalignedSerializerNoStrings, UnalignedVec);
+
+/// Aligned serializer without strings with position tracking
+pub struct PosSerializerNoStrings<BorrowedStore: BorrowMut<AlignedStore>> {
+    storage: BorrowedStore,
+    pos: PosMapping,
+}
+
+impl<Store> PosSerializerNoStrings<Store>
+where
+    Store: BorrowMut<AlignedStore>,
+{
+    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
+        let mut serializer = Self {
+            storage,
+            pos: PosMapping::dummy(),
+        };
+        serializer.serialize_value(t);
+    }
+}
+
+impl<Store> AstSerializer for PosSerializerNoStrings<Store>
+where
+    Store: BorrowMut<AlignedStore>,
+{
+    #[inline]
+    fn serialize_js_word(&mut self, _js_word: &JsWord) {}
+}
+
+impl<BorrowedStore> PosTrackingSerializer for PosSerializerNoStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    #[inline]
+    fn pos_mapping(&self) -> &PosMapping {
+        &self.pos
+    }
+
+    #[inline]
+    fn set_pos_mapping(&mut self, pos: PosMapping) {
+        self.pos = pos;
+    }
+}
+impl_pos_tracking_serializer!(PosSerializerNoStrings<BorrowedStore> where BorrowedStore: BorrowMut<AlignedStore>);
+
+impl_serializer_store!(PosSerializerNoStrings, AlignedStore);

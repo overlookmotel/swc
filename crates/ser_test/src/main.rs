@@ -33,6 +33,16 @@ pub fn main() {
     println!("AlignedSerializerNoStrings {}", storage.len());
 
     /*
+    // Only requires 341648
+    let mut storage = AlignedVec::<
+        OUTPUT_ALIGNMENT,
+        VALUE_ALIGNMENT,
+        MAX_VALUE_ALIGNMENT,
+        MAX_CAPACITY,
+    >::with_capacity(CAPACITY);
+    ser::PosSerializerNoStrings::serialize(&program, &mut storage);
+    println!("PosSerializerNoStrings {}", storage.len());
+
     // Does require 345600
     let mut storage = AlignedVec::<
         OUTPUT_ALIGNMENT,

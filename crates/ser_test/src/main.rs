@@ -58,6 +58,16 @@ pub fn main() {
     );
     println!("AlignedSerializerFastStrings {}", storage.len());
 
+    // Only requires 344992
+    let mut storage = AlignedVec::<
+        OUTPUT_ALIGNMENT,
+        VALUE_ALIGNMENT,
+        MAX_VALUE_ALIGNMENT,
+        MAX_CAPACITY,
+    >::with_capacity(CAPACITY);
+    ser::AlignedSerializerFastStringsShorter::serialize(&program, &mut storage, STRING_DATA_LEN);
+    println!("AlignedSerializerFastStringsShorter {}", storage.len());
+
     // Only requires 344912
     let mut storage = AlignedVec::<
         OUTPUT_ALIGNMENT,

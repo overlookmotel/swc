@@ -43,7 +43,7 @@ macro_rules! impl_serializer_store {
     };
 }
 
-/// Aligned serializer which stores strings on end of output.
+/// Aligned serializer which stores string content + lengths on end of output.
 pub struct AlignedSerializerFastStrings<Store: BorrowMut<AlignedStore>> {
     storage: Store,
     string_lengths: Vec<u32>,
@@ -82,7 +82,6 @@ where
             mut storage,
             string_lengths,
             string_data,
-            ..
         } = serializer;
         let storage = storage.borrow_mut();
 
@@ -122,6 +121,84 @@ where
 }
 
 impl_pure_serializer!(AlignedSerializerFastStrings, AlignedStore);
+
+/// Aligned serializer which stores string content on end of output and pos+len
+/// inline.
+pub struct AlignedSerializerFastStringsShorter<Store: BorrowMut<AlignedStore>> {
+    storage: Store,
+    string_data: Vec<u8>,
+}
+
+impl<Store> AlignedSerializerFastStringsShorter<Store>
+where
+    Store: BorrowMut<AlignedStore>,
+{
+    pub fn serialize<T: Serialize<Self>>(t: &T, mut storage: Store, string_data_len: usize) {
+        // Reserve space for pointer to strings + len (as `u32`s).
+        // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
+        storage.borrow_mut().align_for::<u32>();
+        let metadata_pos = storage.borrow().len();
+        storage.borrow_mut().push_empty_const_slice::<u32, 2>();
+
+        // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
+        let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
+        assert!(storage.borrow().capacity() >= required_capacity);
+        unsafe { storage.borrow_mut().set_len(required_capacity) };
+
+        let mut serializer = Self {
+            storage,
+            string_data: Vec::with_capacity(string_data_len),
+        };
+        serializer.serialize_value(t);
+
+        let Self {
+            mut storage,
+            string_data,
+        } = serializer;
+        let storage = storage.borrow_mut();
+
+        // Get position we're writing string content at
+        let pos = storage.len();
+
+        // Write string lengths + data
+        storage.push_bytes(&string_data);
+
+        unsafe {
+            // Write position and length of string data at start of buffer (each as a `u32`)
+            storage.write(&(pos as u32), metadata_pos);
+            storage.write(&(string_data.len() as u32), metadata_pos + 4);
+        }
+    }
+}
+
+impl<Store> AstSerializer for AlignedSerializerFastStringsShorter<Store>
+where
+    Store: BorrowMut<AlignedStore>,
+{
+    #[inline]
+    fn serialize_js_word(&mut self, js_word: &JsWord) {
+        // `JsWord` can be static, inline or dynamic.
+        // The first 2 representations are self-contained,
+        // so only need to add string to output if it's dynamic.
+        if js_word.is_dynamic() {
+            let str_bytes = js_word.as_bytes();
+            // Record position of this string in `string_data` + string length.
+            // Push in format most suitable for alignment, do avoid alignment calculation
+            // - u64 if storage aligned on 8, otherwise as a slice of 2 x u32s.
+            // Don't need to worry about overflow. It can happen if a string is longer than
+            // u32::MAX, but will cause an error at end of serialization as will exceed max
+            // capacity of storage.
+            if VALUE_ALIGNMENT >= 8 {
+                self.push(&(self.string_data.len() & (str_bytes.len() << 32)));
+            } else {
+                self.push_slice(&[self.string_data.len() as u32, str_bytes.len() as u32]);
+            }
+            self.string_data.extend_from_slice(str_bytes);
+        }
+    }
+}
+
+impl_pure_serializer!(AlignedSerializerFastStringsShorter, AlignedStore);
 
 /// Aligned serializer which stores strings on end of output with deduplication
 /// of strings which are repeated more than once.

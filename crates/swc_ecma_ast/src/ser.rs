@@ -62,9 +62,9 @@ where
     ) {
         // Reserve space for pointer to strings + len (as `u32`s).
         // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
-        storage.borrow_mut().align_for::<u32>();
+        storage.borrow_mut().align_for::<[u32; 2]>();
         let metadata_pos = storage.borrow().len();
-        storage.borrow_mut().push_empty_const_slice::<u32, 2>();
+        storage.borrow_mut().push_empty::<[u32; 2]>();
 
         let mut serializer = Self {
             storage,
@@ -131,9 +131,9 @@ where
     pub fn serialize<T: Serialize<Self>>(t: &T, mut storage: Store, string_data_len: usize) {
         // Reserve space for pointer to strings + len (as `u32`s).
         // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
-        storage.borrow_mut().align_for::<u32>();
+        storage.borrow_mut().align_for::<[u32; 2]>();
         let metadata_pos = storage.borrow().len();
-        storage.borrow_mut().push_empty_const_slice::<u32, 2>();
+        storage.borrow_mut().push_empty::<[u32; 2]>();
 
         let mut serializer = Self {
             storage,
@@ -172,17 +172,11 @@ where
         // so only need to add string to output if it's dynamic.
         if js_word.is_dynamic() {
             let str_bytes = js_word.as_bytes();
-            // Record position of this string in `string_data` + string length.
-            // Push in format most suitable for alignment, do avoid alignment calculation
-            // - u64 if storage aligned on 8, otherwise as a slice of 2 x u32s.
-            // Don't need to worry about overflow. It can happen if a string is longer than
-            // u32::MAX, but will cause an error at end of serialization as will exceed max
-            // capacity of storage.
-            if VALUE_ALIGNMENT >= 8 {
-                self.push(&(self.string_data.len() & (str_bytes.len() << 32)));
-            } else {
-                self.push_slice(&[self.string_data.len() as u32, str_bytes.len() as u32]);
-            }
+            // Record position of this string in `string_data` + string length
+            // Don't need to worry about overflow of `u32`. It can happen if a string is
+            // longer than `u32::MAX`, but will cause an error at end of
+            // serialization as will exceed max capacity of storage.
+            self.push(&[self.string_data.len() as u32, str_bytes.len() as u32]);
             self.string_data.extend_from_slice(str_bytes);
         }
     }
@@ -211,9 +205,9 @@ where
     ) {
         // Reserve space for pointer to strings + len (as `u32`s).
         // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
-        storage.borrow_mut().align_for::<u32>();
+        storage.borrow_mut().align_for::<[u32; 2]>();
         let metadata_pos = storage.borrow().len();
-        storage.borrow_mut().push_empty_const_slice::<u32, 2>();
+        storage.borrow_mut().push_empty::<[u32; 2]>();
 
         let mut serializer = Self {
             storage,

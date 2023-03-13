@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, cmp, collections::HashMap, mem};
+use std::{borrow::BorrowMut, collections::HashMap, mem};
 
 pub use ser::AstSerializer;
 use ser_raw::{
@@ -65,11 +65,6 @@ where
         storage.borrow_mut().align_for::<u32>();
         let metadata_pos = storage.borrow().len();
         storage.borrow_mut().push_empty_const_slice::<u32, 2>();
-
-        // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
-        let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
-        assert!(storage.borrow().capacity() >= required_capacity);
-        unsafe { storage.borrow_mut().set_len(required_capacity) };
 
         let mut serializer = Self {
             storage,
@@ -139,11 +134,6 @@ where
         storage.borrow_mut().align_for::<u32>();
         let metadata_pos = storage.borrow().len();
         storage.borrow_mut().push_empty_const_slice::<u32, 2>();
-
-        // We ensure `pos` is left at multiple of `VALUE_ALIGNMENT`.
-        let required_capacity = cmp::max(8, VALUE_ALIGNMENT);
-        assert!(storage.borrow().capacity() >= required_capacity);
-        unsafe { storage.borrow_mut().set_len(required_capacity) };
 
         let mut serializer = Self {
             storage,

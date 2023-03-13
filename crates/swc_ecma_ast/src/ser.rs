@@ -2,10 +2,12 @@ use std::{borrow::BorrowMut, collections::HashMap, mem};
 
 pub use ser::AstSerializer;
 use ser_raw::{
-    impl_pos_tracking_serializer, impl_pure_copy_serializer,
+    impl_pos_tracking_serializer, impl_pure_copy_serializer, impl_rel_ptr_serializer,
     pos::PosMapping,
     storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
-    PosTrackingSerializer, PureCopySerializer, Serialize, Serializer, SerializerStorage,
+    util::is_aligned_to,
+    PosTrackingSerializer, PureCopySerializer, RelPtrSerializer, Serialize, Serializer,
+    SerializerStorage,
 };
 use swc_atoms::JsWord;
 
@@ -442,3 +444,63 @@ where
 impl_pos_tracking_serializer!(PosSerializerNoStrings<BorrowedStore> where BorrowedStore: BorrowMut<AlignedStore>);
 
 impl_serializer_store!(PosSerializerNoStrings, AlignedStore);
+
+/// Aligned serializer without strings with pointer overwriting
+pub struct PtrSerializerNoStrings<BorrowedStore: BorrowMut<AlignedStore>> {
+    storage: BorrowedStore,
+    pos_mapping: PosMapping,
+}
+
+impl<Store> PtrSerializerNoStrings<Store>
+where
+    Store: BorrowMut<AlignedStore>,
+{
+    pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
+        let mut serializer = Self {
+            storage,
+            pos_mapping: PosMapping::dummy(),
+        };
+        serializer.serialize_value(t);
+    }
+}
+
+impl<Store> AstSerializer for PtrSerializerNoStrings<Store>
+where
+    Store: BorrowMut<AlignedStore>,
+{
+    #[inline]
+    fn serialize_js_word(&mut self, _js_word: &JsWord) {}
+}
+
+impl<BorrowedStore> PosTrackingSerializer for PtrSerializerNoStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    #[inline]
+    fn pos_mapping(&self) -> &PosMapping {
+        &self.pos_mapping
+    }
+
+    #[inline]
+    fn set_pos_mapping(&mut self, pos_mapping: PosMapping) {
+        self.pos_mapping = pos_mapping;
+    }
+}
+
+impl<BorrowedStore> RelPtrSerializer for PtrSerializerNoStrings<BorrowedStore>
+where
+    BorrowedStore: BorrowMut<AlignedStore>,
+{
+    #[inline]
+    unsafe fn write_ptr(&mut self, ptr_pos: usize, target_pos: usize) {
+        // Cannot fully check validity of `target_pos` because its type isn't known
+        debug_assert!(ptr_pos <= self.capacity() - mem::size_of::<usize>());
+        debug_assert!(is_aligned_to(ptr_pos, mem::align_of::<usize>()));
+        debug_assert!(target_pos <= self.capacity());
+
+        self.storage_mut().write(&target_pos, ptr_pos)
+    }
+}
+impl_rel_ptr_serializer!(PtrSerializerNoStrings<BorrowedStore> where BorrowedStore: BorrowMut<AlignedStore>);
+
+impl_serializer_store!(PtrSerializerNoStrings, AlignedStore);

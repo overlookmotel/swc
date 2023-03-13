@@ -3,9 +3,9 @@ use std::{borrow::BorrowMut, collections::HashMap, mem};
 pub use ser::AstSerializer;
 use ser_raw::{
     impl_pos_tracking_serializer, impl_pure_copy_serializer,
+    pos::PosMapping,
     storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
-    PosMapping, PosTrackingSerializer, PureCopySerializer, Serialize, Serializer,
-    SerializerStorage,
+    PosTrackingSerializer, PureCopySerializer, Serialize, Serializer, SerializerStorage,
 };
 use swc_atoms::JsWord;
 
@@ -110,7 +110,7 @@ where
             let index = self.string_lengths.len();
             self.string_lengths.push(js_word.len() as u32);
             self.string_data.extend_from_slice(js_word.as_bytes());
-            self.push(&index);
+            self.push_raw(&index);
         }
     }
 }
@@ -176,7 +176,7 @@ where
             // Don't need to worry about overflow of `u32`. It can happen if a string is
             // longer than `u32::MAX`, but will cause an error at end of
             // serialization as will exceed max capacity of storage.
-            self.push(&[self.string_data.len() as u32, str_bytes.len() as u32]);
+            self.push_raw(&[self.string_data.len() as u32, str_bytes.len() as u32]);
             self.string_data.extend_from_slice(str_bytes);
         }
     }
@@ -269,7 +269,7 @@ where
             };
 
             // Store as `usize` to avoid having to align buffer
-            self.push(&(index as usize));
+            self.push_raw(&(index as usize));
         }
     }
 }
@@ -303,7 +303,7 @@ where
         // so only need to add string to output if it's dynamic.
         if js_word.is_dynamic() {
             // Write length as usize, followed by string
-            self.push(&js_word.len());
+            self.push_raw(&js_word.len());
             self.push_raw_bytes(js_word.as_bytes());
         }
     }
@@ -364,7 +364,7 @@ where
         // so only need to add string to output if it's dynamic.
         if js_word.is_dynamic() {
             // Write length as usize, followed by string
-            self.push(&js_word.len());
+            self.push_raw(&js_word.len());
             self.push_raw_bytes(js_word.as_bytes());
         }
     }

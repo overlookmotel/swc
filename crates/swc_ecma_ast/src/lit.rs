@@ -215,7 +215,7 @@ where
     fn serialize_data_with(bigint: &BigIntValue, serializer: &mut Ser) {
         // Write length as usize, then body. Sign is stored inline.
         let body = bigint.magnitude().to_bytes_le();
-        serializer.push(&body.len());
+        serializer.push_raw(&body.len());
         serializer.push_raw_bytes(body.as_slice());
     }
 }

@@ -401,7 +401,7 @@ impl_pure_serializer!(UnalignedSerializerNoStrings, UnalignedVec);
 /// Aligned serializer without strings with position tracking
 pub struct PosSerializerNoStrings<BorrowedStore: BorrowMut<AlignedStore>> {
     storage: BorrowedStore,
-    pos: PosMapping,
+    pos_mapping: PosMapping,
 }
 
 impl<Store> PosSerializerNoStrings<Store>
@@ -411,7 +411,7 @@ where
     pub fn serialize<T: Serialize<Self>>(t: &T, storage: Store) {
         let mut serializer = Self {
             storage,
-            pos: PosMapping::dummy(),
+            pos_mapping: PosMapping::dummy(),
         };
         serializer.serialize_value(t);
     }
@@ -431,12 +431,12 @@ where
 {
     #[inline]
     fn pos_mapping(&self) -> &PosMapping {
-        &self.pos
+        &self.pos_mapping
     }
 
     #[inline]
-    fn set_pos_mapping(&mut self, pos: PosMapping) {
-        self.pos = pos;
+    fn set_pos_mapping(&mut self, pos_mapping: PosMapping) {
+        self.pos_mapping = pos_mapping;
     }
 }
 impl_pos_tracking_serializer!(PosSerializerNoStrings<BorrowedStore> where BorrowedStore: BorrowMut<AlignedStore>);

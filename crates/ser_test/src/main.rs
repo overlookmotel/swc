@@ -50,8 +50,8 @@ pub fn main() {
         MAX_VALUE_ALIGNMENT,
         MAX_CAPACITY,
     >::with_capacity(CAPACITY);
-    ser::PtrSerializerNoStrings::serialize(&program, &mut storage);
-    println!("PtrSerializerNoStrings {}", storage.len());
+    ser::RelPtrSerializerNoStrings::serialize(&program, &mut storage);
+    println!("RelPtrSerializerNoStrings {}", storage.len());
 
     // Does require 345600
     let mut storage = AlignedVec::<

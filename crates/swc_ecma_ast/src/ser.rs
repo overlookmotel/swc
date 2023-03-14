@@ -455,12 +455,12 @@ impl_serializer_store!(PosSerializerNoStrings, AlignedStorage);
 impl_serializer_write!(PosSerializerNoStrings, AlignedStorage);
 
 /// Aligned serializer without strings with pointer overwriting
-pub struct PtrSerializerNoStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
+pub struct RelPtrSerializerNoStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
     storage: BorrowedStorage,
     pos_mapping: PosMapping,
 }
 
-impl<BorrowedStorage> PtrSerializerNoStrings<BorrowedStorage>
+impl<BorrowedStorage> RelPtrSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
@@ -473,7 +473,7 @@ where
     }
 }
 
-impl<BorrowedStorage> AstSerializer for PtrSerializerNoStrings<BorrowedStorage>
+impl<BorrowedStorage> AstSerializer for RelPtrSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
@@ -481,7 +481,7 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl<BorrowedStorage> PosTrackingSerializer for PtrSerializerNoStrings<BorrowedStorage>
+impl<BorrowedStorage> PosTrackingSerializer for RelPtrSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
@@ -496,7 +496,7 @@ where
     }
 }
 
-impl<BorrowedStorage> PtrSerializer for PtrSerializerNoStrings<BorrowedStorage>
+impl<BorrowedStorage> PtrSerializer for RelPtrSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
@@ -510,7 +510,9 @@ where
         self.storage_mut().write(&target_pos, ptr_pos)
     }
 }
-impl_ptr_serializer!(PtrSerializerNoStrings<BorrowedStorage> where BorrowedStorage: BorrowMut<AlignedStorage>);
+impl_ptr_serializer!(
+    RelPtrSerializerNoStrings<BorrowedStorage> where BorrowedStorage: BorrowMut<AlignedStorage>
+);
 
-impl_serializer_store!(PtrSerializerNoStrings, AlignedStorage);
-impl_serializer_write!(PtrSerializerNoStrings, AlignedStorage);
+impl_serializer_store!(RelPtrSerializerNoStrings, AlignedStorage);
+impl_serializer_write!(RelPtrSerializerNoStrings, AlignedStorage);

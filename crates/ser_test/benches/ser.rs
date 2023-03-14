@@ -113,7 +113,7 @@ fn bench_serializers(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("ser_raw ptrs no strings", |b| {
+    c.bench_function("ser_raw rel ptrs no strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Only requires 341648
         let mut storage = AlignedVec::<
@@ -123,7 +123,10 @@ fn bench_serializers(c: &mut Criterion) {
             MAX_CAPACITY,
         >::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::PtrSerializerNoStrings::serialize(black_box(&program), &mut storage);
+            swc_ecma_ast::ser::RelPtrSerializerNoStrings::serialize(
+                black_box(&program),
+                &mut storage,
+            );
             black_box(&mut storage);
             storage.clear();
         });

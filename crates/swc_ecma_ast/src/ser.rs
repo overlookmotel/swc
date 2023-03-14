@@ -7,7 +7,7 @@ use ser_raw::{
     storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
     util::is_aligned_to,
     PosTrackingSerializer, PtrSerializer, PureCopySerializer, Serialize, Serializer,
-    SerializerStorage,
+    SerializerStorage, SerializerWrite,
 };
 use swc_atoms::JsWord;
 
@@ -26,6 +26,7 @@ macro_rules! impl_pure_serializer {
         impl_pure_copy_serializer!($ty<BorrowedStorage> where BorrowedStorage: BorrowMut<$storage>);
 
         impl_serializer_store!($ty, $storage);
+        impl_serializer_write!($ty, $storage);
     };
 }
 
@@ -42,6 +43,12 @@ macro_rules! impl_serializer_store {
                 self.storage.borrow_mut()
             }
         }
+    };
+}
+
+macro_rules! impl_serializer_write {
+    ($ty:tt, $storage:ty) => {
+        impl<BorrowedStorage: BorrowMut<$storage>> SerializerWrite for $ty<BorrowedStorage> {}
     };
 }
 
@@ -445,6 +452,7 @@ where
 impl_pos_tracking_serializer!(PosSerializerNoStrings<BorrowedStorage> where BorrowedStorage: BorrowMut<AlignedStorage>);
 
 impl_serializer_store!(PosSerializerNoStrings, AlignedStorage);
+impl_serializer_write!(PosSerializerNoStrings, AlignedStorage);
 
 /// Aligned serializer without strings with pointer overwriting
 pub struct PtrSerializerNoStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
@@ -505,3 +513,4 @@ where
 impl_ptr_serializer!(PtrSerializerNoStrings<BorrowedStorage> where BorrowedStorage: BorrowMut<AlignedStorage>);
 
 impl_serializer_store!(PtrSerializerNoStrings, AlignedStorage);
+impl_serializer_write!(PtrSerializerNoStrings, AlignedStorage);

@@ -2,11 +2,11 @@ use std::{borrow::BorrowMut, collections::HashMap, mem};
 
 pub use ser::AstSerializer;
 use ser_raw::{
-    impl_pos_tracking_serializer, impl_pure_copy_serializer, impl_rel_ptr_serializer,
+    impl_pos_tracking_serializer, impl_ptr_serializer, impl_pure_copy_serializer,
     pos::PosMapping,
     storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
     util::is_aligned_to,
-    PosTrackingSerializer, PureCopySerializer, RelPtrSerializer, Serialize, Serializer,
+    PosTrackingSerializer, PtrSerializer, PureCopySerializer, Serialize, Serializer,
     SerializerStorage,
 };
 use swc_atoms::JsWord;
@@ -487,7 +487,7 @@ where
     }
 }
 
-impl<BorrowedStore> RelPtrSerializer for PtrSerializerNoStrings<BorrowedStore>
+impl<BorrowedStore> PtrSerializer for PtrSerializerNoStrings<BorrowedStore>
 where
     BorrowedStore: BorrowMut<AlignedStore>,
 {
@@ -501,6 +501,6 @@ where
         self.storage_mut().write(&target_pos, ptr_pos)
     }
 }
-impl_rel_ptr_serializer!(PtrSerializerNoStrings<BorrowedStore> where BorrowedStore: BorrowMut<AlignedStore>);
+impl_ptr_serializer!(PtrSerializerNoStrings<BorrowedStore> where BorrowedStore: BorrowMut<AlignedStore>);
 
 impl_serializer_store!(PtrSerializerNoStrings, AlignedStore);

@@ -33,6 +33,7 @@ macro_rules! impl_pure_serializer {
 macro_rules! impl_serializer_store {
     ($ty:tt, $storage:ty) => {
         impl<BorrowedStorage: BorrowMut<$storage>> SerializerStorage for $ty<BorrowedStorage> {
+            type BorrowedStorage = BorrowedStorage;
             type Storage = $storage;
 
             fn storage(&self) -> &$storage {
@@ -41,6 +42,10 @@ macro_rules! impl_serializer_store {
 
             fn storage_mut(&mut self) -> &mut $storage {
                 self.storage.borrow_mut()
+            }
+
+            fn into_storage(self) -> BorrowedStorage {
+                self.storage
             }
         }
     };

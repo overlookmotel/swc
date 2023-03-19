@@ -2,12 +2,9 @@ use std::{borrow::BorrowMut, collections::HashMap, mem};
 
 pub use ser::AstSerializer;
 use ser_raw::{
-    impl_pos_tracking_serializer, impl_ptr_serializer, impl_pure_copy_serializer,
-    pos::PosMapping,
+    pos::{PosMapping, Ptrs},
     storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
-    util::is_aligned_to,
-    PosTrackingSerializer, PtrSerializer, PureCopySerializer, Serialize, Serializer,
-    SerializerStorage, SerializerWrite,
+    Serialize, Serializer,
 };
 use swc_atoms::JsWord;
 
@@ -20,45 +17,11 @@ const MAX_CAPACITY: usize = aligned_max_u32_capacity(OUTPUT_ALIGNMENT);
 type AlignedStorage =
     AlignedVec<OUTPUT_ALIGNMENT, VALUE_ALIGNMENT, MAX_VALUE_ALIGNMENT, MAX_CAPACITY>;
 
-macro_rules! impl_pure_serializer {
-    ($ty:tt, $storage:ty) => {
-        impl<BorrowedStorage: BorrowMut<$storage>> PureCopySerializer for $ty<BorrowedStorage> {}
-        impl_pure_copy_serializer!($ty<BorrowedStorage> where BorrowedStorage: BorrowMut<$storage>);
-
-        impl_serializer_store!($ty, $storage);
-        impl_serializer_write!($ty, $storage);
-    };
-}
-
-macro_rules! impl_serializer_store {
-    ($ty:tt, $storage:ty) => {
-        impl<BorrowedStorage: BorrowMut<$storage>> SerializerStorage for $ty<BorrowedStorage> {
-            type BorrowedStorage = BorrowedStorage;
-            type Storage = $storage;
-
-            fn storage(&self) -> &$storage {
-                self.storage.borrow()
-            }
-
-            fn storage_mut(&mut self) -> &mut $storage {
-                self.storage.borrow_mut()
-            }
-
-            fn into_storage(self) -> BorrowedStorage {
-                self.storage
-            }
-        }
-    };
-}
-
-macro_rules! impl_serializer_write {
-    ($ty:tt, $storage:ty) => {
-        impl<BorrowedStorage: BorrowMut<$storage>> SerializerWrite for $ty<BorrowedStorage> {}
-    };
-}
-
 /// Aligned serializer which stores string content + lengths on end of output.
+#[derive(Serializer)]
+#[ser_type(pure_copy)]
 pub struct AlignedSerializerFastStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
+    #[ser_storage(AlignedStorage)]
     storage: BorrowedStorage,
     string_lengths: Vec<u32>,
     string_data: Vec<u8>,
@@ -68,7 +31,7 @@ impl<BorrowedStorage> AlignedSerializerFastStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize<T: Serialize<Self>>(
+    pub fn serialize_into<T: Serialize<Self>>(
         t: &T,
         mut storage: BorrowedStorage,
         num_strings: usize,
@@ -128,11 +91,12 @@ where
     }
 }
 
-impl_pure_serializer!(AlignedSerializerFastStrings, AlignedStorage);
-
 /// Aligned serializer which stores string content on end of output and pos+len
 /// inline.
+#[derive(Serializer)]
+#[ser_type(pure_copy)]
 pub struct AlignedSerializerFastStringsShorter<BorrowedStorage: BorrowMut<AlignedStorage>> {
+    #[ser_storage(AlignedStorage)]
     storage: BorrowedStorage,
     string_data: Vec<u8>,
 }
@@ -141,7 +105,7 @@ impl<BorrowedStorage> AlignedSerializerFastStringsShorter<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize<T: Serialize<Self>>(
+    pub fn serialize_into<T: Serialize<Self>>(
         t: &T,
         mut storage: BorrowedStorage,
         string_data_len: usize,
@@ -198,11 +162,12 @@ where
     }
 }
 
-impl_pure_serializer!(AlignedSerializerFastStringsShorter, AlignedStorage);
-
 /// Aligned serializer which stores strings on end of output with deduplication
 /// of strings which are repeated more than once.
+#[derive(Serializer)]
+#[ser_type(pure_copy)]
 pub struct AlignedSerializerFastStringsDeduped<BorrowedStorage: BorrowMut<AlignedStorage>> {
+    #[ser_storage(AlignedStorage)]
     storage: BorrowedStorage,
     string_lengths: Vec<u32>,
     string_data: Vec<u8>,
@@ -213,7 +178,7 @@ impl<BorrowedStorage> AlignedSerializerFastStringsDeduped<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize<T: Serialize<Self>>(
+    pub fn serialize_into<T: Serialize<Self>>(
         t: &T,
         mut storage: BorrowedStorage,
         num_strings: usize,
@@ -289,11 +254,12 @@ where
     }
 }
 
-impl_pure_serializer!(AlignedSerializerFastStringsDeduped, AlignedStorage);
-
 /// Aligned serializer with strings.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
+#[derive(Serializer)]
+#[ser_type(pure_copy)]
 pub struct AlignedSerializer<BorrowedStorage: BorrowMut<AlignedStorage>> {
+    #[ser_storage(AlignedStorage)]
     storage: BorrowedStorage,
 }
 
@@ -301,7 +267,7 @@ impl<BorrowedStorage> AlignedSerializer<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
+    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
         let mut serializer = Self { storage };
         serializer.serialize_value(t);
     }
@@ -324,11 +290,12 @@ where
     }
 }
 
-impl_pure_serializer!(AlignedSerializer, AlignedStorage);
-
 /// Aligned serializer without strings.
 /// `push_js_word` discards strings.
+#[derive(Serializer)]
+#[ser_type(pure_copy)]
 pub struct AlignedSerializerNoStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
+    #[ser_storage(AlignedStorage)]
     storage: BorrowedStorage,
 }
 
@@ -336,7 +303,7 @@ impl<BorrowedStorage> AlignedSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
+    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
         let mut serializer = Self { storage };
         serializer.serialize_value(t);
     }
@@ -350,11 +317,12 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl_pure_serializer!(AlignedSerializerNoStrings, AlignedStorage);
-
 /// Unaligned serializer with strings.
 /// `push_js_word` just adds `JsWord`s into main output buffer.
+#[derive(Serializer)]
+#[ser_type(pure_copy)]
 pub struct UnalignedSerializer<BorrowedStorage: BorrowMut<UnalignedVec>> {
+    #[ser_storage(UnalignedVec)]
     storage: BorrowedStorage,
 }
 
@@ -362,7 +330,7 @@ impl<BorrowedStorage> UnalignedSerializer<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<UnalignedVec>,
 {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
+    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
         let mut serializer = Self { storage };
         serializer.serialize_value(t);
     }
@@ -385,11 +353,12 @@ where
     }
 }
 
-impl_pure_serializer!(UnalignedSerializer, UnalignedVec);
-
 /// Unaligned serializer without strings.
 /// `push_js_word` discards strings.
+#[derive(Serializer)]
+#[ser_type(pure_copy)]
 pub struct UnalignedSerializerNoStrings<BorrowedStorage: BorrowMut<UnalignedVec>> {
+    #[ser_storage(UnalignedVec)]
     storage: BorrowedStorage,
 }
 
@@ -397,7 +366,7 @@ impl<BorrowedStorage> UnalignedSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<UnalignedVec>,
 {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
+    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
         let mut serializer = Self { storage };
         serializer.serialize_value(t);
     }
@@ -411,11 +380,13 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl_pure_serializer!(UnalignedSerializerNoStrings, UnalignedVec);
-
 /// Aligned serializer without strings with position tracking
+#[derive(Serializer)]
+#[ser_type(pos_tracking)]
 pub struct PosSerializerNoStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
+    #[ser_storage(AlignedStorage)]
     storage: BorrowedStorage,
+    #[ser_pos_mapping]
     pos_mapping: PosMapping,
 }
 
@@ -423,7 +394,7 @@ impl<BorrowedStorage> PosSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
+    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
         let mut serializer = Self {
             storage,
             pos_mapping: PosMapping::dummy(),
@@ -440,36 +411,22 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl<BorrowedStorage> PosTrackingSerializer for PosSerializerNoStrings<BorrowedStorage>
-where
-    BorrowedStorage: BorrowMut<AlignedStorage>,
-{
-    #[inline]
-    fn pos_mapping(&self) -> &PosMapping {
-        &self.pos_mapping
-    }
-
-    #[inline]
-    fn set_pos_mapping(&mut self, pos_mapping: PosMapping) {
-        self.pos_mapping = pos_mapping;
-    }
-}
-impl_pos_tracking_serializer!(PosSerializerNoStrings<BorrowedStorage> where BorrowedStorage: BorrowMut<AlignedStorage>);
-
-impl_serializer_store!(PosSerializerNoStrings, AlignedStorage);
-impl_serializer_write!(PosSerializerNoStrings, AlignedStorage);
-
-/// Aligned serializer without strings with pointer overwriting
-pub struct RelPtrSerializerNoStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
+/// Aligned serializer without strings with pointer overwriting with relative
+/// offsets
+#[derive(Serializer)]
+#[ser_type(ptr_offset)]
+pub struct PtrOffsetSerializerNoStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
+    #[ser_storage(AlignedStorage)]
     storage: BorrowedStorage,
+    #[ser_pos_mapping]
     pos_mapping: PosMapping,
 }
 
-impl<BorrowedStorage> RelPtrSerializerNoStrings<BorrowedStorage>
+impl<BorrowedStorage> PtrOffsetSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
+    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
         let mut serializer = Self {
             storage,
             pos_mapping: PosMapping::dummy(),
@@ -478,7 +435,7 @@ where
     }
 }
 
-impl<BorrowedStorage> AstSerializer for RelPtrSerializerNoStrings<BorrowedStorage>
+impl<BorrowedStorage> AstSerializer for PtrOffsetSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
@@ -486,38 +443,36 @@ where
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
 
-impl<BorrowedStorage> PosTrackingSerializer for RelPtrSerializerNoStrings<BorrowedStorage>
+/// Aligned serializer without strings creating complete output
+#[derive(Serializer)]
+#[ser_type(complete)]
+pub struct CompleteSerializerNoStrings<BorrowedStorage: BorrowMut<AlignedStorage>> {
+    #[ser_storage(AlignedStorage)]
+    storage: BorrowedStorage,
+    #[ser_pos_mapping]
+    pos_mapping: PosMapping,
+    #[ser_ptrs]
+    ptrs: Ptrs,
+}
+
+impl<BorrowedStorage> CompleteSerializerNoStrings<BorrowedStorage>
+where
+    BorrowedStorage: BorrowMut<AlignedStorage>,
+{
+    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
+        let mut serializer = Self {
+            storage,
+            pos_mapping: PosMapping::dummy(),
+            ptrs: Ptrs::new(),
+        };
+        serializer.serialize_value(t);
+    }
+}
+
+impl<BorrowedStorage> AstSerializer for CompleteSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
     #[inline]
-    fn pos_mapping(&self) -> &PosMapping {
-        &self.pos_mapping
-    }
-
-    #[inline]
-    fn set_pos_mapping(&mut self, pos_mapping: PosMapping) {
-        self.pos_mapping = pos_mapping;
-    }
+    fn serialize_js_word(&mut self, _js_word: &JsWord) {}
 }
-
-impl<BorrowedStorage> PtrSerializer for RelPtrSerializerNoStrings<BorrowedStorage>
-where
-    BorrowedStorage: BorrowMut<AlignedStorage>,
-{
-    #[inline]
-    unsafe fn write_ptr(&mut self, ptr_pos: usize, target_pos: usize) {
-        // Cannot fully check validity of `target_pos` because its type isn't known
-        debug_assert!(ptr_pos <= self.capacity() - mem::size_of::<usize>());
-        debug_assert!(is_aligned_to(ptr_pos, mem::align_of::<usize>()));
-        debug_assert!(target_pos <= self.capacity());
-
-        self.storage_mut().write(&target_pos, ptr_pos)
-    }
-}
-impl_ptr_serializer!(
-    RelPtrSerializerNoStrings<BorrowedStorage> where BorrowedStorage: BorrowMut<AlignedStorage>
-);
-
-impl_serializer_store!(RelPtrSerializerNoStrings, AlignedStorage);
-impl_serializer_write!(RelPtrSerializerNoStrings, AlignedStorage);

@@ -19,7 +19,7 @@ pub fn main() {
 
     // Only requires 341648
     let mut storage = UnalignedVec::with_capacity(CAPACITY);
-    ser::UnalignedSerializerNoStrings::serialize(&program, &mut storage);
+    ser::UnalignedSerializerNoStrings::serialize_into(&program, &mut storage);
     println!("UnalignedSerializerNoStrings {}", storage.len());
 
     // Only requires 341648
@@ -29,7 +29,7 @@ pub fn main() {
         MAX_VALUE_ALIGNMENT,
         MAX_CAPACITY,
     >::with_capacity(CAPACITY);
-    ser::AlignedSerializerNoStrings::serialize(&program, &mut storage);
+    ser::AlignedSerializerNoStrings::serialize_into(&program, &mut storage);
     println!("AlignedSerializerNoStrings {}", storage.len());
 
     /*
@@ -40,7 +40,7 @@ pub fn main() {
         MAX_VALUE_ALIGNMENT,
         MAX_CAPACITY,
     >::with_capacity(CAPACITY);
-    ser::PosSerializerNoStrings::serialize(&program, &mut storage);
+    ser::PosSerializerNoStrings::serialize_into(&program, &mut storage);
     println!("PosSerializerNoStrings {}", storage.len());
 
     // Only requires 341648
@@ -50,8 +50,18 @@ pub fn main() {
         MAX_VALUE_ALIGNMENT,
         MAX_CAPACITY,
     >::with_capacity(CAPACITY);
-    ser::RelPtrSerializerNoStrings::serialize(&program, &mut storage);
-    println!("RelPtrSerializerNoStrings {}", storage.len());
+    ser::PtrOffsetSerializerNoStrings::serialize_into(&program, &mut storage);
+    println!("PtrOffsetSerializerNoStrings {}", storage.len());
+
+    // Only requires 341648
+    let mut storage = AlignedVec::<
+        OUTPUT_ALIGNMENT,
+        VALUE_ALIGNMENT,
+        MAX_VALUE_ALIGNMENT,
+        MAX_CAPACITY,
+    >::with_capacity(CAPACITY);
+    ser::CompleteSerializerNoStrings::serialize_into(&program, &mut storage);
+    println!("CompleteSerializerNoStrings {}", storage.len());
 
     // Does require 345600
     let mut storage = AlignedVec::<
@@ -60,7 +70,7 @@ pub fn main() {
         MAX_VALUE_ALIGNMENT,
         MAX_CAPACITY,
     >::with_capacity(CAPACITY);
-    ser::AlignedSerializerFastStrings::serialize(
+    ser::AlignedSerializerFastStrings::serialize_into(
         &program,
         &mut storage,
         NUM_STRINGS,
@@ -75,7 +85,11 @@ pub fn main() {
         MAX_VALUE_ALIGNMENT,
         MAX_CAPACITY,
     >::with_capacity(CAPACITY);
-    ser::AlignedSerializerFastStringsShorter::serialize(&program, &mut storage, STRING_DATA_LEN);
+    ser::AlignedSerializerFastStringsShorter::serialize_into(
+        &program,
+        &mut storage,
+        STRING_DATA_LEN,
+    );
     println!("AlignedSerializerFastStringsShorter {}", storage.len());
 
     // Only requires 344912
@@ -85,7 +99,7 @@ pub fn main() {
         MAX_VALUE_ALIGNMENT,
         MAX_CAPACITY,
     >::with_capacity(CAPACITY);
-    ser::AlignedSerializerFastStringsDeduped::serialize(
+    ser::AlignedSerializerFastStringsDeduped::serialize_into(
         &program,
         &mut storage,
         NUM_UNIQUE_STRINGS,
@@ -95,7 +109,7 @@ pub fn main() {
 
     // Only requires 344980
     let mut storage = UnalignedVec::with_capacity(CAPACITY);
-    ser::UnalignedSerializer::serialize(&program, &mut storage);
+    ser::UnalignedSerializer::serialize_into(&program, &mut storage);
     println!("UnalignedSerializer {}", storage.len());
 
     // Only requires 345432
@@ -105,7 +119,7 @@ pub fn main() {
         MAX_VALUE_ALIGNMENT,
         MAX_CAPACITY,
     >::with_capacity(CAPACITY);
-    ser::AlignedSerializer::serialize(&program, &mut storage);
+    ser::AlignedSerializer::serialize_into(&program, &mut storage);
     println!("AlignedSerializer {}", storage.len());
     */
 }

@@ -2712,10 +2712,20 @@ name = "ser_raw"
 version = "0.0.1"
 dependencies = [
  "ser_raw_derive",
+ "ser_raw_derive_serializer",
 ]
 
 [[package]]
 name = "ser_raw_derive"
+version = "0.0.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "ser_raw_derive_serializer"
 version = "0.0.1"
 dependencies = [
  "proc-macro2",

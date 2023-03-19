@@ -68,7 +68,7 @@ fn bench_serializers(c: &mut Criterion) {
         // Only requires 341648
         let mut storage = UnalignedVec::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::UnalignedSerializerNoStrings::serialize(
+            swc_ecma_ast::ser::UnalignedSerializerNoStrings::serialize_into(
                 black_box(&program),
                 &mut storage,
             );
@@ -87,7 +87,7 @@ fn bench_serializers(c: &mut Criterion) {
             MAX_CAPACITY,
         >::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::AlignedSerializerNoStrings::serialize(
+            swc_ecma_ast::ser::AlignedSerializerNoStrings::serialize_into(
                 black_box(&program),
                 &mut storage,
             );
@@ -107,7 +107,10 @@ fn bench_serializers(c: &mut Criterion) {
             MAX_CAPACITY,
         >::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::PosSerializerNoStrings::serialize(black_box(&program), &mut storage);
+            swc_ecma_ast::ser::PosSerializerNoStrings::serialize_into(
+                black_box(&program),
+                &mut storage,
+            );
             black_box(&mut storage);
             storage.clear();
         });
@@ -123,7 +126,26 @@ fn bench_serializers(c: &mut Criterion) {
             MAX_CAPACITY,
         >::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::RelPtrSerializerNoStrings::serialize(
+            swc_ecma_ast::ser::PtrOffsetSerializerNoStrings::serialize_into(
+                black_box(&program),
+                &mut storage,
+            );
+            black_box(&mut storage);
+            storage.clear();
+        });
+    });
+
+    c.bench_function("ser_raw complete no strings", |b| {
+        use ser_raw::storage::{AlignedVec, Storage};
+        // Only requires 341648
+        let mut storage = AlignedVec::<
+            OUTPUT_ALIGNMENT,
+            VALUE_ALIGNMENT,
+            MAX_VALUE_ALIGNMENT,
+            MAX_CAPACITY,
+        >::with_capacity(CAPACITY);
+        b.iter(|| {
+            swc_ecma_ast::ser::CompleteSerializerNoStrings::serialize_into(
                 black_box(&program),
                 &mut storage,
             );
@@ -142,7 +164,7 @@ fn bench_serializers(c: &mut Criterion) {
             MAX_CAPACITY,
         >::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::AlignedSerializerFastStrings::serialize(
+            swc_ecma_ast::ser::AlignedSerializerFastStrings::serialize_into(
                 black_box(&program),
                 &mut storage,
                 NUM_STRINGS,
@@ -163,7 +185,7 @@ fn bench_serializers(c: &mut Criterion) {
             MAX_CAPACITY,
         >::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::AlignedSerializerFastStringsShorter::serialize(
+            swc_ecma_ast::ser::AlignedSerializerFastStringsShorter::serialize_into(
                 black_box(&program),
                 &mut storage,
                 STRING_DATA_LEN,
@@ -183,7 +205,7 @@ fn bench_serializers(c: &mut Criterion) {
             MAX_CAPACITY,
         >::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::AlignedSerializerFastStringsDeduped::serialize(
+            swc_ecma_ast::ser::AlignedSerializerFastStringsDeduped::serialize_into(
                 black_box(&program),
                 &mut storage,
                 NUM_UNIQUE_STRINGS,
@@ -199,7 +221,10 @@ fn bench_serializers(c: &mut Criterion) {
         // Only requires 344980
         let mut storage = UnalignedVec::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::UnalignedSerializer::serialize(black_box(&program), &mut storage);
+            swc_ecma_ast::ser::UnalignedSerializer::serialize_into(
+                black_box(&program),
+                &mut storage,
+            );
             black_box(&mut storage);
             storage.clear();
         });
@@ -215,7 +240,7 @@ fn bench_serializers(c: &mut Criterion) {
             MAX_CAPACITY,
         >::with_capacity(CAPACITY);
         b.iter(|| {
-            swc_ecma_ast::ser::AlignedSerializer::serialize(black_box(&program), &mut storage);
+            swc_ecma_ast::ser::AlignedSerializer::serialize_into(black_box(&program), &mut storage);
             black_box(&mut storage);
             storage.clear();
         });

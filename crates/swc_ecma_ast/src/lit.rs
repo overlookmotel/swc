@@ -66,14 +66,12 @@ bridge_lit_from!(BigInt, BigIntValue);
 pub struct BigInt {
     pub span: Span,
     #[cfg_attr(feature = "rkyv", with(EncodeBigInt))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(BigIntProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(BigIntProxy))]
     pub value: BigIntValue,
 
     /// Use `None` value only for transformations to avoid recalculate
     /// characters in big integer
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
@@ -157,55 +155,9 @@ impl From<BigIntValue> for BigInt {
     }
 }
 
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
+#[cfg(feature = "ser_raw")]
 #[derive(Debug, Clone, Copy)]
 struct BigIntProxy;
-
-#[cfg(feature = "abomonation")]
-const USIZE_LEN: usize = std::mem::size_of::<usize>();
-
-#[cfg(feature = "abomonation")]
-impl BigIntProxy {
-    #[inline]
-    fn entomb_with<W: std::io::Write>(bigint: &BigIntValue, write: &mut W) -> std::io::Result<()> {
-        // Write length as usize, then body. Sign is stored inline.
-        let body_bytes = bigint.magnitude().to_bytes_le();
-        let len = body_bytes.len();
-        write.write_all(&len.to_ne_bytes())?;
-        write.write_all(&body_bytes)?;
-
-        Ok(())
-    }
-
-    #[inline]
-    fn extent_with(bigint: &BigIntValue) -> usize {
-        USIZE_LEN + bigint.magnitude().to_bytes_le().len()
-    }
-
-    #[inline]
-    fn exhume_with<'a, 'b>(
-        bigint: &'a mut BigIntValue,
-        bytes: &'b mut [u8],
-    ) -> Option<&'b mut [u8]> {
-        if bytes.len() < USIZE_LEN {
-            None
-        } else {
-            let (len_bytes, rest) = bytes.split_at_mut(USIZE_LEN);
-            let len = usize::from_ne_bytes(len_bytes.try_into().unwrap());
-
-            if rest.len() < len {
-                None
-            } else {
-                let (body_bytes, rest) = rest.split_at_mut(len);
-                let bigint_new = BigIntValue::from_bytes_le(bigint.sign(), body_bytes);
-                unsafe {
-                    std::ptr::write(bigint, bigint_new);
-                }
-                Some(rest)
-            }
-        }
-    }
-}
 
 #[cfg(feature = "ser_raw")]
 impl<Ser> ser_raw::SerializeWith<BigIntValue, Ser> for BigIntProxy
@@ -227,14 +179,12 @@ pub struct Str {
     pub span: Span,
 
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordProxy))]
     pub value: JsWord,
 
     /// Use `None` value only for transformations to avoid recalculate escaped
     /// characters in strings
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }
@@ -345,13 +295,11 @@ pub struct Regex {
 
     #[serde(rename = "pattern")]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordProxy))]
     pub exp: JsWord,
 
     #[serde(default)]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordProxy))]
     pub flags: JsWord,
 }
@@ -400,7 +348,6 @@ pub struct Number {
     /// Use `None` value only for transformations to avoid recalculate
     /// characters in number literal
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordOptProxy))]
     pub raw: Option<JsWord>,
 }

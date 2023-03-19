@@ -11,7 +11,6 @@ use swc_common::EqIgnoreSpan;
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum BinaryOp {
@@ -123,7 +122,6 @@ impl BinaryOp {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum AssignOp {
@@ -199,7 +197,6 @@ impl AssignOp {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum UpdateOp {
@@ -219,7 +216,6 @@ pub enum UpdateOp {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum UnaryOp {

@@ -26,12 +26,9 @@ plugin-mode = ["plugin-base"]
 plugin-rt = ["plugin-base"]
 rkyv-impl = ["rkyv", "bytecheck"]
 tty-emitter = ["atty", "termcolor"]
-abomonation = ["dep:abomonation", "dep:abomonation_derive"]
 ser_raw = ["dep:ser", "dep:ser_raw"]
 
 [dependencies]
-abomonation = { version = "0.7.3", optional = true }
-abomonation_derive = { version = "0.5.0", optional = true, path = "../../../abomonation_derive" }
 ahash = "0.7.4"
 anyhow = { version = "1.0.45", optional = true }
 arbitrary = { version = "1", optional = true, features = ["derive"] }

@@ -396,7 +396,6 @@ pub struct TsKeywordType {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum TsKeywordTypeKind {
@@ -684,7 +683,6 @@ pub struct TsTypeOperator {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum TsTypeOperatorOp {
@@ -717,7 +715,6 @@ pub struct TsIndexedAccessType {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum TruePlusMinus {
@@ -1084,7 +1081,6 @@ pub struct TsNonNullExpr {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum Accessibility {

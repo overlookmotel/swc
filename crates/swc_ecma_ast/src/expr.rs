@@ -717,7 +717,6 @@ pub struct MetaPropExpr {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum MetaPropKind {
@@ -798,12 +797,10 @@ pub struct TplElement {
     /// don't have to worry about this value.
 
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordOptProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordOptProxy))]
     pub cooked: Option<JsWord>,
 
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordProxy))]
     pub raw: JsWord,
 }
@@ -916,7 +913,6 @@ impl Take for Import {
         deserialize = "__D: rkyv::de::SharedDeserializeRegistry"
     ))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub struct ExprOrSpread {

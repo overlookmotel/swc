@@ -252,7 +252,6 @@ pub struct Decorator {
     feature = "rkyv",
     archive_attr(repr(u32), derive(bytecheck::CheckBytes))
 )]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub enum MethodKind {

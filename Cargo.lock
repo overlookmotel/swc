@@ -13,22 +13,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "abomonation"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56e72913c99b1f927aa7bd59a41518fdd9995f63ffc8760f211609e0241c4fb2"
-
-[[package]]
-name = "abomonation_derive"
-version = "0.5.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
- "synstructure",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3136,7 +3120,6 @@ dependencies = [
 name = "swc_atoms"
 version = "0.2.13"
 dependencies = [
- "abomonation",
  "bytecheck",
  "once_cell",
  "rkyv",
@@ -3234,8 +3217,6 @@ dependencies = [
 name = "swc_common"
 version = "0.23.0"
 dependencies = [
- "abomonation",
- "abomonation_derive",
  "ahash",
  "anyhow",
  "arbitrary",
@@ -3432,8 +3413,6 @@ dependencies = [
 name = "swc_ecma_ast"
 version = "0.84.0"
 dependencies = [
- "abomonation",
- "abomonation_derive",
  "arbitrary",
  "bitflags",
  "bytecheck",
@@ -4356,18 +4335,6 @@ checksum = "7ff7c592601f11445996a06f8ad0c27f094a58857c2f89e97974ab9235b92c52"
 dependencies = [
  "proc-macro2",
  "quote",
- "unicode-xid",
-]
-
-[[package]]
-name = "synstructure"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
  "unicode-xid",
 ]
 

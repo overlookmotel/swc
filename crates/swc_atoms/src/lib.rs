@@ -51,11 +51,6 @@ impl Atom {
     }
 }
 
-#[cfg(feature = "abomonation")]
-impl abomonation::Abomonation for Atom {
-    // TODO
-}
-
 impl Deref for Atom {
     type Target = str;
 

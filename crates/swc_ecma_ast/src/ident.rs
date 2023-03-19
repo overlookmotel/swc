@@ -26,7 +26,6 @@ use crate::typescript::TsTypeAnn;
     ))
 )]
 #[cfg_attr(feature = "rkyv", archive_attr(repr(C), derive(bytecheck::CheckBytes)))]
-#[cfg_attr(feature = "abomonation", derive(abomonation_derive::Abomonation))]
 #[cfg_attr(feature = "ser_raw", derive(ser_raw::Serialize))]
 #[cfg_attr(feature = "ser_raw", ser_bound(ser::AstSerializer))]
 pub struct BindingIdent {
@@ -108,7 +107,6 @@ pub struct Ident {
     pub span: Span,
     #[serde(rename = "value")]
     #[cfg_attr(feature = "rkyv", with(crate::EncodeJsWord))]
-    #[cfg_attr(feature = "abomonation", unsafe_abomonate_with(crate::JsWordProxy))]
     #[cfg_attr(feature = "ser_raw", ser_with(crate::JsWordProxy))]
     pub sym: JsWord,
 

@@ -248,76 +248,12 @@ where
     }
 }
 
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
+#[cfg(feature = "ser_raw")]
 use swc_atoms::JsWord;
 
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
+#[cfg(feature = "ser_raw")]
 #[derive(Debug, Clone, Copy)]
 pub struct JsWordProxy;
-
-#[cfg(feature = "abomonation")]
-use std::{
-    io::{Result as IOResult, Write},
-    ptr, str,
-};
-
-#[cfg(feature = "abomonation")]
-const USIZE_LEN: usize = std::mem::size_of::<usize>();
-
-#[cfg(feature = "abomonation")]
-impl JsWordProxy {
-    #[inline]
-    fn entomb_with<W: Write>(js_word: &JsWord, write: &mut W) -> IOResult<()> {
-        // `JsWord` can be static, inline or dynamic.
-        // The first 2 representations are self-contained,
-        // so only need to add string to output if it's dynamic.
-        if js_word.is_dynamic() {
-            // Write length as usize, followed by string
-            let len = js_word.len();
-            write.write_all(&len.to_ne_bytes())?;
-            write.write_all(js_word.as_bytes())?;
-        }
-        Ok(())
-    }
-
-    #[inline]
-    fn extent_with(js_word: &JsWord) -> usize {
-        if js_word.is_dynamic() {
-            USIZE_LEN + js_word.len()
-        } else {
-            0
-        }
-    }
-
-    #[inline]
-    fn exhume_with<'a, 'b>(js_word: &'a mut JsWord, bytes: &'b mut [u8]) -> Option<&'b mut [u8]> {
-        // Nothing to do if string is not dynamic
-        if !js_word.is_dynamic() {
-            return Some(bytes);
-        }
-
-        if bytes.len() < USIZE_LEN {
-            return None;
-        }
-
-        let (len_bytes, rest) = bytes.split_at_mut(USIZE_LEN);
-        let len = usize::from_ne_bytes(len_bytes.try_into().unwrap());
-        if rest.len() < len {
-            return None;
-        }
-
-        unsafe {
-            let (str_bytes, rest) = rest.split_at_mut(len);
-            let s = str::from_utf8_unchecked(str_bytes);
-            // This is inefficient. Could have serialized the string's hash,
-            // and avoided recalculating it here. But `JsWord` has no public API
-            // for creating a new `JsWord` with known hash.
-            let js_word_new = JsWord::from(s);
-            ptr::write(js_word, js_word_new);
-            Some(rest)
-        }
-    }
-}
 
 #[cfg(feature = "ser_raw")]
 impl<Ser> ser_raw::SerializeWith<JsWord, Ser> for JsWordProxy
@@ -330,42 +266,9 @@ where
     }
 }
 
-#[cfg(any(feature = "abomonation", feature = "ser_raw"))]
+#[cfg(feature = "ser_raw")]
 #[derive(Debug, Clone, Copy)]
 pub struct JsWordOptProxy;
-
-#[cfg(feature = "abomonation")]
-impl JsWordOptProxy {
-    #[inline]
-    fn entomb_with<W: Write>(js_word: &Option<JsWord>, write: &mut W) -> IOResult<()> {
-        if let Some(js_word) = js_word {
-            JsWordProxy::entomb_with(js_word, write)
-        } else {
-            Ok(())
-        }
-    }
-
-    #[inline]
-    fn extent_with(js_word: &Option<JsWord>) -> usize {
-        if let Some(js_word) = js_word {
-            JsWordProxy::extent_with(js_word)
-        } else {
-            0
-        }
-    }
-
-    #[inline]
-    fn exhume_with<'a, 'b>(
-        js_word: &'a mut Option<JsWord>,
-        bytes: &'b mut [u8],
-    ) -> Option<&'b mut [u8]> {
-        if let Some(js_word) = js_word {
-            JsWordProxy::exhume_with(js_word, bytes)
-        } else {
-            Some(bytes)
-        }
-    }
-}
 
 #[cfg(feature = "ser_raw")]
 impl<Ser> ser_raw::SerializeWith<Option<JsWord>, Ser> for JsWordOptProxy

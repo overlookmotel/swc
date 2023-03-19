@@ -49,18 +49,6 @@ fn bench_serializers(c: &mut Criterion) {
             });
         });
     });
-
-    c.bench_function("abomonation", |b| {
-        b.iter(|| {
-            let _ = black_box({
-                let mut bytes = Vec::with_capacity(344980);
-                unsafe {
-                    abomonation::encode(&program, &mut bytes).unwrap();
-                }
-                bytes
-            });
-        });
-    });
     */
 
     c.bench_function("ser_raw unaligned no strings", |b| {

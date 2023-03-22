@@ -8,7 +8,7 @@ use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 const OUTPUT_ALIGNMENT: usize = std::mem::align_of::<u64>();
 const VALUE_ALIGNMENT: usize = std::mem::align_of::<usize>();
 const MAX_VALUE_ALIGNMENT: usize = std::mem::align_of::<u64>();
-const MAX_CAPACITY: usize = ser_raw::storage::aligned_max_u32_capacity(OUTPUT_ALIGNMENT);
+const MAX_CAPACITY: usize = ser_raw::util::aligned_max_u32_capacity(OUTPUT_ALIGNMENT);
 const CAPACITY: usize = 345600;
 // const NUM_STRINGS: usize = 152;
 // const NUM_UNIQUE_STRINGS: usize = 102;

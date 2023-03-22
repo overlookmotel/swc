@@ -3,7 +3,8 @@ use std::{borrow::BorrowMut, collections::HashMap, mem};
 pub use ser::AstSerializer;
 use ser_raw::{
     pos::{PosMapping, Ptrs},
-    storage::{aligned_max_u32_capacity, AlignedVec, ContiguousStorage, Storage, UnalignedVec},
+    storage::{AlignedVec, ContiguousStorage, Storage, UnalignedVec},
+    util::aligned_max_u32_capacity,
     Serialize, Serializer,
 };
 use swc_atoms::JsWord;

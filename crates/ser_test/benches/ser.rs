@@ -51,20 +51,6 @@ fn bench_serializers(c: &mut Criterion) {
     });
     */
 
-    c.bench_function("ser_raw unaligned no strings", |b| {
-        use ser_raw::storage::{Storage, UnalignedVec};
-        // Only requires 341648
-        let mut storage = UnalignedVec::with_capacity(CAPACITY);
-        b.iter(|| {
-            swc_ecma_ast::ser::UnalignedSerializerNoStrings::serialize_into(
-                black_box(&program),
-                &mut storage,
-            );
-            black_box(&mut storage);
-            storage.clear();
-        });
-    });
-
     c.bench_function("ser_raw base no strings", |b| {
         use ser_raw::storage::{AlignedVec, Storage};
         // Only requires 341648
@@ -198,20 +184,6 @@ fn bench_serializers(c: &mut Criterion) {
                 &mut storage,
                 NUM_UNIQUE_STRINGS,
                 STRING_DATA_LEN,
-            );
-            black_box(&mut storage);
-            storage.clear();
-        });
-    });
-
-    c.bench_function("ser_raw unaligned with strings", |b| {
-        use ser_raw::storage::{Storage, UnalignedVec};
-        // Only requires 344980
-        let mut storage = UnalignedVec::with_capacity(CAPACITY);
-        b.iter(|| {
-            swc_ecma_ast::ser::UnalignedSerializer::serialize_into(
-                black_box(&program),
-                &mut storage,
             );
             black_box(&mut storage);
             storage.clear();

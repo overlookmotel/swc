@@ -3,7 +3,7 @@ use std::{borrow::BorrowMut, collections::HashMap, mem};
 pub use ser::AstSerializer;
 use ser_raw::{
     pos::{PosMapping, Ptrs},
-    storage::{AlignedVec, ContiguousStorage, Storage, UnalignedVec},
+    storage::{AlignedVec, ContiguousStorage, Storage},
     util::aligned_max_u32_capacity,
     Serialize, Serializer,
 };
@@ -313,69 +313,6 @@ where
 impl<BorrowedStorage> AstSerializer for AlignedSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
-{
-    #[inline]
-    fn serialize_js_word(&mut self, _js_word: &JsWord) {}
-}
-
-/// Unaligned serializer with strings.
-/// `push_js_word` just adds `JsWord`s into main output buffer.
-#[derive(Serializer)]
-#[ser_type(pure_copy)]
-pub struct UnalignedSerializer<BorrowedStorage: BorrowMut<UnalignedVec>> {
-    #[ser_storage(UnalignedVec)]
-    storage: BorrowedStorage,
-}
-
-impl<BorrowedStorage> UnalignedSerializer<BorrowedStorage>
-where
-    BorrowedStorage: BorrowMut<UnalignedVec>,
-{
-    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
-        let mut serializer = Self { storage };
-        serializer.serialize_value(t);
-    }
-}
-
-impl<BorrowedStorage> AstSerializer for UnalignedSerializer<BorrowedStorage>
-where
-    BorrowedStorage: BorrowMut<UnalignedVec>,
-{
-    #[inline]
-    fn serialize_js_word(&mut self, js_word: &JsWord) {
-        // `JsWord` can be static, inline or dynamic.
-        // The first 2 representations are self-contained,
-        // so only need to add string to output if it's dynamic.
-        if js_word.is_dynamic() {
-            // Write length as usize, followed by string
-            self.push_raw(&js_word.len());
-            self.push_raw_bytes(js_word.as_bytes());
-        }
-    }
-}
-
-/// Unaligned serializer without strings.
-/// `push_js_word` discards strings.
-#[derive(Serializer)]
-#[ser_type(pure_copy)]
-pub struct UnalignedSerializerNoStrings<BorrowedStorage: BorrowMut<UnalignedVec>> {
-    #[ser_storage(UnalignedVec)]
-    storage: BorrowedStorage,
-}
-
-impl<BorrowedStorage> UnalignedSerializerNoStrings<BorrowedStorage>
-where
-    BorrowedStorage: BorrowMut<UnalignedVec>,
-{
-    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
-        let mut serializer = Self { storage };
-        serializer.serialize_value(t);
-    }
-}
-
-impl<BorrowedStorage> AstSerializer for UnalignedSerializerNoStrings<BorrowedStorage>
-where
-    BorrowedStorage: BorrowMut<UnalignedVec>,
 {
     #[inline]
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}

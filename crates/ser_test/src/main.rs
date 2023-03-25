@@ -1,6 +1,6 @@
 extern crate swc_node_base;
 
-use ser_raw::storage::{AlignedVec, Storage, UnalignedVec};
+use ser_raw::storage::{AlignedVec, Storage};
 use swc_common::{sync::Lrc, FileName, SourceMap};
 use swc_ecma_ast::{ser, Program};
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
@@ -16,11 +16,6 @@ const CAPACITY: usize = 345600;
 
 pub fn main() {
     let program = get_ast();
-
-    // Only requires 341648
-    let mut storage = UnalignedVec::with_capacity(CAPACITY);
-    ser::UnalignedSerializerNoStrings::serialize_into(&program, &mut storage);
-    println!("UnalignedSerializerNoStrings {}", storage.len());
 
     // Only requires 341648
     let mut storage = AlignedVec::<
@@ -106,11 +101,6 @@ pub fn main() {
         STRING_DATA_LEN,
     );
     println!("AlignedSerializerFastStringsDeduped {}", storage.len());
-
-    // Only requires 344980
-    let mut storage = UnalignedVec::with_capacity(CAPACITY);
-    ser::UnalignedSerializer::serialize_into(&program, &mut storage);
-    println!("UnalignedSerializer {}", storage.len());
 
     // Only requires 345432
     let mut storage = AlignedVec::<

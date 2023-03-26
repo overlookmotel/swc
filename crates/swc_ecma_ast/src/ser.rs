@@ -398,12 +398,12 @@ where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
     pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
-        let mut serializer = Self {
+        let serializer = Self {
             storage,
             pos_mapping: PosMapping::dummy(),
             ptrs: Ptrs::new(),
         };
-        serializer.serialize_value(t);
+        serializer.serialize(t);
     }
 }
 

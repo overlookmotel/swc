@@ -41,7 +41,7 @@ where
         // Reserve space for pointer to strings + len (as `u32`s).
         // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
         storage.borrow_mut().align_for::<[u32; 2]>();
-        let metadata_pos = storage.borrow().len();
+        let metadata_pos = storage.borrow().pos();
         storage.borrow_mut().push_empty::<[u32; 2]>();
 
         let mut serializer = Self {
@@ -60,7 +60,7 @@ where
 
         // Get position we're writing string lengths at
         storage.align_for::<u32>(); // Should be a no-op because will be aligned to `VALUE_ALIGNMENT` anyway
-        let pos = storage.len();
+        let pos = storage.pos();
 
         // Write string lengths + data
         storage.push_slice(&string_lengths);
@@ -114,7 +114,7 @@ where
         // Reserve space for pointer to strings + len (as `u32`s).
         // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
         storage.borrow_mut().align_for::<[u32; 2]>();
-        let metadata_pos = storage.borrow().len();
+        let metadata_pos = storage.borrow().pos();
         storage.borrow_mut().push_empty::<[u32; 2]>();
 
         let mut serializer = Self {
@@ -130,7 +130,7 @@ where
         let storage = storage.borrow_mut();
 
         // Get position we're writing string content at
-        let pos = storage.len();
+        let pos = storage.pos();
 
         // Write string lengths + data
         storage.push_bytes(&string_data);
@@ -188,7 +188,7 @@ where
         // Reserve space for pointer to strings + len (as `u32`s).
         // `align_for` should be a no-op as will be aligned to `VALUE_ALIGNMENT` anyway.
         storage.borrow_mut().align_for::<[u32; 2]>();
-        let metadata_pos = storage.borrow().len();
+        let metadata_pos = storage.borrow().pos();
         storage.borrow_mut().push_empty::<[u32; 2]>();
 
         let mut serializer = Self {
@@ -209,7 +209,7 @@ where
 
         // Get position we're writing string lengths at
         storage.align_for::<u32>(); // Should be a no-op because will be aligned to `VALUE_ALIGNMENT` anyway
-        let pos = storage.len();
+        let pos = storage.pos();
 
         // Write string lengths + data
         storage.push_slice(&string_lengths);

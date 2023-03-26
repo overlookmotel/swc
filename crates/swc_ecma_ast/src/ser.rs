@@ -3,7 +3,7 @@ use std::{borrow::BorrowMut, collections::HashMap, mem};
 pub use ser::AstSerializer;
 use ser_raw::{
     pos::{PosMapping, Ptrs},
-    storage::{AlignedVec, ContiguousStorage, Storage},
+    storage::{AlignedVec, RandomAccessStorage, Storage},
     util::aligned_max_u32_capacity,
     Serialize, Serializer,
 };

@@ -2695,6 +2695,7 @@ dependencies = [
 name = "ser_raw"
 version = "0.1.0"
 dependencies = [
+ "num-bigint",
  "ser_raw_derive",
  "ser_raw_derive_serializer",
 ]

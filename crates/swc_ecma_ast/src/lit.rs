@@ -66,7 +66,6 @@ bridge_lit_from!(BigInt, BigIntValue);
 pub struct BigInt {
     pub span: Span,
     #[cfg_attr(feature = "rkyv", with(EncodeBigInt))]
-    #[cfg_attr(feature = "ser_raw", ser_with(BigIntProxy))]
     pub value: BigIntValue,
 
     /// Use `None` value only for transformations to avoid recalculate
@@ -152,23 +151,6 @@ impl From<BigIntValue> for BigInt {
             value,
             raw: None,
         }
-    }
-}
-
-#[cfg(feature = "ser_raw")]
-#[derive(Debug, Clone, Copy)]
-struct BigIntProxy;
-
-#[cfg(feature = "ser_raw")]
-impl<Ser> ser_raw::SerializeWith<BigIntValue, Ser> for BigIntProxy
-where
-    Ser: ser_raw::Serializer + ser::AstSerializer,
-{
-    fn serialize_data_with(bigint: &BigIntValue, serializer: &mut Ser) {
-        // Write length as usize, then body. Sign is stored inline.
-        let body = bigint.magnitude().to_bytes_le();
-        serializer.push_raw(&body.len());
-        serializer.push_raw_bytes(body.as_slice());
     }
 }
 

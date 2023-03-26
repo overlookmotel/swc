@@ -69,7 +69,7 @@ where
         unsafe {
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
-            storage.write(&[pos as u32, string_lengths.len() as u32], metadata_pos);
+            storage.write(metadata_pos, &[pos as u32, string_lengths.len() as u32]);
         }
     }
 }
@@ -137,7 +137,7 @@ where
 
         unsafe {
             // Write position and length of string data at start of buffer (each as a `u32`)
-            storage.write(&[pos as u32, string_data.len() as u32], metadata_pos);
+            storage.write(metadata_pos, &[pos as u32, string_data.len() as u32]);
         }
     }
 }
@@ -218,7 +218,7 @@ where
         unsafe {
             // Write position of string length data + number of strings at start
             // of buffer (each as a `u32`)
-            storage.write(&[pos as u32, string_lengths.len() as u32], metadata_pos);
+            storage.write(metadata_pos, &[pos as u32, string_lengths.len() as u32]);
         }
     }
 }

@@ -33,7 +33,7 @@ where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
     pub fn serialize_into<T: Serialize<Self>>(
-        t: &T,
+        value: &T,
         mut storage: BorrowedStorage,
         num_strings: usize,
         string_data_len: usize,
@@ -49,27 +49,29 @@ where
             string_lengths: Vec::with_capacity(num_strings),
             string_data: Vec::with_capacity(string_data_len),
         };
-        serializer.serialize_value(t);
+        serializer.serialize_value(value);
+        serializer.finalize_strings(metadata_pos);
+        serializer.finalize();
+    }
 
-        let Self {
-            mut storage,
-            string_lengths,
-            string_data,
-        } = serializer;
-        let storage = storage.borrow_mut();
+    fn finalize_strings(&mut self, metadata_pos: usize) {
+        let storage = self.storage.borrow_mut();
 
         // Get position we're writing string lengths at
         storage.align_for::<u32>(); // Should be a no-op because will be aligned to `VALUE_ALIGNMENT` anyway
         let pos = storage.pos();
 
         // Write string lengths + data
-        storage.push_slice(&string_lengths);
-        storage.push_bytes(&string_data);
+        storage.push_slice(&self.string_lengths);
+        storage.push_bytes(&self.string_data);
 
+        // Write position of string length data + number of strings at start of buffer
+        // (each as a `u32`)
         unsafe {
-            // Write position of string length data + number of strings at start
-            // of buffer (each as a `u32`)
-            storage.write(metadata_pos, &[pos as u32, string_lengths.len() as u32]);
+            storage.write(
+                metadata_pos,
+                &[pos as u32, self.string_lengths.len() as u32],
+            );
         }
     }
 }
@@ -107,7 +109,7 @@ where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
     pub fn serialize_into<T: Serialize<Self>>(
-        t: &T,
+        value: &T,
         mut storage: BorrowedStorage,
         string_data_len: usize,
     ) {
@@ -121,24 +123,21 @@ where
             storage,
             string_data: Vec::with_capacity(string_data_len),
         };
-        serializer.serialize_value(t);
+        serializer.serialize_value(value);
+        serializer.finalize_strings(metadata_pos);
+        serializer.finalize();
+    }
 
-        let Self {
-            mut storage,
-            string_data,
-        } = serializer;
-        let storage = storage.borrow_mut();
+    fn finalize_strings(&mut self, metadata_pos: usize) {
+        let storage = self.storage.borrow_mut();
 
         // Get position we're writing string content at
         let pos = storage.pos();
 
         // Write string lengths + data
-        storage.push_bytes(&string_data);
-
-        unsafe {
-            // Write position and length of string data at start of buffer (each as a `u32`)
-            storage.write(metadata_pos, &[pos as u32, string_data.len() as u32]);
-        }
+        storage.push_bytes(&self.string_data);
+        // Write position and length of string data at start of buffer (each as a `u32`)
+        unsafe { storage.write(metadata_pos, &[pos as u32, self.string_data.len() as u32]) };
     }
 }
 
@@ -180,7 +179,7 @@ where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
     pub fn serialize_into<T: Serialize<Self>>(
-        t: &T,
+        value: &T,
         mut storage: BorrowedStorage,
         num_strings: usize,
         string_data_len: usize,
@@ -197,28 +196,28 @@ where
             string_data: Vec::with_capacity(string_data_len),
             string_lookup: HashMap::with_capacity(num_strings),
         };
-        serializer.serialize_value(t);
+        serializer.serialize_value(value);
+        serializer.finalize_strings(metadata_pos);
+        serializer.finalize();
+    }
 
-        let Self {
-            mut storage,
-            string_lengths,
-            string_data,
-            ..
-        } = serializer;
-        let storage = storage.borrow_mut();
+    fn finalize_strings(&mut self, metadata_pos: usize) {
+        let storage = self.storage.borrow_mut();
 
         // Get position we're writing string lengths at
         storage.align_for::<u32>(); // Should be a no-op because will be aligned to `VALUE_ALIGNMENT` anyway
         let pos = storage.pos();
 
         // Write string lengths + data
-        storage.push_slice(&string_lengths);
-        storage.push_bytes(&string_data);
-
+        storage.push_slice(&self.string_lengths);
+        storage.push_bytes(&self.string_data);
+        // Write position of string length data + number of strings at start
+        // of buffer (each as a `u32`)
         unsafe {
-            // Write position of string length data + number of strings at start
-            // of buffer (each as a `u32`)
-            storage.write(metadata_pos, &[pos as u32, string_lengths.len() as u32]);
+            storage.write(
+                metadata_pos,
+                &[pos as u32, self.string_lengths.len() as u32],
+            );
         }
     }
 }
@@ -268,9 +267,9 @@ impl<BorrowedStorage> AlignedSerializer<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
-        let mut serializer = Self { storage };
-        serializer.serialize_value(t);
+    pub fn serialize_into<T: Serialize<Self>>(value: &T, storage: BorrowedStorage) {
+        let serializer = Self { storage };
+        serializer.serialize(value);
     }
 }
 
@@ -304,9 +303,9 @@ impl<BorrowedStorage> AlignedSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
-        let mut serializer = Self { storage };
-        serializer.serialize_value(t);
+    pub fn serialize_into<T: Serialize<Self>>(value: &T, storage: BorrowedStorage) {
+        let serializer = Self { storage };
+        serializer.serialize(value);
     }
 }
 
@@ -332,12 +331,12 @@ impl<BorrowedStorage> PosSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
-        let mut serializer = Self {
+    pub fn serialize_into<T: Serialize<Self>>(value: &T, storage: BorrowedStorage) {
+        let serializer = Self {
             storage,
             pos_mapping: PosMapping::dummy(),
         };
-        serializer.serialize_value(t);
+        serializer.serialize(value);
     }
 }
 
@@ -364,12 +363,12 @@ impl<BorrowedStorage> PtrOffsetSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
-        let mut serializer = Self {
+    pub fn serialize_into<T: Serialize<Self>>(value: &T, storage: BorrowedStorage) {
+        let serializer = Self {
             storage,
             pos_mapping: PosMapping::dummy(),
         };
-        serializer.serialize_value(t);
+        serializer.serialize(value);
     }
 }
 
@@ -397,13 +396,13 @@ impl<BorrowedStorage> CompleteSerializerNoStrings<BorrowedStorage>
 where
     BorrowedStorage: BorrowMut<AlignedStorage>,
 {
-    pub fn serialize_into<T: Serialize<Self>>(t: &T, storage: BorrowedStorage) {
+    pub fn serialize_into<T: Serialize<Self>>(value: &T, storage: BorrowedStorage) {
         let serializer = Self {
             storage,
             pos_mapping: PosMapping::dummy(),
             ptrs: Ptrs::new(),
         };
-        serializer.serialize(t);
+        serializer.serialize(value);
     }
 }
 

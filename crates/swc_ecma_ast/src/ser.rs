@@ -87,7 +87,7 @@ where
         // so only need to add string to output if it's dynamic.
         if js_word.is_dynamic() {
             let index = self.string_lengths.len();
-            self.string_lengths.push(js_word.len() as u32);
+            self.string_lengths.push(utf16_len(js_word));
             self.string_data.extend_from_slice(js_word.as_bytes());
             self.push_raw(&index);
         }
@@ -236,7 +236,7 @@ where
                 Some(index) => *index,
                 None => {
                     let index = self.string_lengths.len() as u32;
-                    self.string_lengths.push(js_word.len() as u32);
+                    self.string_lengths.push(utf16_len(js_word));
                     self.string_data.extend_from_slice(js_word.as_bytes());
                     // `js_word` isn't really `&'static`, but we know it'll live as long as the hash
                     // map because we have an immutable reference to the AST
@@ -412,4 +412,35 @@ where
 {
     #[inline]
     fn serialize_js_word(&mut self, _js_word: &JsWord) {}
+}
+
+/// Get length of `JsWord` as number of UTF16 characters.
+/// JavaScript stores strings in UTF16, so can then use these lengths to
+/// chop up 1 long string with `str.slice()`.
+///
+/// The implementation below is equivalent to
+/// `js_word.chars().map(|c| c.len_utf16() as u32).sum::<u32>()`
+/// (but hopefully faster).
+///
+/// It relies on translation of UTF8 coding to UTF16:
+/// - 1 bytes UTF8 = byte 0 `0xxxxxxx` -> 1 x UTF16 char = UTF8 len
+/// - 2 bytes UTF8 = byte 0 `110xxxxx`, remaining bytes `10xxxxxx` -> 1 x UTF16
+///   = UTF8 len - 1
+/// - 3 bytes UTF8 = byte 0 `1110xxxx`, remaining bytes `10xxxxxx` -> 1 x UTF16
+///   = UTF8 len - 2
+/// - 4 bytes UTF8 = byte 0 `1111xxxx`, remaining bytes `10xxxxxx` -> 2 x UTF16
+///   = UTF8 len - 2
+///
+/// So UTF16 len =
+///   UTF8 len
+///   minus count of UTF8 bytes indicating start of sequences 2 bytes or longer
+///   minus count of UTF8 bytes indicating start of sequences 3 bytes or longer
+///
+/// See: https://stackoverflow.com/questions/5728045/c-most-efficient-way-to-determine-how-many-bytes-will-be-needed-for-a-utf-16-st
+fn utf16_len(js_word: &JsWord) -> u32 {
+    js_word.len() as u32
+        - js_word
+            .bytes()
+            .map(|c| (c >= 0xc0) as u32 + (c >= 0xe0) as u32)
+            .sum::<u32>()
 }

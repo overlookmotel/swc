@@ -83,6 +83,19 @@ function deserializeBox(pos, deserialize) {
  * Serialize boxed value.
  * Return position of boxed value in buffer | 0x80000000.
  * Setting highest bit is to avoid 0 being returned. 0 has special meaning for Options.
+ *
+ * On NodeJS, `n | 0x80000000` is still an SMI for all values of n `0` - `0x7FFFFFFF`.
+ * i.e. SMIs are 32 bit signed ints. Any 31-bit positive int can be encoded as an SMI.
+ * `| 0x80000000` just sets the sign bit, so it remains an SMI.
+ * I think it must be that pointer compression is disabled on NodeJS's V8 due to its
+ * support for heap larger than 4GB.
+ * However, if this code was running in a browser which does use pointer compression,
+ * behavior might not be the same. I think using `| 0x80000000` would still produce an SMI,
+ * but need to check.
+ * Non-SMI numbers are stored on the heap in V8, so this would be a major performance hit.
+ * Pointer compression in V8: https://v8.dev/blog/pointer-compression
+ * TODO: Investigate behavior in browsers.
+ *
  * @param {*} value - Boxed value
  * @param {Function} serialize - Serialize function for type
  * @param {Function} finalize - Finalize function for type

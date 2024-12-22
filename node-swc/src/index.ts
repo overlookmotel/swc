@@ -32,7 +32,10 @@ export function plugins(ps: Plugin[]): Plugin {
 }
 
 export class Compiler {
-
+  // TODO: Don't use `toBuffer()` on `src`. Involves unnecessary `JSON.stringify()` call.
+  // TODO: Take `Program` as `src`
+  // TODO: Take `Buffer` as `src`
+  // TODO: Option to return AST not code
   async minify(src: string, opts?: JsMinifyOptions): Promise<Output> {
     return bindings.minify(toBuffer(src), toBuffer(opts ?? {}));
   }
@@ -41,6 +44,7 @@ export class Compiler {
     return bindings.minifySync(toBuffer(src), toBuffer(opts ?? {}));
   }
 
+  // TODO: Take `Buffer` as `src`
   parse(
     src: string,
     options: ParseOptions & { isModule: false }
@@ -150,6 +154,11 @@ export class Compiler {
     return bindings.printSyncFromBuffer(buff, toBuffer(options));
   }
 
+  // TODO: Take `Buffer` as `src`
+  // TODO: Option to return AST not code
+  // TODO: Add comment similar to on `print` and `printSync` above,
+  // if providing `src` as a `Program`.
+  // I think this method also needs same compiler instance.
   async transform(src: string | Program, options?: Options): Promise<Output> {
     const isModule = typeof src !== "string";
     options = options || {};

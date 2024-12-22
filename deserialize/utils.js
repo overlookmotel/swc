@@ -49,6 +49,11 @@ function deserialize(buffIn) {
     );
 
     // Allow buffer to be garbage collected
+    // TODO: Could also signal to Rust to drop the buffer immediately?
+    // Maybe this will screw up GC as next buffer could use same memory address.
+    // Maybe V8 references buffers by mem address so would get confused by that.
+    // https://github.com/napi-rs/napi-rs/discussions/1444
+    // Or reuse the same buffer each time?
     buff = int32 = uint32 = float64 = undefined;
 
     return ast;
@@ -57,6 +62,9 @@ let buff, int32, uint32, float64;
 
 /**
  * Serialize AST to buffer.
+ * TODO: Could `serialize` functions return float64s instead of uint32s?
+ * In a lot of cases, scratch buffer is only used to store 64 bits,
+ * so being able to return a 64-bit number directly would avoid lots of scratch operations.
  * @param {Object} ast - AST
  * @returns {Buffer} - Serialized buffer
  */
@@ -131,6 +139,7 @@ function alloc(bytes) {
  * @returns {undefined}
  */
 function growBuffer(minLen) {
+    // TODO: Use `Math.clz32(minLen)` to round up to next power of 2, instead of this loop
     do {
         buffLen *= 2;
     } while (buffLen < minLen);
@@ -155,6 +164,7 @@ growBuffer.toString = () =>
  * @returns {undefined}
  */
 function alignPos(align) {
+    // TODO: Make this branchless `pos = (pos + align - 1) & ~(align - 1)`
     if (align !== 1) {
         const modulus = pos & (align - 1);
         if (modulus !== 0) pos += align - modulus;
@@ -263,6 +273,12 @@ function writeScratchUint32(pos32, value) {
  * `len` must be at least 8 bytes.
  * Scratch buffer position must be aligned to 4 bytes.
  * Both of these conditions are satisfied when copying `JsWord` content.
+ *
+ * TODO: Could also copy as Float64 if position aligned on 8.
+ * TODO: Is this whole optimization unnecessary? Only used by `JsWord` serializer
+ * in case when len is between 8-21 bytes (and it's pretty uncommon case).
+ * TODO: Check there's a test for strings of length 7 or less where UTF8-encoded length
+ * is more than 7 bytes. That's the only case where this code will be called.
  *
  * @param {number} scratchPos32 - Starting position in scratch buffer in multiples of 4 bytes
  * @param {number} len - Number of bytes to copy (minimum 8)

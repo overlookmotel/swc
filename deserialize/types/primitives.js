@@ -21,6 +21,27 @@ module.exports = {
          *     Therefore if byte 7's highest bit is set, it's a string longer than 7 bytes,
          *     if that bit is not set, it's a string with length <= 7 bytes.
          *
+         * TODO: String serialization / deserialization is a big chunk of processing time.
+         * Each call out of JS with `utf8Slice` / `utf8Write` has an overhead.
+         * Alternative approach:
+         * Deserialization:
+         * Instead of deserializing each string individually, encode all strings as UTF16
+         * on Rust side and store in a separate buffer (or add to end of existing buffer).
+         * Serialize each individual string as position and length of string in this buffer.
+         * Then deserialize all strings in one go with a single `utf16Slice` call,
+         * and slice up that string into the individual strings.
+         * Reason for encoding to UTF16 first on Rust side (rather than making a single UTF8 buffer)
+         * is that then positions to slice the combined string on JS-side can be calculated as strings
+         * are added to the buffer. If string buffer was UTF8-encoded, this would be unpredicable
+         * depending on whether string contains non-ASCII characters or not.
+         * Serialization:
+         * Same approach in reverse. Concatenate all strings on JS side and add to end of the buffer.
+         * On Rust side, convert each string from UTF16 to UTF8 when encountered during RKYV
+         * deserialization.
+         * Or maybe use https://nodejs.org/dist/latest-v18.x/docs/api/n-api.html#napi_create_string_utf16
+         * Bun author also mentions optimization for latin1 strings which may be relevant:
+         * https://twitter.com/jarredsumner/status/1614088400226902016
+         *
          * @param {number} pos - Position in buffer
          * @returns {string} - Decoded string
          */

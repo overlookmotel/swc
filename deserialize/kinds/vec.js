@@ -86,6 +86,18 @@ function deserializeVec(pos, deserialize, length) {
     // Fast path for empty vecs
     const numEntries = uint32[pos32 + 1];
     if (numEntries === 0) return [];
+
+    // TODO: Even though length of array is known upfront,
+    // `new Array()` may be slow because it creates a "holey" array.
+    // Read operations `entries[i]` involve check if that index is a hole.
+    // Write operations `entries[i] =` in loop below involve a prototype chain lookup too
+    // because each time it's writing to a hole.
+    // https://v8.dev/blog/elements-kinds#avoid-creating-holes
+    // I tried switching to `entries = []` and using `.push()`. Does not appear to be faster
+    // (though benchmark has so much variance across runs, it's hard to say).
+    // But maybe is faster for user to access array, once they've received it.
+    // Converting `for` loop below to `do ... while` loop (because 1st `i < numEntries` check
+    // is defunct since we know `numEntries` > 0) also makes no measurable difference.
     const entries = new Array(numEntries);
     pos += int32[pos32];
     for (let i = 0; i < numEntries; i++) {
@@ -128,6 +140,9 @@ function serializeVec(values, serialize, finalize, valueLength, valueAlign) {
     const scratchPos32Before = scratchPos32;
 
     // Serialize values
+    // TODO: Use a `Uint32Array` here? May be more performant.
+    // Or use scratch buffer to avoid creating a temp array.
+    // I think `serialize()` always returns a 32-bit unsigned integer.
     const finalizeData = new Array(numValues);
     for (let i = 0; i < numValues; i++) {
         finalizeData[i] = serialize(values[i]);
